@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cocnc"
-version = "0.1.23"
+version = "0.1.24"
 description = "CNC is the first framework for application deployment, a fully distributed and customizable PaaS developer experience, based on docker-compose config files"
 authors = [
     "Adam Abdelaziz <adam.abdelaziz@withcoherence.com>",

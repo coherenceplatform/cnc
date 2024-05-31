@@ -215,7 +215,12 @@ class AppConfig(BaseModel):
         for service in self.services:
             _vars.update(service.settings.managed_environment_variables)
 
-        return [self.variable_object({"name": k, "value": v}) for k, v in _vars.items()]
+        variable_objects = []
+        for k, v in _vars.items():
+            if v:
+                variable_objects.append(self.variable_object({"name": k, "value": v}))
+
+        return variable_objects
 
     @property
     def managed_environment_secrets(self):
