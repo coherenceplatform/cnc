@@ -145,8 +145,8 @@ class BaseServiceSettings(BaseModel):
             "PORT": self.service.port,
         }
 
-        if service.domain:
-            _data["CNC_ENVIRONMENT_DOMAIN"] = service.domain
+        if self.service.domain:
+            _data["CNC_ENVIRONMENT_DOMAIN"] = self.service.domain
 
         return _data
 
