@@ -140,10 +140,15 @@ class BaseServiceSettings(BaseModel):
 
     @property
     def managed_environment_variables(self):
-        return {
+        _data = {
             "CNC_INSTANCE_NAME": self.service.instance_name,
             "PORT": self.service.port,
         }
+
+        if service.domain:
+            _data["CNC_ENVIRONMENT_DOMAIN"] = service.domain
+
+        return _data
 
     @property
     def custom_request_headers(self):
