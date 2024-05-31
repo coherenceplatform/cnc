@@ -1,0 +1,88 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "{{ service.instance_name }}"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: "{{ service.instance_name }}"
+  name: "{{ service.instance_name }}"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: "{{ service.instance_name }}"
+  name: "{{ service.instance_name }}"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: "{{ service.instance_name }}"
+  name: "{{ service.instance_name }}"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: "{{ service.instance_name }}"
+subjects:
+- kind: ServiceAccount
+  name: "{{ service.instance_name }}"
+  namespace: "{{ service.instance_name }}"
+---
+{% for task in service.settings.scheduled_tasks %}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  namespace: "{{ service.instance_name }}"
+  name: "{{ service.name }}-{{ task.name }}"
+spec:
+  # https://cloud.google.com/kubernetes-engine/docs/how-to/cronjobs#schedule
+  # "*/1 * * * *"
+  schedule: "{{ task.schedule }}"
+  # todo, allow user to set
+  concurrencyPolicy: Replace
+  startingDeadlineSeconds: 100
+  # todo, allow user to set
+  # suspend: false
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 10
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          terminationGracePeriodSeconds: 1800
+          affinity:
+            nodeAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 1
+                preference:
+                  matchExpressions:
+                  - key: cloud.google.com/gke-spot
+                    operator: {% if service.environment.is_static %}NotIn{% else %}In{% endif %}
+                    values:
+                    - "true"
+          restartPolicy: "Never"
+          serviceAccountName: "{{ service.instance_name }}"
+          securityContext:
+            runAsUser: 3298
+            runAsGroup: 3298
+            fsGroup: 3298
+          containers:
+{% filter indent(width=20) %}
+{% with worker=None %}
+{% include "k8s/service_containers/backend-worker.yml" %}
+{% endwith %}
+{% endfilter %}
+---
+{% endfor %}

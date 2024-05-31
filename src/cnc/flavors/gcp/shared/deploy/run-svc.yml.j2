@@ -1,0 +1,10 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: {{ service.instance_name }}
+  labels:
+    cloud.googleapis.com/location: {{ service.environment.collection.region }}
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+
+{% include "run-container.yml.j2" %}

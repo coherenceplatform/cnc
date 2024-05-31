@@ -1,0 +1,20 @@
+name: my-backend-test-app
+provider: gcp
+region: us-east1
+flavor: run
+version: 1
+
+collections:
+- name: preview
+  base_domain: my-backend-test-app.testnewsite.coherencesites.com
+  account_id: "foo-bar-123"
+  region: us-west2
+  environments:
+  - name: main
+    environment_variables:
+    - name: foo
+      value: bar
+  - name: staging
+    environment_variables:
+    - name: foo2
+      value: baz

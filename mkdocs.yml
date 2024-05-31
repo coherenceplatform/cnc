@@ -1,0 +1,4 @@
+site_name: CNC Docs
+site_url: https://cncframework.com
+theme:
+  name: material

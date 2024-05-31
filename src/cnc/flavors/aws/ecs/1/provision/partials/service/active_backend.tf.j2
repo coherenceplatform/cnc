@@ -1,0 +1,290 @@
+resource "aws_lb_listener_rule" "{{ env_collection.instance_name }}_{{ lb_rules.priority }}" {
+    listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
+    priority = {{ 1000 + lb_rules.priority }}
+
+    action {
+        type = "forward"
+        target_group_arn = aws_alb_target_group.{{ service.instance_name }}.arn
+    }
+
+    condition {
+        path_pattern {
+            values = [
+                {% if service.settings.url_path != "/" %}
+                "/{{ service.settings.url_path.strip('/') }}",
+                {% endif %}
+                "{{ service.settings.url_path }}*"
+            ]
+        }
+    }
+
+    condition {
+        host_header {
+            values = [
+                replace(aws_alb.{{ env_collection.instance_name }}.dns_name, "/^https?://([^/]*).*/", "$1"),
+                "*.{{ service.environment.domain }}",
+                "{{ service.environment.domain }}"
+            ]
+        }
+    }
+}
+{% set lb_rules.priority = lb_rules.priority + 1 %}
+
+{% if service.environment.domains %}
+{% for domain in service.environment.domains %}
+{% if service.environment.custom_ns_records_for(domain) %}
+resource "aws_lb_listener_rule" "{{ env_collection.instance_name }}_{{ lb_rules.priority }}" {
+    listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
+    priority = {{ 1000 + lb_rules.priority }}
+
+    action {
+        type = "forward"
+        target_group_arn = aws_alb_target_group.{{ service.instance_name }}.arn
+    }
+
+    condition {
+        path_pattern {
+            values = [
+                {% if service.settings.url_path != "/" %}
+                "/{{ service.settings.url_path.strip('/') }}",
+                {% endif %}
+                "{{ service.settings.url_path }}*"
+            ]
+        }
+    }
+
+    condition {
+        host_header {
+            values = [
+                "*.{{ domain }}",
+                "{{ domain }}"
+            ]
+        }
+    }
+}
+{% set lb_rules.priority = lb_rules.priority + 1 %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+resource "aws_appautoscaling_target" "{{ service.instance_name }}" {
+    service_namespace = "ecs"
+    resource_id = "service/${aws_ecs_cluster.{{ env_collection.instance_name }}.name}/${aws_ecs_service.{{ service.instance_name }}.name}"
+    scalable_dimension = "ecs:service:DesiredCount"
+    role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_autoscaling.arn}"
+    {% if environment.is_production %}
+    min_capacity = {{ service.settings.system.platform.min_scale }}
+    max_capacity = {{ service.settings.system.platform.max_scale }}
+    {% else %}
+    min_capacity = 1
+    max_capacity = 4
+    {% endif %}
+
+    lifecycle {
+        ignore_changes = [role_arn]
+    }
+}
+
+resource "aws_appautoscaling_policy" "{{ service.instance_name }}_up" {
+    name = "{{ service.instance_name }}-scale-up"
+    service_namespace = "ecs"
+    resource_id = "service/${aws_ecs_cluster.{{ env_collection.instance_name }}.name}/${aws_ecs_service.{{ service.instance_name }}.name}"
+    scalable_dimension = "ecs:service:DesiredCount"
+
+    step_scaling_policy_configuration {
+        adjustment_type = "ChangeInCapacity"
+        cooldown = 60
+        metric_aggregation_type = "Maximum"
+
+        step_adjustment {
+            metric_interval_lower_bound = 0
+            scaling_adjustment = 1
+        }
+    }
+
+    depends_on = [aws_appautoscaling_target.{{ service.instance_name }}]
+}
+
+resource "aws_appautoscaling_policy" "{{ service.instance_name }}_down" {
+    name = "{{ service.instance_name }}-scale-down"
+    service_namespace = "ecs"
+    resource_id = "service/${aws_ecs_cluster.{{ env_collection.instance_name }}.name}/${aws_ecs_service.{{ service.instance_name }}.name}"
+    scalable_dimension = "ecs:service:DesiredCount"
+
+    step_scaling_policy_configuration {
+        adjustment_type = "ChangeInCapacity"
+        cooldown = 60
+        metric_aggregation_type = "Maximum"
+
+        step_adjustment {
+            metric_interval_lower_bound = 0
+            scaling_adjustment = -1
+        }
+    }
+
+    depends_on = [aws_appautoscaling_target.{{ service.instance_name }}]
+}
+
+resource "aws_cloudwatch_metric_alarm" "{{ service.instance_name }}_cpu_high" {
+    alarm_name = "{{ service.instance_name }}-cpu-utilization-high"
+    comparison_operator = "GreaterThanOrEqualToThreshold"
+    evaluation_periods = "3"
+    metric_name = "CPUUtilization"
+    namespace = "AWS/ECS"
+    period = "60"
+    statistic = "Maximum"
+    threshold = "70"
+
+    dimensions = {
+        ClusterName = "${aws_ecs_cluster.{{ env_collection.instance_name }}.name}"
+        ServiceName = "${aws_ecs_service.{{ service.instance_name }}.name}"
+    }
+
+    alarm_actions = ["${aws_appautoscaling_policy.{{ service.instance_name }}_up.arn}"]
+    ok_actions = ["${aws_appautoscaling_policy.{{ service.instance_name }}_down.arn}"]
+
+    lifecycle {
+        ignore_changes = all
+    }
+}
+
+resource "aws_ecs_task_definition" "{{ service.instance_name }}_migrate" {
+    family = "{{ service.instance_name }}_migrate"
+    container_definitions = jsonencode([
+        {
+            name = "{{ service.instance_name }}_migrate"
+            image = "public.ecr.aws/docker/library/hello-world:latest"
+            portMappings = [{
+                containerPort = 80
+                hostPort = 80
+            }]
+        }
+    ])
+    requires_compatibilities = ["FARGATE"]
+    network_mode = "awsvpc"
+    cpu = "{{ service.deploy.resources.limits.cpu }}"
+    memory = "{{ service.deploy.resources.limits.memory }}"
+    execution_role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.arn}"
+    task_role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.arn}"
+
+    lifecycle {
+        ignore_changes = all
+    }
+}
+
+resource "aws_ecs_task_definition" "{{ service.instance_name }}_seed" {
+    family = "{{ service.instance_name }}_seed"
+    container_definitions = jsonencode([
+        {
+            name = "{{ service.instance_name }}_seed"
+            image = "public.ecr.aws/docker/library/hello-world:latest"
+            portMappings = [{
+                containerPort = 80
+                hostPort = 80
+            }]
+        }
+    ])
+    requires_compatibilities = ["FARGATE"]
+    network_mode = "awsvpc"
+    cpu = "{{ service.deploy.resources.limits.cpu }}"
+    memory = "{{ service.deploy.resources.limits.memory }}"
+    execution_role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.arn}"
+    task_role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.arn}"
+
+    lifecycle {
+        ignore_changes = all
+    }
+}
+
+resource "aws_ecs_task_definition" "{{ service.instance_name }}" {
+    family = "{{ service.instance_name }}"
+    container_definitions = jsonencode([
+        {
+            name = "{{ service.instance_name }}"
+            image = "public.ecr.aws/docker/library/hello-world:latest"
+            portMappings = [{
+                containerPort = {{ service.port }}
+                hostPort = {{ service.port }}
+            }]
+        }
+    ])
+    requires_compatibilities = ["FARGATE"]
+    network_mode = "awsvpc"
+    cpu = "{{ service.deploy.resources.limits.cpu }}"
+    memory = "{{ service.deploy.resources.limits.memory }}"
+    execution_role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.arn}"
+    task_role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.arn}"
+
+    lifecycle {
+        ignore_changes = all
+    }
+}
+
+resource "aws_ecs_service" "{{ service.instance_name }}" {
+    name = "{{ service.instance_name }}"
+    task_definition = "${aws_ecs_task_definition.{{ service.instance_name }}.family}"
+    desired_count = 0
+
+    cluster = "${aws_ecs_cluster.{{ env_collection.instance_name }}.id}"
+    depends_on = [aws_iam_role_policy.{{ env_collection.instance_name }}_ecs_task, aws_alb_target_group.{{ service.instance_name }}]
+
+    network_configuration {
+        security_groups = "${concat([aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id], [aws_security_group.{{ env_collection.instance_name }}_db_access.id], [aws_security_group.{{ env_collection.instance_name }}_cache_access.id])}"
+        subnets = concat(
+            local.private_subnet_ids,
+            length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+        )
+    }
+
+    load_balancer {
+        target_group_arn = "${aws_alb_target_group.{{ service.instance_name }}.arn}"
+        container_name = "{{ service.instance_name }}"
+        container_port = "{{ service.port }}"
+    }
+
+    deployment_circuit_breaker {
+        enable = true
+        rollback = true
+    }
+
+    {% if service.environment.is_static %}
+    launch_type = "FARGATE"
+    {% else %}
+    capacity_provider_strategy {
+        capacity_provider = "FARGATE_SPOT"
+        weight            = 100
+    }
+    {% endif %}
+
+    lifecycle {
+        ignore_changes = [desired_count, task_definition]
+    }
+}
+
+resource "aws_alb_target_group" "{{ service.instance_name }}" {
+    name = "{{ service.settings.target_group_name }}"
+    port = 80
+    protocol = "HTTP"
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+    target_type = "ip"
+
+    health_check {
+        path = "{{ service.settings.system.health_check }}"
+        matcher = "200-399"
+        interval = 10
+        healthy_threshold = 2
+        unhealthy_threshold = 9
+    }
+
+    lifecycle {
+        create_before_destroy = true
+    }
+}
+
+{% if service.settings.scheduled_tasks %}
+{% include "partials/service/backend/scheduled_tasks.tf.j2" %}
+{% endif %}
+
+{% if service.settings.workers %}
+{% include "partials/service/backend/workers.tf.j2" %}
+{% endif %}

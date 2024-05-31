@@ -1,0 +1,60 @@
+{% for queue in environment.message_queue_resources %}
+{% if queue.settings.use_existing %}
+resource "aws_sqs_queue" "{{ queue.tf_safe_queue_name}}" {
+  name                  = "{{ queue.queue_name }}"
+  {% if queue.is_fifo %}
+  fifo_queue            = true
+  {% endif %}
+}
+
+output "aws_sqs_queue_{{ queue.tf_safe_queue_name }}" {
+    value = aws_sqs_queue.{{ queue.tf_safe_queue_name }}.arn
+}
+{% endif %}
+{% endfor %}
+
+{% for bucket in environment.object_storage_resources %}
+{% if not bucket.settings.use_existing %}
+resource "aws_s3_bucket" "{{ bucket.settings.bucket_name }}" {
+  bucket = "{{ bucket.settings.bucket_name }}"
+
+  {% if not environment.is_static %}
+  force_destroy = true
+  {% endif %}
+}
+
+{% if bucket.settings.cors %}
+resource "aws_s3_bucket_cors_configuration" "{{ bucket.settings.bucket_name }}" {
+  bucket = aws_s3_bucket.{{ bucket.settings.bucket_name }}.id
+
+{% for cors_block in bucket.settings.cors %}
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = [{% for method in cors_block.allowed_methods %}"{{ method }}"{% if not loop.last %},{% endif %}{% endfor %}]
+    allowed_origins = [{% for domain in cors_block.allowed_origins %}"{{ domain }}"{% if not loop.last %},{% endif %}{% endfor %}]
+    max_age_seconds = 3000
+  }
+{% endfor %}
+}
+{% endif %}
+
+resource "aws_s3_bucket_ownership_controls" "{{ bucket.settings.bucket_name }}" {
+  bucket = aws_s3_bucket.{{ bucket.settings.bucket_name }}.id
+  rule {
+    object_ownership = "ObjectWriter"
+  }
+}
+
+resource "aws_s3_bucket_acl" "{{ bucket.settings.bucket_name }}" {
+  bucket = aws_s3_bucket.{{ bucket.settings.bucket_name }}.id
+  acl    = "private"
+  depends_on = [
+        aws_s3_bucket_ownership_controls.{{ bucket.settings.bucket_name }},
+    ]
+}
+
+output "s3_bucket_{{ bucket.settings.bucket_name }}" {
+    value = aws_s3_bucket.{{ bucket.settings.bucket_name }}.arn
+}
+{% endif %}
+{% endfor %}

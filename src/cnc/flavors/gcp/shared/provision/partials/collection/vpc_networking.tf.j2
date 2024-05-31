@@ -1,0 +1,222 @@
+{% if env_collection.has_active_deployments %}
+resource "google_compute_network" "app-network" {
+  name = "{{ env_collection.instance_name }}"
+  auto_create_subnetworks = true
+  delete_default_routes_on_create = true
+
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_compute_global_address" "service_range" {
+  name          = "{{ env_collection.instance_name }}-address-range"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = google_compute_network.app-network.id
+
+  depends_on = [google_project_service.servicenetworking, google_project_service.compute]
+}
+
+resource "google_service_networking_connection" "private_service_connection" {
+  network                 = google_compute_network.app-network.id
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.service_range.name]
+  deletion_policy = "ABANDON"
+
+  depends_on = [google_project_service.servicenetworking, google_compute_global_address.service_range]
+}
+
+resource "google_compute_global_address" "{{ env_collection.instance_name }}" {
+  name = "{{ env_collection.instance_name }}-address"
+
+  depends_on = [google_project_service.compute]
+}
+
+output "load_balancer_ip" {
+  value = google_compute_global_address.{{ env_collection.instance_name }}.address
+}
+
+resource "google_compute_target_https_proxy" "{{ env_collection.instance_name }}" {
+  name = "{{ env_collection.instance_name }}-https-proxy"
+
+  url_map = google_compute_url_map.{{ env_collection.instance_name }}-map.id
+
+  ssl_certificates = [
+    {% for bucket_id, domain in env_collection.domain_buckets.items() %}google_compute_managed_ssl_certificate.app-ssl-{{ bucket_id }}.id{% if not loop.last %}, {% endif %}{% endfor %}
+  ]
+
+  depends_on = [google_project_service.compute,
+    google_compute_url_map.{{ env_collection.instance_name }}-map,
+    {% for bucket_id in env_collection.domain_buckets.keys() %}google_compute_managed_ssl_certificate.app-ssl-{{ bucket_id }}{% if not loop.last %}, {% endif %}{% endfor %}
+  ]
+}
+
+resource "google_compute_url_map" "{{ env_collection.instance_name }}_https_redirect" {
+  name            = "{{ env_collection.instance_name }}-https-redirect"
+
+  depends_on = [google_project_service.compute]
+
+  default_url_redirect {
+    https_redirect         = true
+    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
+    strip_query            = false
+  }
+}
+
+resource "google_compute_target_http_proxy" "{{ env_collection.instance_name }}_https_redirect" {
+  name   = "{{ env_collection.instance_name }}-http-proxy"
+  url_map          = google_compute_url_map.{{ env_collection.instance_name }}_https_redirect.id
+  depends_on = [google_project_service.compute]
+}
+
+resource "google_compute_global_forwarding_rule" "{{ env_collection.instance_name }}_https_redirect" {
+  name   = "{{ env_collection.instance_name }}-lb-http"
+
+  target = google_compute_target_http_proxy.{{ env_collection.instance_name }}_https_redirect.id
+  port_range = "80"
+  ip_address = google_compute_global_address.{{ env_collection.instance_name }}.address
+  depends_on = [google_project_service.compute, google_compute_global_address.{{ env_collection.instance_name }}]
+}
+
+resource "google_compute_global_forwarding_rule" "{{ env_collection.instance_name }}" {
+  name   = "{{ env_collection.instance_name }}-lb"
+
+  target = google_compute_target_https_proxy.{{ env_collection.instance_name }}.id
+  port_range = "443"
+  ip_address = google_compute_global_address.{{ env_collection.instance_name }}.address
+  depends_on = [google_project_service.compute, google_compute_global_address.{{ env_collection.instance_name }}]
+}
+
+resource "random_id" "random-urlmap-id" {
+  byte_length           = 6
+
+  keepers = {
+      domains = md5("{% for service in env_collection.all_services %}{% if service.environment.active_deployment %}google_compute_backend_service.{{ service.instance_name }}.name{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}")
+  }
+}
+
+{% for bucket_id, domain_list in env_collection.domain_buckets.items() %}
+resource "random_id" "random-ssl-postfix-{{ bucket_id }}" {
+  byte_length           = 6
+
+
+  keepers = {
+      domains = md5("{% for domain in domain_list %}{{ domain }}{% endfor %}")
+  }
+}
+
+resource "google_compute_managed_ssl_certificate" "app-ssl-{{ bucket_id }}" {
+    provider = google-beta
+
+    name = "cert-${random_id.random-ssl-postfix-{{ bucket_id }}.hex}"
+
+    managed {
+        domains = [{% for domain in domain_list %}"{{ domain }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+    }
+
+    depends_on = [google_project_service.compute]
+
+    lifecycle {
+      create_before_destroy = true
+    }
+}
+{% endfor %}{# for bucket_id, domain_list in env_collection.domain_buckets.items() #}
+
+resource "google_compute_route" "internet-gateway-route" {
+  name = "{{ env_collection.instance_name }}-internet-route"
+  description        = "{{ env_collection.instance_name }}'s route to the Internet"
+  dest_range  = "0.0.0.0/0"
+  network     = google_compute_network.app-network.id
+  next_hop_gateway = "default-internet-gateway"
+  priority    = 1000
+}
+
+resource "google_vpc_access_connector" "app-connector" {
+  provider      = google-beta
+
+  name          = "{{ env_collection.instance_name[:19] }}"
+  project       = "{{ env_collection.account_id }}"
+  region        = "{{ env_collection.region }}"
+  ip_cidr_range = "10.8.0.0/28"
+  network       = google_compute_network.app-network.id
+
+  min_instances  = 2
+  max_instances  = 10
+  max_throughput = 1000
+
+  depends_on = [
+    google_project_service.vpcaccess-api,
+    google_service_networking_connection.private_service_connection
+  ]
+}
+
+resource "google_compute_url_map" "{{ env_collection.instance_name }}-map" {
+  name        = "{{ env_collection.instance_name }}-map-${random_id.random-urlmap-id.hex}"
+  description = "URL map for coherence app {{ env_collection.instance_name }} (Version: ${random_id.random-urlmap-id.hex})"
+
+  lifecycle {
+      create_before_destroy = true
+    }
+
+  {% if env_collection.includes_production %}
+  default_service = google_compute_backend_service.{{ env_collection.default_service.instance_name }}.id
+  {% else %}
+  default_service = google_compute_backend_service.{{ env_collection.instance_name }}_default.id
+  {% endif %}
+
+  depends_on = [
+    google_project_service.compute,
+    {% if not env_collection.includes_production %}
+    google_compute_backend_service.{{ env_collection.instance_name }}_default,
+    {% endif %}
+    {% for service in env_collection.all_web_services %}{% if service.environment.active_deployment %}google_compute_backend_service.{{ service.instance_name }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}
+  ]
+
+{% for environment in env_collection.valid_environments %}
+{% if environment.active_deployment %}
+  host_rule {
+    hosts        = ["{{ environment.domain }}", "*.{{ environment.domain }}"]
+    path_matcher = "{{ environment.instance_name }}"
+  }
+
+  path_matcher {
+    name            = "{{ environment.instance_name }}"
+    default_service = google_compute_backend_service.{{ environment.default_service.instance_name }}.id
+
+{% for service in environment.web_services %}
+    path_rule {
+      paths   = [
+        "{% if service.settings.url_path != "/" %}{{ service.settings.url_path }}{% endif %}/*"
+        {%- if service.settings.url_path != "/" -%},
+        "{{ service.settings.url_path }}"
+        {%- endif %}
+      ]
+      service = google_compute_backend_service.{{ service.instance_name }}.id
+    }
+{% endfor %}
+  }
+
+{% for service in environment.web_services %}
+  test {
+    service = google_compute_backend_service.{{ service.instance_name }}.id
+    host    = "{{ environment.domain }}"
+    path    = "{% if service.settings.url_path != "/" %}{{ service.settings.url_path }}{% endif %}/foo"
+  }
+
+  test {
+    service = google_compute_backend_service.{{ service.instance_name }}.id
+    host    = "foo.{{ environment.domain }}"
+    path    = "{% if service.settings.url_path != "/" %}{{ service.settings.url_path }}{% endif %}/foo"
+  }
+
+  test {
+    service = google_compute_backend_service.{{ service.instance_name }}.id
+    host    = "{{ environment.domain }}"
+    path    = "{{ service.settings.url_path }}"
+  }
+{% endfor %}
+
+{% endif %} {# if environment.active_deployment #}
+{% endfor %}
+}
+{% endif %}

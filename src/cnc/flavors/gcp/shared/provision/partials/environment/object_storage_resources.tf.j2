@@ -1,0 +1,35 @@
+{%- if environment.active_deployment %}
+{%- for bucket in environment.object_storage_resources %}
+{%- if not bucket.settings.use_existing %}
+resource "google_storage_bucket" "{{ bucket.settings.bucket_name }}" {
+  name     = "{{ bucket.settings.bucket_name }}"
+  location = "US"
+
+  uniform_bucket_level_access = true
+
+  {% for cors_block in bucket.settings.cors %}
+  cors {
+    origin          = [
+      {% for domain in cors_block.allowed_origins %}"https://{{ domain }}"{% if not loop.last %},{% endif %}{% endfor %}
+      ]
+    method          = [{% for method in cors_block.allowed_methods %}"{{ method }}"{% if not loop.last %},{% endif %}{% endfor %}]
+    response_header = ["*"]
+    max_age_seconds = 3600
+  }
+  {% endfor %}{# for cors_block in bucket.cors #}
+}
+
+resource "google_storage_bucket_iam_binding" "{{ bucket.settings.bucket_name }}" {
+  bucket = google_storage_bucket.{{ bucket.settings.bucket_name }}.name
+  role = "roles/storage.objectAdmin"
+  members = [
+    "serviceAccount:${google_service_account.{{ env_collection.instance_name }}.email}"
+  ]
+}
+
+output "gcs_bucket_{{ bucket.settings.bucket_name }}" {
+  value = google_storage_bucket.{{ bucket.settings.bucket_name }}.url
+}
+{%- endif %}{# if bucket.settings.use_existing #}
+{%- endfor %}{# for bucket in environment.object_storage_resources #}
+{%- endif %}

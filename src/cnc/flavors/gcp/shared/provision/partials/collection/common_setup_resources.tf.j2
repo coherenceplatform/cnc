@@ -1,0 +1,133 @@
+{# ----- APIs #}
+
+resource "google_project_service" "iam" {
+  project = "{{ env_collection.account_id }}"
+  service = "iam.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+resource "google_project_service" "sqladmin" {
+  project = "{{ env_collection.account_id }}"
+  service = "sqladmin.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+resource "google_project_service" "servicenetworking" {
+  project = "{{ env_collection.account_id }}"
+  service = "servicenetworking.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+resource "google_project_service" "cloudbuild" {
+  project = "{{ env_collection.account_id }}"
+  service = "cloudbuild.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+resource "google_project_service" "secretmanager" {
+  project = "{{ env_collection.account_id }}"
+  service = "secretmanager.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 90"
+  }
+}
+
+resource "google_project_service" "compute" {
+  project = "{{ env_collection.account_id }}"
+  service = "compute.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+resource "google_project_service" "run" {
+  project = "{{ env_collection.account_id }}"
+  service = "run.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+resource "google_project_service" "vpcaccess-api" {
+  project = "{{ env_collection.account_id }}"
+  service = "vpcaccess.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+resource "google_project_service" "redis" {
+  project = "{{ env_collection.account_id }}"
+  service = "redis.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+resource "google_project_service" "gke" {
+  project = "{{ env_collection.account_id }}"
+  service = "container.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+resource "google_project_service" "artifactregistry" {
+  project = "{{ env_collection.account_id }}"
+  service = "artifactregistry.googleapis.com"
+  disable_on_destroy = false
+  provisioner "local-exec" {
+    command = "sleep 300"
+  }
+}
+
+{# ----- service accounts for CI and apps #}
+
+resource "google_service_account" "{{ env_collection.instance_name }}" {
+  project = "{{ env_collection.account_id }}"
+  account_id   = "{{ env_collection.service_identity_email.split("@")[0] }}"
+  display_name = "IAM role for coherence-managed app {{ env_collection.instance_name }}"
+  depends_on = [google_project_service.iam]
+}
+
+resource "google_project_iam_member" "app-use-secrets" {
+  project = "{{ env_collection.account_id }}"
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_service_account.{{ env_collection.instance_name }}.email}"
+  depends_on = [google_project_service.iam]
+}
+
+resource "google_project_iam_member" "app-use-sql" {
+  project = "{{ env_collection.account_id }}"
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${google_service_account.{{ env_collection.instance_name }}.email}"
+  depends_on = [google_project_service.iam]
+}
+
+# ----- fixed resources
+
+resource "google_artifact_registry_repository" "{{ env_collection.instance_name }}" {
+  project       = "{{ env_collection.account_id }}"
+  location      = "{{ env_collection.region }}"
+  repository_id = "{{ env_collection.instance_name }}"
+  description   = "docker repository for {{ app.name }}({{ env_collection.cloud_resource_namespace }})"
+  format        = "DOCKER"
+}

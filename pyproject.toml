@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "cocnc"
+version = "0.1.21"
+description = "CNC is the first framework for application deployment, a fully distributed and customizable PaaS developer experience, based on docker-compose config files"
+authors = [
+    "Adam Abdelaziz <adam.abdelaziz@withcoherence.com>",
+    "Zachary Zaro <zach@withcoherence.com>",
+]
+readme = "README.md"
+packages = [
+    { include = "cnc", from = "src" },
+]
+
+[tool.poetry.scripts]
+cnc = 'cnc.main:app'
+
+[tool.poetry.dependencies]
+python = "^3.9"
+typer = {extras = ["all"], version = "^0.9.0"}
+pydantic = "^2.6.3"
+pyyaml = "^6.0.1"
+pygohcl = "^1.0.8"
+jinja2 = "^3.1.3"
+tabulate = "^0.9.0"
+google-cloud-secret-manager = "^2.19.0"
+rudder-sdk-python = "^2.1.0"
+py-machineid = "^0.5.1"
+boto3 = "^1.34.78"
+ipython = "^8.0.0"
+toml = "^0.10.2"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.3.0"
+ruff = "^0.3.3"
+pytest = "^8.1.1"
+mkdocs-material = "^9.5.24"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

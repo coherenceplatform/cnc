@@ -1,0 +1,8 @@
+build_scripts: 
+- build-[service].sh
+
+deploy_scripts:
+- deploy-[service].sh
+
+provision_script:
+- main.tf

@@ -1,0 +1,52 @@
+{% if env_collection.has_active_deployments %}
+resource "google_compute_instance" "{{ env_collection.instance_name }}-bastion" {
+  name         = "{{ env_collection.instance_name }}-bastion"
+  machine_type = "{{ env_collection.bastion_instance_type }}"
+  zone         = "{{ env_collection.region }}-b"
+  allow_stopping_for_update = true
+  deletion_protection = false
+
+  tags = ["bastion"]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+    }
+  }
+
+  network_interface {
+    network = google_compute_network.app-network.id
+    subnetwork = "{{ env_collection.instance_name }}"
+
+    access_config {
+      // Ephemeral public IP
+    }
+  }
+
+  depends_on = [google_compute_network.app-network]
+}
+
+resource "google_project_iam_member" "project-app-ssh-bastion" {
+  project = "{{ env_collection.account_id }}"
+  role    = "roles/compute.instanceAdmin.v1"
+  member  = "serviceAccount:${google_service_account.{{ env_collection.instance_name }}.email}"
+  depends_on = [google_project_service.iam, google_compute_instance.{{ env_collection.instance_name }}-bastion]
+}
+
+resource "google_compute_firewall" "rules" {
+  project     = "{{ env_collection.account_id }}"
+  name        = "allow-bastion-ssh"
+  network     = google_compute_network.app-network.id
+  description = "Allow ssh to bastion"
+
+  allow {
+    protocol  = "tcp"
+    ports     = ["22"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags = ["bastion"]
+}
+
+{% endif %}{# if env_collection.has_active_deployments #}
+

@@ -1,0 +1,98 @@
+{%- if environment.active_deployment %}
+{%- for resource in environment.database_resources %}
+output "{{ resource.settings.host_output_id }}" {
+    value = "{{ resource.settings.host_output_tf_value_string }}"
+}
+
+{%- if not resource.settings.use_existing %}
+resource "google_sql_database_instance" "{{ resource.instance_name }}" {
+    name = "{{ resource.instance_name }}"
+    database_version = "{{ resource.settings.cloud_resource_version }}"
+    region = "{{ env_collection.region }}"
+    project = "{{ env_collection.account_id }}"
+
+    {% if not environment.is_production %}
+    deletion_protection = false
+    {% endif %}
+
+    settings {
+        tier = "db-f1-micro"
+        ip_configuration {
+            ipv4_enabled = true
+            {%- if vpc_enabled %}
+            private_network = google_compute_network.app-network.id
+            {% else %}
+            authorized_networks {
+                name = "all"
+                value = "0.0.0.0/0"
+            }
+            {%- endif %}
+        }
+    }
+
+    lifecycle {
+        ignore_changes = [
+            maintenance_version, replica_configuration, root_password, encryption_key_name,
+            deletion_protection, settings[0].availability_type, settings[0].tier,
+            settings[0].disk_autoresize, settings[0].deletion_protection_enabled,
+            settings[0].disk_size, settings[0].disk_type, settings[0].user_labels,
+            settings[0].deny_maintenance_period, settings[0].backup_configuration,
+            settings[0].insights_config, settings[0].location_preference,
+            settings[0].ip_configuration[0].authorized_networks
+        ]
+    }
+
+    depends_on = [
+        {%- if vpc_enabled %}
+        google_compute_network.app-network,
+        google_service_networking_connection.private_service_connection,
+        {%- endif %}
+        google_project_service.sqladmin
+    ]
+}
+
+resource "google_sql_user" "{{ resource.instance_name }}" {
+    name = "{{ resource.settings.username }}"
+    instance = google_sql_database_instance.{{ resource.instance_name }}.name
+    password = "{{ resource.settings.database_password }}"
+
+    depends_on = [google_sql_database_instance.{{ resource.instance_name }}]
+}
+{% else %}
+data "google_sql_database_instance" "{{ resource.instance_name }}" {
+    name = "{{ resource.instance_name }}"
+}
+
+resource "google_sql_user" "{{ resource.instance_name }}" {
+    name = "{{ env_collection.instance_name }}"
+    instance = data.google_sql_database_instance.{{ resource.instance_name }}.name
+    password = "{{ resource.settings.database_password }}"
+
+    depends_on = [data.google_sql_database_instance.{{ resource.instance_name }}]
+}
+{% endif %}{# if resource.use_existing #}
+
+{% if resource.settings.manage_databases %}
+resource "google_sql_database" "{{ resource.instance_name }}" {
+    name = "{{ resource.settings.db_name }}"
+    {% if resource.settings.use_existing %}
+    instance = data.google_sql_database_instance.{{ resource.instance_name }}.name
+    {% else %}
+    instance = google_sql_database_instance.{{ resource.instance_name }}.name
+    {% endif %}
+
+    {% if environment.is_preview %}
+    deletion_policy = "ABANDON"
+    {% endif %}
+
+    depends_on = [
+        {% if resource.settings.use_existing %}
+        data.google_sql_database_instance.{{ resource.instance_name }}
+        {% else %}
+        google_sql_database_instance.{{ resource.instance_name }}
+        {% endif %}
+    ]
+}
+{%- endif %}{# if resource.manage_databases #}
+{%- endfor %}{# for resource in environment.database_resources #}
+{%- endif %}{# if environment.active_deployment #}

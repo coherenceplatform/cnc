@@ -1,0 +1,11 @@
+
+# CNC Team Preferences
+notes.*
+
+# Dev Environment files
+.venv
+__pycache__
+dist/*
+
+# Managed Terraform Artifacts
+*terraform*

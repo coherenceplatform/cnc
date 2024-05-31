@@ -1,0 +1,62 @@
+{% block state %}
+terraform {
+  backend "local" {
+    path = "{{ config_renderer.working_dir }}/.terraform/{{ config_renderer.tf_state_namespace }}.tfstate"
+  }
+}
+{% endblock %}
+
+{% if not output_only %}
+{% block application %}
+{% include "partials/collection/providers.tf.j2" %}
+{% include "partials/collection/common_setup_resources.tf.j2" %}
+{% include "partials/collection/default_service.tf.j2" %}
+{% include "partials/collection/vpc_networking.tf.j2" %}
+{% include "partials/collection/gke_cluster.tf.j2" %}
+{% include "partials/collection/bastion_instance.tf.j2" %}
+
+{% include "partials/collection_level_resources.tf.j2" %}
+{% endblock application %}
+
+{# Per active environment #}
+{% for environment in env_collection.valid_environments %}
+{% block environment_resources scoped %}
+{% if env_collection.has_active_deployments %}
+resource "kubernetes_namespace" "{{ environment.instance_name }}" {
+    metadata {
+        annotations = {
+            name = "{{ environment.instance_name }}-deploy"
+        }
+        name = "{{ environment.instance_name }}-deploy"
+    }
+}
+{% endif %}{# if env_collection.has_active_deployments #}
+{% endblock environment_resources %}
+{% endfor %}
+
+{# Per active service #}
+{% for service in env_collection.all_services %}
+{% set environment = service.environment %}
+
+{% block service_resources scoped %}
+{% set vpc_enabled = true %}
+
+{% include "partials/service/cache.tf.j2" %}
+{% include "partials/service_level_resources.tf.j2" %}
+{% endblock service_resources %}
+{% endfor %}
+
+{# Per active|paused environment #}
+{% for environment in env_collection.environments_with_databases %}
+{% set vpc_enabled = true %}
+
+{% block active_and_paused_envs scoped %}
+{% include "partials/environment/resource_managed_secrets.tf.j2" %}
+{% include "partials/environment/object_storage_resources.tf.j2" %}
+{% include "partials/environment/database_resources.tf.j2" %}
+{% endblock active_and_paused_envs %}
+{% endfor %}
+
+{% block custom scoped %}
+{% endblock custom %}
+{% endif %}

@@ -1,0 +1,130 @@
+{% if environment.active_deployment %}
+{% if service.is_frontend or service.is_backend %}
+
+data "kubernetes_service" "{{ service.instance_name }}" {
+    metadata {
+        name = "{{ service.instance_name }}-svc"
+        namespace = "{{ environment.instance_name }}-deploy"
+    }
+
+    depends_on = [kubernetes_service.{{ service.instance_name }}]
+}
+
+resource "kubernetes_service" "{{ service.instance_name }}" {
+    metadata {
+        name = "{{ service.instance_name }}-svc"
+        namespace = "{{ environment.instance_name }}-deploy"
+        {% if not service.is_internal %}
+        annotations = {
+            {% if service.is_frontend %}
+            "cloud.google.com/neg": jsonencode({
+                exposed_ports = {
+                    80 = {
+                        name = "{{ service.instance_name }}-neg"
+                    }
+                }
+            })
+            {% elif service.is_backend %}
+            "cloud.google.com/neg": jsonencode({
+                exposed_ports = {
+                    {{ service.port }} = {
+                        name = "{{ service.instance_name }}-neg"
+                    }
+                }
+            })
+            {% endif %}
+          {% endif %}
+        }
+    }
+
+    spec {
+        type = "ClusterIP"
+        selector = {
+            app = "{{ service.instance_name }}-app"
+        }
+        port {
+            {% if service.is_frontend %}
+            port = 80
+            target_port = 80
+            {% else %}
+            port = {{ service.port }}
+            target_port = {{ service.port }}
+            {% endif %}
+        }
+    }
+
+    lifecycle {
+        ignore_changes = [metadata[0].annotations]
+    }
+}
+
+{% if not service.is_internal %}
+resource "google_compute_health_check" "{{ service.instance_name }}" {
+    name = "{{ service.instance_name }}-health-check"
+
+    http_health_check {
+        {% if service.is_frontend %}
+        port = 80
+        request_path = "/"
+        {% elif service.is_backend %}
+        port = {{ service.port }}
+        request_path = "{{ service.settings.system.health_check }}"
+        {% endif %}
+    }
+}
+
+data "google_compute_network_endpoint_group" "{{ service.instance_name }}-neg" {
+    count = data.kubernetes_service.{{ service.instance_name }}.metadata != null && data.kubernetes_service.{{ service.instance_name }}.metadata[0].annotations != null ? length(jsondecode(data.kubernetes_service.{{ service.instance_name }}.metadata[0].annotations["cloud.google.com/neg-status"])["zones"]) : 0
+    name = "{{ service.instance_name }}-neg"
+    zone = jsondecode(data.kubernetes_service.{{ service.instance_name }}.metadata[0].annotations["cloud.google.com/neg-status"])["zones"][count.index]
+
+    depends_on = [
+        kubernetes_service.{{ service.instance_name }},
+        data.kubernetes_service.{{ service.instance_name }}
+    ]
+}
+
+resource "google_compute_backend_service" "{{ service.instance_name }}" {
+    name      = "{{ service.instance_name }}"
+
+    protocol  = "HTTP"
+    port_name = "http"
+    timeout_sec = 30
+
+    {% if service.settings.cdn.enabled %}
+    enable_cdn  = true
+    compression_mode = "AUTOMATIC"
+    {% endif %}
+    {% if service.is_frontend %}
+    log_config {
+      enable = true
+      sample_rate = "1.0"
+    }
+    {% endif %}
+
+    dynamic "backend" {
+      for_each = data.kubernetes_service.{{ service.instance_name }}.metadata[0].annotations != null ? range(length(jsondecode(data.kubernetes_service.{{ service.instance_name }}.metadata[0].annotations["cloud.google.com/neg-status"])["zones"])) : []
+      content {
+        group = data.google_compute_network_endpoint_group.{{ service.instance_name }}-neg[backend.value].id
+        balancing_mode = "RATE"
+        max_rate = 1000
+      }
+    }
+    health_checks = [google_compute_health_check.{{ service.instance_name }}.id]
+
+    {% if service.settings.custom_request_headers %}
+    custom_request_headers = [{% for header in service.settings.custom_request_headers %}"{{ header.name }}:{{ header.value }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+    {% endif %}
+    {% if service.settings.custom_response_headers %}
+    custom_response_headers = [{% for header in service.settings.custom_response_headers %}"{{ header.name }}:{{ header.value }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+    {% endif %}
+
+    depends_on = [
+      google_project_service.compute,
+      data.google_compute_network_endpoint_group.{{ service.instance_name }}-neg
+    ]
+}
+{% endif %} # if not service.is_internal
+
+{% endif %} # if service.is_frontend or service.is_backend
+{% endif %} # if service.environment.active_deployment

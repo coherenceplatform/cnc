@@ -1,0 +1,123 @@
+#!/bin/bash
+
+TOOLBOX_ACTIVE_TEMP_FILEPATH=/tmp/cnc_toolbox_active
+touch $TOOLBOX_ACTIVE_TEMP_FILEPATH
+
+# This kills all processes spawned by this script on exit
+trap cleanup_toolbox EXIT
+
+# Echo caller identity
+echo -e "\nYou are currently authenticated as: $(aws sts get-caller-identity)"
+
+{%- if environment.database_resources or environment.cache_resources %}
+cleanup_toolbox () {
+    rm $TOOLBOX_ACTIVE_TEMP_FILEPATH
+
+    group_id=$(ps -p $port_forwarding_parent_process_id -o pgid= | tr -d "[:space:]")
+    child_process_ids=$(pgrep -g $group_id)
+    for pid in $child_process_ids
+    do
+        if [[ $pid != $port_forwarding_parent_process_id && $pid != $group_id ]]
+        then
+            kill $pid > /dev/null 2>&1
+        fi
+    done
+
+    {%- for resource in environment.database_resources + environment.cache_resources %}
+    if test -f /tmp/cnc_ssh_output_{{ loop.index }}
+    then
+        rm /tmp/cnc_ssh_output_{{ loop.index }}
+    fi
+    {%- endfor %}
+}
+
+{# Start ssm sessions #}
+start_ssm_sessions () {
+    PID_FALLBACK="none"
+    while test -f $TOOLBOX_ACTIVE_TEMP_FILEPATH
+    do
+    {% for resource in environment.database_resources + environment.cache_resources %}
+        if ! test -d /proc/${SSM_PID_{{ loop.index }}:-$PID_FALLBACK}/ > /dev/null
+        then
+            SSM_RETRY_COUNT_{{ loop.index }}=${SSM_RETRY_COUNT_{{ loop.index }}:-0}
+            if [ $SSM_RETRY_COUNT_{{ loop.index }} -eq 0 ]
+            then
+                echo -e "\nStarting ssm port-forwarding session for {{ resource.name }}..."
+            fi
+
+            aws ssm start-session --target {{ bastion_instance_id }} \
+            --document-name AWS-StartPortForwardingSessionToRemoteHost \
+            --parameters '{{ resource.settings.toolbox_ssh_port_mapping }}' > /tmp/cnc_ssh_output_{{ loop.index }} 2>&1 &
+            SSH_PID_{{ loop.index }}=$!
+
+            if [ $SSM_RETRY_COUNT_{{ loop.index }} -gt 3 ]
+            then
+                cmd_output=$(</tmp/cnc_ssh_output_{{ loop.index }})
+                echo -e "\nWarning: issue starting port forwarding session for {{ resource.name }}" \
+                "(failed_attempts: $SSM_RETRY_COUNT_{{ loop.index }})\n$cmd_output"
+            fi
+
+            SSM_RETRY_COUNT_{{ loop.index }}=`expr $SSM_RETRY_COUNT_{{ loop.index }} + 1`
+        fi
+    {% endfor %}
+    sleep 10
+    done &
+}
+start_ssm_sessions
+port_forwarding_parent_process_id=$!
+{%- endif %}
+
+echo -e "\nLogging into Amazon ECR..."
+aws ecr get-login-password --region {{ environment.collection.region }} | \
+docker login -u AWS --password-stdin {{ service.image_registry_url().split('/')[0] }}
+
+{{ render_template("Dockerfile.j2", "Dockerfile") }}
+# copy config from default location
+AWS_DEFAULT_CONFIG_DIR=~/.aws
+if test -d "$AWS_DEFAULT_CONFIG_DIR"
+then
+    cp -r ~/.aws {{ toolbox.rendered_files_path }}/.aws
+else
+    mkdir {{ toolbox.rendered_files_path }}/.aws
+fi
+
+# copy config file if exists
+CONFIG_FILE_PATH=${AWS_CONFIG_FILE:-~/.aws/config}
+if test -e "$CONFIG_FILE_PATH"
+then
+    cp $CONFIG_FILE_PATH {{ toolbox.rendered_files_path }}/.aws/config
+fi
+
+# copy creds file if exists
+CREDS_FILE_PATH=${AWS_SHARED_CREDENTIALS_FILE:-~/.aws/credentials}
+if test -e "$CREDS_FILE_PATH"
+then
+    cp $CREDS_FILE_PATH {{ toolbox.rendered_files_path }}/.aws/credentials
+fi
+
+docker build -t {{ service.instance_name }}_toolbox \
+--build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+--build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+--build-arg AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
+-f {{ toolbox.rendered_files_path }}/Dockerfile {{ toolbox.rendered_files_path }}
+
+{%- if command %}
+{# Allow time for port forwarding processes to start #}
+sleep ${CNC_TOOLBOX_CMD_DELAY_SECONDS:-15}
+{%- endif %}
+
+# Start & exec into docker container
+docker run --entrypoint sh \
+{%- for variable in toolbox.environment_items -%}
+-e {{ variable.name }}={{ variable.value }} \
+{%- endfor -%}
+--network ${CNC_TOOLBOX_NETWORK:-host} \
+{%- if command %}
+--rm --name app {{ service.instance_name }}_toolbox -c '{{ command }}'; command_result=$?
+{%- else %}
+-it --rm --name app {{ service.instance_name }}_toolbox
+{%- endif %}
+
+{%- if command %}
+exit $command_result
+{%- endif %}

@@ -1,0 +1,8 @@
+FROM nginx
+
+ADD {{ service.name }}-nginx.conf /etc/nginx/nginx.conf
+COPY {{ service.settings.assets_path }}/. /usr/share/nginx/html{{ service.settings.url_path }}{% if not service.settings.url_path.endswith("/") %}/{% endif %}
+
+RUN ls -alR /usr/share/nginx/html
+
+EXPOSE 80

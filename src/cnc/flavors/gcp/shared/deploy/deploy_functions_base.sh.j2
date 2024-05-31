@@ -1,0 +1,143 @@
+#!/bin/bash
+
+if ! command -v bash >/dev/null 2>&1; then
+    echo "Bash not found. Exiting."
+    exit 1
+fi
+
+{% block shared_functions %}
+run_install_commands () {
+    echo "install..."
+    gcloud config set core/project {{ service.environment.collection.account_id }}
+}
+
+run_pre_build_commands () {
+    echo `gcloud --version`
+}
+
+send_{{ service.name }}_status_hook () {
+    echo -e \\nSending deploy status webhook...\\n
+
+    if [ $1 -eq 0 ]; then
+        cnc_build_status=${2:-"success"}
+    else
+        cnc_build_status="failed"
+    fi
+
+    revision_id=$(if test -f {{ deployer.rendered_files_path }}/revision-{{ service.name }}.txt; then cat {{ deployer.rendered_files_path }}/revision-{{ service.name }}.txt; fi)
+    data='{
+        "token": "{{ deployer.webhook_token }}",
+        "status": "'"$cnc_build_status"'",
+        "stage": "deploy",
+        "service": "{{ service.name }}",
+        "revision_id": "'"$revision_id"'"
+    }'
+    echo "===== {{ service.name }} deploy status ====="
+    echo "$data" | jq .
+    echo "===== {{ service.name }} deploy status ====="
+
+    which curl; curl_exists=$?
+    if [ $curl_exists -ne 0 ]; then
+        echo -e \\nWarning: Cannot find curl binary, skipping deploy status webhook...\\n
+    else
+        {% if deployer.webhook_url %}
+        webhook_status=$(curl -X PUT -H "Content-Type: application/json" \
+        -d "$data" -w "%{http_code}\n" \
+        {{ deployer.webhook_url }})
+
+        if [ "$webhook_status" != "200" ]; then
+            echo -e \\nDeploy status webhook failed.
+        else
+            echo -e \\nDeploy status webhook succeeded.
+        fi
+        {% else %}
+        echo -e \\nNo webhook URL provided. Skipping deploy status webhook...
+        {% endif %}
+    fi
+}
+{% endblock %}
+
+{% block render_functions %}
+{{ render_template("all-access-policy.yml.j2", "policy-all-{}.yml".format(service.name)) }}
+{{ render_template("run-svc.yml.j2", "run-{}.yml".format(service.name)) }}
+{{ render_template("run-job.yml.j2", "job-{}.yml".format(service.name)) }}
+
+{% if service.is_backend %}
+
+{% if service.settings.workers %}
+{{ render_template("k8s/workers.yml", "{}-workers.yml".format(service.name)) }}
+{% endif %}
+
+{% if service.settings.scheduled_tasks %}
+{{ render_template("k8s/scheduled_tasks.yml", "{}-tasks.yml".format(service.name)) }}
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+{% block deploy_functions %}
+
+{% block backend_functions scoped %}
+{% if service.is_backend %}
+{% block migrate_function scoped %}
+{% if service.settings.migrate %}
+migrate_{{ service.name }} () {
+    cnc toolbox run {{ environment.name }} --tag {{ deployer.tag_for_service(service.name) }} \
+    --service-name {{ service.name }} -- '{{ " ".join(service.settings.migrate) }}'; migrate_result=$?
+    if [ $migrate_result -ne 0 ]; then exit $migrate_result; fi
+}
+{% endif %}
+{% endblock %}
+
+{% block seed_function scoped %}
+{% if service.settings.seed %}
+seed_{{ service.name }} () {
+    cnc toolbox run {{ environment.name }} --tag {{ deployer.tag_for_service(service.name) }} \
+    --service-name {{ service.name }} -- '{{ " ".join(service.settings.seed) }}'; seed_result=$?
+    if [ $seed_result -ne 0 ]; then exit $seed_result; fi
+}
+{% endif %}
+{% endblock %}
+
+{% if service.settings.workers %}
+deploy_{{ service.name }}_workers () {
+    gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
+    kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-workers.yml
+}
+{% endif %}
+
+{% if service.settings.scheduled_tasks %}
+deploy_{{ service.name }}_tasks () {
+    gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
+
+    # solve a race condition in creating some common resources with workers
+    sleep 5
+
+    kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-tasks.yml
+}
+{% endif %}
+
+deploy_{{ service.name }} () {
+    gcloud run services replace {{ deployer.rendered_files_path }}/run-{{ service.name }}.yml
+    gcloud run services describe {{ service.instance_name }} --region {{ service.environment.collection.region }} --format="value(status.latestReadyRevisionName)" > {{ deployer.rendered_files_path }}/revision-{{ service.name }}.txt
+    gcloud run services set-iam-policy {{ service.instance_name }} {{ deployer.rendered_files_path }}/policy-all-{{ service.name }}.yml --region {{ service.environment.collection.region }} --quiet
+
+    gcloud run jobs replace {{ deployer.rendered_files_path }}/job-{{ service.name }}.yml --region {{ service.environment.collection.region }}
+    gcloud run jobs describe {{ service.instance_name }} --region {{ service.environment.collection.region }}
+}
+
+{% endif %}
+{% endblock %}
+
+{% block frontend_functions scoped %}
+{% if service.is_frontend %}
+deploy_{{ service.name }} () {
+    gcloud run services replace {{ deployer.rendered_files_path }}/run-{{ service.name }}.yml
+    gcloud run services describe {{ service.instance_name }} --region {{ service.environment.collection.region }} --format="value(status.latestReadyRevisionName)" > {{ deployer.rendered_files_path }}/revision-{{ service.name }}.txt
+    gcloud run services set-iam-policy {{ service.instance_name }} {{ deployer.rendered_files_path }}/policy-all-{{ service.name }}.yml --region {{ service.environment.collection.region }} --quiet
+}
+{% endif %}
+{% endblock %}
+
+{% endblock %}

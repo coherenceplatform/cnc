@@ -1,0 +1,27 @@
+{# Backend deploy logic - only kicks off deploy, does not report success/fail
+see backend_deploy_status_check.sh.j2 #}
+
+    echo -e \\nDeploying {{ task_name }} to Amazon ECS...\\n
+
+    task_revision=$(cat {{ deployer.rendered_files_path }}/task_rev_{{ task_name }}.txt)
+    task_rev={{ task_name }}:$task_revision
+
+    init_describe_result=$(aws ecs describe-services --region "{{ environment.collection.region }}" --cluster {{ environment.application.name }}-cluster --services {{ task_name }})
+    current_desired_count=$(echo $init_describe_result | jq '.services[0].desiredCount')
+    min_desired_count={{ min_scale }}
+    if [ $current_desired_count -lt $min_desired_count ]; then DESIRED_COUNT=$min_desired_count; else DESIRED_COUNT=$current_desired_count; fi
+    update_result=$(aws ecs update-service --region "{{ environment.collection.region }}" --cluster {{ environment.application.name }}-cluster --service {{ task_name }} --task-definition $task_rev --desired-count $DESIRED_COUNT --force-new-deployment)
+    updated_task_revision=$(echo $update_result | jq '.service.deployments[0].taskDefinition')
+    updated_task_rev=$(echo $updated_task_revision | sed -e 's/^"//' -e 's/"$//' -e 's/^.\+\///')
+
+    if [ "${COHERENCE_BUILD_DEBUG_MODE:-0}" -eq 1 ]; then
+        echo -e \\nUpdateService response:\\n
+        echo $update_result
+        echo $updated_task_revision
+        echo $updated_task_rev
+    fi
+
+    if [ "$updated_task_rev" != "$task_rev" ]; then
+        echo -e "\\nDeploy failed... check events and stopped tasks in the {{ task_name }} ecs service for more information.\\n"
+        exit 1
+    fi

@@ -1,0 +1,25 @@
+name: my-backend-test-app
+provider: gcp
+region: us-east1
+flavor: run
+version: 1
+
+collections:
+- name: preview
+  base_domain: my-backend-test-app.testnewsite.coherencesites.com
+  account_id: "foo-bar-123"
+  environments:
+  - name: main
+    environment_variables:
+    - name: foo-standard
+      value: bar
+    - name: foo-secret
+      secret_id: bar123
+    - name: foo-output
+      output_name: bar123-a
+    - name: foo-standard-alias
+      alias: foo-standard
+    - name: foo-secret-alias
+      alias: foo-secret
+    - name: foo-output-alias
+      alias: foo-output

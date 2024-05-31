@@ -1,0 +1,174 @@
+resource "aws_acm_certificate" "{{ env_collection.instance_name }}" {
+    domain_name = "*.{{ env_collection.base_domain }}"
+    validation_method = "DNS"
+
+    lifecycle {
+        create_before_destroy = true
+    }
+}
+
+{%- if not env_collection.region == "us-east-1" %}
+resource "aws_acm_certificate" "{{ env_collection.instance_name }}_cloudfront" {
+    provider = aws.us_east_1
+    domain_name = "*.{{ env_collection.base_domain }}"
+    validation_method = "DNS"
+
+    lifecycle {
+        create_before_destroy = true
+    }
+}
+
+resource "aws_acm_certificate_validation" "{{ env_collection.instance_name }}_cloudfront" {
+    provider = aws.us_east_1
+    certificate_arn         = aws_acm_certificate.{{ env_collection.instance_name }}_cloudfront.arn
+    validation_record_fqdns = [aws_route53_record.{{ env_collection.instance_name }}_validation.fqdn]
+
+    timeouts {
+        create = "10m"
+    }
+}
+{%- endif %}
+
+resource "aws_route53_record" "{{ env_collection.instance_name }}_validation" {
+    zone_id = aws_route53_zone.{{ env_collection.instance_name }}.zone_id
+    name =  element(aws_acm_certificate.{{ env_collection.instance_name }}.domain_validation_options.*.resource_record_name, 0)
+    type = "CNAME"
+    records = [element(aws_acm_certificate.{{ env_collection.instance_name }}.domain_validation_options.*.resource_record_value, 0)]
+    ttl = 7200
+    allow_overwrite = true
+
+    lifecycle {
+        ignore_changes = [ttl]
+    }
+}
+
+resource "aws_acm_certificate_validation" "{{ env_collection.instance_name }}" {
+    certificate_arn         = aws_acm_certificate.{{ env_collection.instance_name }}.arn
+    validation_record_fqdns = [aws_route53_record.{{ env_collection.instance_name }}_validation.fqdn]
+
+    timeouts {
+        create = "10m"
+    }
+}
+
+{% if (env_collection.cache_resources or env_collection.database_resources) %}
+data "aws_ami" "amazon-linux-2" {
+ most_recent = true
+
+
+ filter {
+   name   = "owner-alias"
+   values = ["amazon"]
+ }
+
+
+ filter {
+   name   = "name"
+   values = ["amzn2-ami-hvm*"]
+ }
+
+ filter {
+   name   = "architecture"
+   values = ["x86_64"]
+ }
+}
+
+resource "aws_instance" "{{ env_collection.instance_name }}_bastion" {
+    ami           = data.aws_ami.amazon-linux-2.id
+    instance_type = "t3.micro"
+    subnet_id = element(concat(
+        local.public_subnet_ids,
+        length(local.public_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_public.*.id,
+    ), 0)
+    associate_public_ip_address = true
+    iam_instance_profile = aws_iam_instance_profile.{{ env_collection.instance_name }}_bastion.name
+    vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id, aws_security_group.{{ env_collection.instance_name }}_db_access.id, aws_security_group.{{ env_collection.instance_name }}_cache_access.id]
+
+    tags = {
+        Name = "{{ env_collection.instance_name }}-bastion"
+    }
+
+    lifecycle {
+        create_before_destroy = true
+    }
+}
+
+output "bastion_instance_id" {
+    description = "aws instance id of the bastion host"
+    value = aws_instance.{{ env_collection.instance_name }}_bastion.id
+}
+
+resource "aws_iam_instance_profile" "{{ env_collection.instance_name }}_bastion" {
+    name = "{{ env_collection.instance_name }}-bastion"
+    role = aws_iam_role.{{ env_collection.instance_name }}_bastion.name
+
+    depends_on = [aws_iam_role.{{ env_collection.instance_name }}_bastion]
+}
+
+data "aws_iam_policy_document" "bastion" {
+    statement {
+        effect = "Allow"
+        actions = ["sts:AssumeRole"]
+        principals {
+            type = "Service"
+            identifiers = ["ec2.amazonaws.com"]
+        }
+    }
+}
+
+resource "aws_iam_role" "{{ env_collection.instance_name }}_bastion" {
+    name        = "{{ env_collection.instance_name }}-bastion"
+    description = "Allows bastion access via AmazonSSMManagedInstanceCore policy"
+    assume_role_policy = "${data.aws_iam_policy_document.bastion.json}"
+}
+
+resource "aws_iam_role_policy_attachment" "{{ env_collection.instance_name }}_bastion" {
+    role       = aws_iam_role.{{ env_collection.instance_name }}_bastion.name
+    policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+
+    depends_on = [aws_iam_role.{{ env_collection.instance_name }}_bastion]
+}
+
+resource "aws_ssm_document" "{{ env_collection.instance_name }}_bastion" {
+  name            = "{{ env_collection.instance_name }}_SSM-SessionManagerRunShell"
+  document_type   = "Session"
+  document_format = "JSON"
+
+  content = <<DOC
+{
+"schemaVersion": "1.0",
+"description": "Document to hold regional settings for Session Manager",
+"sessionType": "Standard_Stream",
+"inputs": {
+    "s3EncryptionEnabled": true,
+    "cloudWatchEncryptionEnabled": false,
+    "cloudWatchStreamingEnabled": false,
+    "idleSessionTimeout": "60",
+    "maxSessionDuration": "1440",
+    "runAsEnabled": false
+}
+}
+DOC
+}
+{% endif %}
+
+resource "aws_s3_bucket" "{{ env_collection.instance_name }}_cloudfront_logs" {
+    bucket = "{{ env_collection.instance_name }}-cloudfront-logs"
+    force_destroy = true
+}
+
+resource "aws_s3_bucket_ownership_controls" "{{ env_collection.instance_name }}_cloudfront_logs" {
+  bucket = "${aws_s3_bucket.{{ env_collection.instance_name }}_cloudfront_logs.id}"
+  rule {
+    object_ownership = "ObjectWriter"
+  }
+}
+
+resource "aws_s3_bucket_acl" "{{ env_collection.instance_name }}_cloudfront_logs" {
+    bucket = "${aws_s3_bucket.{{ env_collection.instance_name }}_cloudfront_logs.id}"
+    acl = "private"
+
+    depends_on = [
+        aws_s3_bucket_ownership_controls.{{ env_collection.instance_name }}_cloudfront_logs
+    ]
+}

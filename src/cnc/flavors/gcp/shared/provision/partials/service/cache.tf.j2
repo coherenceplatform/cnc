@@ -1,0 +1,39 @@
+{%- if service.environment.active_deployment and service.settings.is_cache %}
+resource "google_redis_instance" "{{ service.instance_name }}" {
+    name = "{{ service.instance_name }}"
+    {% if environment.is_production %}
+    tier = "STANDARD_HA"
+    {% else %}
+    tier = "BASIC"
+    {% endif %}
+    memory_size_gb = 1
+    region = "{{ env_collection.region }}"
+
+    {% if environment.is_production %}
+    lifecycle {
+        ignore_changes = all
+    }
+    {% endif %}
+
+    authorized_network = google_compute_network.app-network.id
+    connect_mode = "PRIVATE_SERVICE_ACCESS"
+
+    redis_version = "{{ service.settings.provider_version }}"
+    display_name = "{{ service.instance_name }} Redis Instance"
+
+    depends_on = [
+        {%- if vpc_enabled %}
+        google_service_networking_connection.private_service_connection,
+        {%- endif %}
+        google_project_service.redis
+    ]
+}
+
+output "redis_ip_{{ service.instance_name }}" {
+  value = google_redis_instance.{{ service.instance_name }}.host
+}
+
+output "redis_port_{{ service.instance_name }}" {
+  value = google_redis_instance.{{ service.instance_name }}.port
+}
+{%- endif %}

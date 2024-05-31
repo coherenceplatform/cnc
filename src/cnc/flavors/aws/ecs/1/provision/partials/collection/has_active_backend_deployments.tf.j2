@@ -1,0 +1,178 @@
+resource "aws_cloudfront_origin_request_policy" "{{ env_collection.instance_name }}_backend" {
+  name    = "{{ env_collection.instance_name }}-backend"
+  comment = "Backend origin request policy"
+  cookies_config {
+    cookie_behavior = "all"
+  }
+  headers_config {
+    header_behavior = "allViewerAndWhitelistCloudFront"
+    headers {
+        items = [
+            "CloudFront-Is-Mobile-Viewer",
+            "CloudFront-Is-Tablet-Viewer",
+            "CloudFront-Is-SmartTV-Viewer",
+            "CloudFront-Is-Desktop-Viewer",
+            "CloudFront-Is-IOS-Viewer",
+            "CloudFront-Is-Android-Viewer",
+            "CloudFront-Forwarded-Proto",
+            "CloudFront-Viewer-Http-Version",
+            "CloudFront-Viewer-Country",
+            "CloudFront-Viewer-Country-Name",
+            "CloudFront-Viewer-Country-Region",
+            "CloudFront-Viewer-Country-Region-Name",
+            "CloudFront-Viewer-City",
+            "CloudFront-Viewer-Postal-Code",
+            "CloudFront-Viewer-Time-Zone",
+            "CloudFront-Viewer-Latitude",
+            "CloudFront-Viewer-Longitude",
+            "CloudFront-Viewer-Metro-Code",
+            "CloudFront-Viewer-Address",
+            "Cloudfront-Viewer-ASN",
+        ]
+    }
+  }
+  query_strings_config {
+    query_string_behavior = "all"
+  }
+}
+
+resource "aws_cloudfront_cache_policy" "{{ env_collection.instance_name }}_backend" {
+  name        = "{{ env_collection.instance_name }}-backend"
+  comment     = "Coherence backend cache policy"
+  default_ttl = 0
+  max_ttl     = 0
+  min_ttl     = 0
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "none"
+    }
+    headers_config {
+      header_behavior = "none"
+    }
+    query_strings_config {
+      query_string_behavior = "none"
+    }
+  }
+}
+
+resource "aws_security_group" "{{ env_collection.instance_name }}_inbound" {
+    name = "{{ env_collection.instance_name }}-inbound"
+    description = "Allow HTTP from anywhere into ALB"
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+
+    ingress {
+        from_port = 443
+        to_port = 443
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    ingress {
+        from_port = 80
+        to_port = 80
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    ingress {
+        from_port = 8
+        to_port = 0
+        protocol = "icmp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    egress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    tags = {
+        Name = "{{ app.name }}_inbound_sg"
+    }
+}
+
+resource "aws_alb" "{{ env_collection.instance_name }}" {
+    name = "{{ env_collection.instance_name[:32] }}"
+    subnets = concat(
+        local.public_subnet_ids,
+        length(local.public_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_public.*.id
+    )
+    security_groups = "${[aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_inbound.id]}"
+
+    lifecycle {
+        ignore_changes = [idle_timeout]
+    }
+}
+
+resource "aws_alb_listener" "{{ env_collection.instance_name }}_http" {
+    load_balancer_arn = "${aws_alb.{{ env_collection.instance_name }}.arn}"
+    port = 80
+    protocol = "HTTP"
+
+    default_action {
+      type = "forward"
+      target_group_arn = "${aws_alb_target_group.{{ env_collection.backend_services[0].instance_name }}.arn}"
+    }
+}
+
+resource "aws_alb_listener" "{{ env_collection.instance_name }}_https" {
+    load_balancer_arn = "${aws_alb.{{ env_collection.instance_name }}.arn}"
+    port = 443
+    protocol = "HTTPS"
+
+    default_action {
+      type = "forward"
+      target_group_arn = "${aws_alb_target_group.{{ env_collection.backend_services[0].instance_name }}.arn}"
+    }
+
+    certificate_arn = aws_acm_certificate_validation.{{ env_collection.instance_name }}.certificate_arn
+}
+
+resource "aws_cloudwatch_event_rule" "{{ env_collection.instance_name }}_ecs_events" {
+    name = "{{ env_collection.instance_name }}-ecs-events"
+    event_pattern = jsonencode({
+        source = ["aws.ecs"]
+        detail-type = [
+            "ECS Task State Change",
+            "ECS Container Instance State Change",
+            "ECS Deployment State Change"
+        ]
+        detail = {
+            clusterArn = ["${aws_ecs_cluster.{{ env_collection.instance_name }}.id}"]
+        }
+    })
+}
+
+resource "aws_cloudwatch_log_group" "{{ env_collection.instance_name }}_ecs_events" {
+    name = "/aws/events/{{ env_collection.instance_name }}-ecs-events"
+}
+
+resource "aws_cloudwatch_event_target" "{{ env_collection.instance_name }}_ecs_events" {
+    rule = "${aws_cloudwatch_event_rule.{{ env_collection.instance_name }}_ecs_events.name}"
+    arn = "${aws_cloudwatch_log_group.{{ env_collection.instance_name }}_ecs_events.arn}"
+}
+
+data "aws_iam_policy_document" "cloudwatch_logs" {
+  statement {
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+
+    resources = [
+        "arn:aws:logs:{{env_collection.region}}:{{env_collection.account_id}}:log-group:/aws/events/*:*"
+    ]
+
+    principals {
+      identifiers = ["delivery.logs.amazonaws.com", "events.amazonaws.com"]
+      type        = "Service"
+    }
+  }
+}
+
+resource "aws_cloudwatch_log_resource_policy" "{{ env_collection.instance_name }}" {
+  policy_document = data.aws_iam_policy_document.cloudwatch_logs.json
+  policy_name     = "{{ env_collection.instance_name }}"
+}

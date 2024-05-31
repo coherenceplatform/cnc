@@ -1,0 +1,66 @@
+{%- set is_job = is_job | default(False) %}
+spec:
+  template:
+    metadata:
+      annotations:
+{% if service.is_backend %}
+        run.googleapis.com/vpc-access-connector: {{ service.environment.collection.instance_name[:19] }}
+        run.googleapis.com/vpc-access-egress: all
+{% endif %}
+        autoscaling.knative.dev/minScale: "{{ service.deploy.replicas }}"
+        run.googleapis.com/execution-environment: "gen2"
+    {%- if is_job %}
+    spec:
+      template:
+    {%- endif %}
+    {% filter indent(4 if is_job else 0) %}
+    spec:
+      timeoutSeconds: 1800
+      serviceAccountName: {{ service.environment.collection.service_identity_email }}
+      {%- if not is_job %}
+      containerConcurrency: 80
+      {%- endif %}
+      {%- if is_job %}
+      maxRetries: 0
+      {% endif %}
+      containers:
+      {% if service.is_frontend %}
+      - image: {{ service.image_for_tag(deployer.tag_for_service(service.name), run=True) }}
+      {% else %}
+      - image: {{ service.image_for_tag(deployer.tag_for_service(service.name)) }}
+      {% endif %}
+      {% if service.is_backend and service.command %}
+        {%- set svc_command = svc_command | default(service.joined_command) %}
+        command:
+        - "sh"
+        - "-c"
+        {%- if not is_job %}
+        - |
+          {{ svc_command }}
+        {% endif %}
+      {% endif %}
+        env:
+        - name: CNC_PROVISIONED
+          value: "1"
+        {% for variable in service.insecure_environment_items %}
+        {% if variable.name != "PORT" %}
+        - name: {{ variable.name }}
+          value: "{{ variable.value }}"
+        {% endif %}
+        {% endfor %}
+        {% for secret in service.environment_secrets %}
+        - name: {{ secret.name }}
+          valueFrom:
+            secretKeyRef:
+              key: "latest"
+              name: {{ secret.secret_id }}
+        {%- endfor %}
+        resources:
+          limits:
+            cpu: "{{ service.deploy.resources.limits.cpu }}"
+            memory: "{{ service.deploy.resources.limits.memory }}"
+        {% if service.is_frontend %}
+        ports:
+        - containerPort: 80
+        {% endif %}
+    {% endfilter %}

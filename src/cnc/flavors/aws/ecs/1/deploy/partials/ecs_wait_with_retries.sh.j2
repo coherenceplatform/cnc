@@ -1,0 +1,20 @@
+{# Retry logic for ecs wait commands (the aws cli command has a timeout of 10 mins) #}
+    max_retries={{ num_retries or 2 }}
+    count=0
+    wait_command="aws ecs wait {{ wait_for }} --region {{ environment.collection.region }} --cluster {{ environment.application.name }}-cluster {{ wait_cmd_args }}"
+
+    until $wait_command
+    do
+        wait_result=$?
+        count=`expr $count + 1`
+        if [ $wait_result -ne 255 ]
+        then
+        echo -e "\\n{{ wait_task_name }} failed, something went wrong while waiting for status.\\n"
+        exit 1
+        elif [ $count -eq $max_retries ]
+        then
+        echo -e "\\n{{ wait_task_name }} timed out\\n"
+        exit 1
+        fi
+        echo -e "\\naws ecs wait command timed out, retrying...\\n"
+    done

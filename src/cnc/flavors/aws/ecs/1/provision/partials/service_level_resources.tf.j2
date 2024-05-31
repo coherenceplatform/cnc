@@ -1,0 +1,32 @@
+{% if env_collection.hosted_zone_ns_records %}
+
+resource "aws_ecr_repository" "{{ service.instance_name }}" {
+    name = "{{ service.instance_name }}"
+    force_delete = true
+}
+
+{# {% if service.is_frontend %}
+{% include "partials/service/all_frontend.tf.j2" %}
+{% endif %}if service.is_frontend #}
+
+{% if service.is_backend %}
+resource "aws_cloudwatch_log_group" "{{ service.instance_name }}" {
+    name = "{{ service.instance_name }}"
+    tags = {
+        Environment = "{{ env_collection.name }}"
+        Application = "{{ app.name }}"
+    }
+}
+{% endif %}{# if service.is_backend #}
+
+{% if environment.active_deployment %}
+{% if service.is_frontend %}
+{% include "partials/service/active_frontend.tf.j2" %}
+{% endif %}{# if service.is_frontend #}
+
+{% if service.is_backend %}
+{% include "partials/service/active_backend.tf.j2" %}
+{% endif %}{# if service.is_backend #}
+{% endif %}{# if environment.active_deployment #}
+
+{% endif %}{# if hosted_zone_ns_records #}

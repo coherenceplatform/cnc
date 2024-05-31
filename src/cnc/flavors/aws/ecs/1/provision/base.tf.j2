@@ -1,0 +1,49 @@
+{% block state %}
+terraform {
+  backend "local" {
+    path = "{{ config_renderer.working_dir }}/.terraform/{{ config_renderer.tf_state_namespace }}.tfstate"
+  }
+}
+{% endblock %}
+
+{% if not output_only %}
+
+{% block providers %}
+{% include "partials/collection/providers.tf.j2" %}
+{% endblock providers%}
+
+{% block collection %}{% endblock collection %}
+
+{% block collection_level_resources %}
+{% include "partials/collection_level_resources.tf.j2" %}
+{% endblock collection_level_resources %}
+
+{# Per active environment #}
+{% for environment in env_collection.active_environments %}
+{% block environment_resources scoped %}
+{% include "partials/environment_level_resources.tf.j2" %}
+{% endblock environment_resources %}
+{% endfor %}
+
+{% set lb_rules = namespace(priority=1) %}
+{% set efs_mountpoint_status = namespace(created=False) %}
+
+{# Per active web service #}
+{% for service in sorted(env_collection.all_web_services, key=svc_path_lambda, reverse=True) %}
+{% set environment = service.environment %}
+
+{% block service_resources scoped %}
+{% include "partials/service_level_resources.tf.j2" %}
+{% endblock service_resources %}
+{% endfor %}
+
+{# Per active|paused environment #}
+{% for environment in env_collection.valid_environments %}
+{% block active_and_paused_envs scoped %}
+{% include "partials/active_and_paused_envs.tf.j2" %}
+{% endblock active_and_paused_envs %}
+{% endfor %}
+
+{% block custom scoped %}
+{% endblock custom %}
+{% endif %}{# {% if not output_only %} #}

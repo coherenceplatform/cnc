@@ -1,0 +1,74 @@
+{% if env_collection.has_active_deployments and env_collection.needs_k8s %}
+resource "google_container_cluster" "{{ env_collection.instance_name }}" {
+  name     = "{{ env_collection.instance_name }}"
+  location = "{{ env_collection.region }}"
+  enable_autopilot = true
+  network = google_compute_network.app-network.id
+  {% if env_collection.allow_net_admin %}
+  allow_net_admin = true
+  {% endif %}
+
+  {% if not env_collection.includes_production %}
+  deletion_protection = false
+  {% endif %}
+
+  private_cluster_config {
+    enable_private_nodes = true
+    enable_private_endpoint = false
+    master_ipv4_cidr_block = "172.16.1.0/28"
+  }
+
+  {# see https://github.com/hashicorp/terraform-provider-google/issues/10782 #}
+  ip_allocation_policy {}
+
+  depends_on = [google_project_service.gke]
+}
+
+resource "google_compute_router" "cluster_router" {
+  name    = "{{ env_collection.instance_name }}-cluster-router"
+  region  = "{{ env_collection.region }}"
+  network = google_compute_network.app-network.id
+
+  bgp {
+    asn = 64514
+  }
+
+  depends_on = [google_compute_network.app-network]
+}
+
+resource "google_project_iam_member" "k8s-use-secrets" {
+  project = "{{ env_collection.account_id }}"
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/{{ env_collection.account_id }}.svc.id.goog/kubernetes.cluster/https://container.googleapis.com/v1/projects/{{ env_collection.account_id }}/locations/{{ env_collection.region }}/clusters/{{ env_collection.instance_name }}"
+  depends_on = [google_project_service.iam, google_container_cluster.{{ env_collection.instance_name }}]
+}
+
+resource "google_project_iam_member" "k8s-use-sql" {
+  project = "{{ env_collection.account_id }}"
+  role    = "roles/cloudsql.client"
+  member  = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/{{ env_collection.account_id }}.svc.id.goog/kubernetes.cluster/https://container.googleapis.com/v1/projects/{{ env_collection.account_id }}/locations/{{ env_collection.region }}/clusters/{{ env_collection.instance_name }}"
+  depends_on = [google_project_service.iam, google_container_cluster.{{ env_collection.instance_name }}]
+}
+
+resource "google_project_iam_member" "k8s-use-run-jobs" {
+  project = "{{ env_collection.account_id }}"
+  role    = "roles/run.developer"
+  member  = "principalSet://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/{{ env_collection.account_id }}.svc.id.goog/kubernetes.cluster/https://container.googleapis.com/v1/projects/{{ env_collection.account_id }}/locations/{{ env_collection.region }}/clusters/{{ env_collection.instance_name }}"
+  depends_on = [google_project_service.iam, google_container_cluster.{{ env_collection.instance_name }}]
+}
+
+resource "google_compute_router_nat" "cluster-router-nat" {
+  name                               = "{{ env_collection.instance_name }}-cluster-router-nat"
+  router                             = google_compute_router.cluster_router.name
+  region                             = google_compute_router.cluster_router.region
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+
+  log_config {
+    enable = true
+    filter = "ERRORS_ONLY"
+  }
+
+  depends_on = [google_compute_network.app-network]
+}
+{% endif %}{# env_collection.has_active_deployments #}

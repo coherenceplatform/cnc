@@ -1,0 +1,140 @@
+#!/bin/bash
+
+if ! command -v bash >/dev/null 2>&1; then
+    echo "Bash not found. Exiting."
+    exit 1
+fi
+
+{% block shared_functions %}
+send_{{ service.name }}_status_hook () {
+    echo -e \\nSending build status webhook...\\n
+
+    if [ $1 -eq 0 ]; then
+        cnc_build_status=${2:-"success"}
+    else
+        cnc_build_status="failed"
+    fi
+
+    data='{
+        "token": "{{ builder.webhook_token }}",
+        "status": "'"$cnc_build_status"'",
+        "stage": "build",
+        "service": "{{ service.name }}"
+    }'
+    echo "===== {{ service.name }} build status ====="
+    echo "$data" | jq .
+    echo "===== {{ service.name }} build status ====="
+
+    which curl; curl_exists=$?
+    if [ $curl_exists -ne 0 ]; then
+        echo -e \\nWarning: Cannot find curl binary, skipping build status webhook...\\n
+    else
+        {% if builder.webhook_url %}
+        webhook_status=$(curl -X PUT -H "Content-Type: application/json" \
+        -d "$data" -w "%{http_code}\n" \
+        {{ builder.webhook_url }})
+
+        if [ "$webhook_status" != "200" ]; then
+            echo -e \\nBuild status webhook failed.
+        else
+            echo -e \\nBuild status webhook succeeded.
+        fi
+        {% else %}
+        echo -e \\nNo webhook URL provided. Skipping build status webhook...
+        {% endif %}
+    fi
+}
+{% endblock %}
+
+{% block render_functions %}
+{% endblock %}
+
+{% block build_functions %}
+
+verify_{{ service.name }}_image_exists () {
+    echo -e "\\nSkipping image build - using existing image."
+    echo -e "\\nVerifying image exists...\\n"
+    docker manifest inspect {{ service.image_for_tag(builder.tag_for_service(service.name)) }}; inspect_result=$?
+    if [ $inspect_result -ne 0 ]; then exit $inspect_result; fi
+}
+
+build_{{ service.name }}_image () {
+{% if builder.file_exists(service.build.dockerfile) or (not service.build.dockerfile_is_default) %}
+    echo -e "\\nBuilding from dockerfile: ({{ service.image_for_tag(builder.tag_for_service(service.name)) }})...\\n"
+    if [ "${COHERENCE_BUILD_DEBUG_MODE:-0}" -eq 1 ]; then
+        docker -v
+        docker buildx version
+    fi
+    docker buildx inspect {{ service.name }}builder || docker buildx create --name {{ service.name }}builder --use
+    docker buildx build {% for variable in service.environment_items %}--build-arg {{ variable.name }}={{ variable.value }} {% endfor %}\
+    --load \
+    --platform linux/amd64 \
+    --cache-to=type=inline \
+    --cache-from=type=registry,ref={{ service.image_for_tag("latest-cache") }} \
+    -t {{ service.image_for_tag("latest-cache") }} \
+    -t {{ service.image_for_tag("latest") }} \
+    -t {{ service.image_for_tag(builder.tag_for_service(service.name)) }} \
+    -f {{ service.build.dockerfile }} \
+    {{ service.build.context }}
+{% else %}
+
+    echo -e "\\Building with nixpacks...\\n"
+
+    # Check if Nixpacks is installed
+    if ! command -v nixpacks &> /dev/null
+    then
+        curl -sSL https://nixpacks.com/install.sh | bash
+        if ! command -v nixpacks &> /dev/null
+        then
+            echo "Failed to find Nixpacks. Please install it manually - see https://nixpacks.com/docs/install."
+            exit 1
+        fi
+    else
+        NIXPACKS_BIN=$(command -v nixpacks)
+    fi
+
+    nixpacks build {{ service.build.context }}/ --inline-cache --platform linux/amd64 \
+    --cache-from {{ service.image_for_tag("latest-cache") }} \
+    --name {{ service.image_for_tag(builder.tag_for_service(service.name)) }} \
+    {% if service.command %} --start-cmd "{{ service.command }}" \{% endif %}
+    {% for variable in service.environment_items %}--env {{ variable.name }}={{ variable.value }} {% endfor %}
+    docker tag {{ service.image_for_tag(builder.tag_for_service(service.name)) }} {{ service.image_for_tag("latest") }}
+{% endif %}
+}
+
+push_{{ service.name }}_image_tags () {
+    echo -e "\\nPushing docker images...\\n"
+    {% if not service.image %}
+    docker push {{ service.image_for_tag("latest-cache") }}
+    docker push {{ service.image_for_tag(builder.tag_for_service(service.name)) }}
+    {% else %}
+    echo -e \\nNothing to do, skipping...
+    {% endif %}
+}
+
+{% if service.is_frontend %}
+build_{{ service.name }}_assets () {
+    echo -e "\\nBuilding assets...\\n"
+    mkdir -p .{% if service.build.context != "." %}/{{ service.build.context }}{% endif %}/{{ service.settings.assets_path }}
+    docker run --entrypoint sh {% for variable in service.environment_variables %}-e {{ variable.name }}={{ variable.value }} {% endfor %} -d --name app {{ service.image_for_tag(builder.tag_for_service(service.name)) }} -c "sleep 5000"
+    docker exec app sh -c "{{ ' '.join(service.settings.build) }}"; build_result=$?
+    if [ $build_result -ne 0 ]; then docker logs app && docker stop app && docker rm app && exit $build_result; fi
+    docker cp app:$(docker exec app pwd)/{{service.settings.assets_path }}/. .{% if service.build.context != "." %}/{{ service.build.context }}{% endif %}/{{ service.settings.assets_path }}{% if service.settings.url_path != "/" %}/{% endif %}{{ service.settings.url_path.lstrip("/").rstrip("/") }}; copy_result=$?
+    if [ $copy_result -ne 0 ]; then exit $copy_result; fi
+    docker stop app
+    docker rm app
+}
+
+build_{{ service.name }}_run_image () {
+    cp {{ builder.rendered_files_path }}/{{ service.name }}-nginx.conf {{ service.build.context }}/{{ service.name }}-nginx.conf
+    docker buildx inspect coherencebuilder_{{ service.name }}_run || docker buildx create --name coherencebuilder_{{ service.name }}_run
+    docker buildx build -t {{ service.image_for_tag("latest", run=True) }} -t {{ service.image_for_tag(builder.tag_for_service(service.name), run=True) }} \
+    --builder=coherencebuilder_{{ service.name }}_run \
+    --cache-to=type=registry,ref={{ service.image_for_tag("cache", run=True) }},mode=max \
+    --cache-from=type=registry,ref={{ service.image_for_tag("cache", run=True) }} \
+    -f {{ builder.rendered_files_path }}/Dockerfile.{{ service.name }} --push {{ service.build.context }}
+    rm {{ service.build.context }}/{{ service.name }}-nginx.conf
+}
+{% endif %}
+
+{% endblock %}

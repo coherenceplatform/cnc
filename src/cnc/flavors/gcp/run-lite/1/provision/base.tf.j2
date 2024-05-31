@@ -1,0 +1,44 @@
+{% block state %}
+terraform {
+  backend "local" {
+    path = "{{ config_renderer.working_dir }}/.terraform/{{ config_renderer.tf_state_namespace }}.tfstate"
+  }
+}
+{% endblock %}
+
+{% if not output_only %}
+{% block application %}
+{% include "partials/collection/common_setup_resources.tf.j2" %}
+{% endblock application %}
+
+{# Per active environment #}
+{% for environment in env_collection.valid_environments %}
+{% block environment_resources scoped %}
+{# {% include "partials/environment_level_resources.tf.j2" %} #}
+{% endblock environment_resources %}
+{% endfor %}
+
+{# Per active service #}
+{% for service in env_collection.all_services %}
+{% set environment = service.environment %}
+{% set vpc_enabled = false %}
+
+{% block service_resources scoped %}
+{% include "partials/service/cloud_run_service.tf.j2" %}
+{% endblock service_resources %}
+{% endfor %}
+
+{# Per active|paused environment #}
+{% for environment in env_collection.valid_environments %}
+{% set vpc_enabled = false %}
+
+{% block active_and_paused_envs scoped %}
+{% include "partials/environment/resource_managed_secrets.tf.j2" %}
+{% include "partials/environment/object_storage_resources.tf.j2" %}
+{% include "partials/environment/database_resources.tf.j2" %}
+{% endblock active_and_paused_envs %}
+{% endfor %}
+
+{% block custom scoped %}
+{% endblock custom %}
+{% endif %}{# {% if not output_only %} #}

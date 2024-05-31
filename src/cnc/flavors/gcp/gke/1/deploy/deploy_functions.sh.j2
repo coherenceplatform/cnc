@@ -1,0 +1,66 @@
+{% extends "deploy_functions_base.sh.j2" %}
+
+
+{% block render_functions %}
+
+{{ render_template("k8s/deployment.yml.j2", "{}-deployment.yml".format(service.name)) }}
+
+{% if service.is_backend %}
+
+{% if service.settings.workers %}
+{{ render_template("k8s/workers.yml", "{}-workers.yml".format(service.name)) }}
+{% endif %}
+
+{% if service.settings.scheduled_tasks %}
+{{ render_template("k8s/scheduled_tasks.yml", "{}-tasks.yml".format(service.name)) }}
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block backend_functions scoped %}
+{% if service.is_backend %}
+{% if service.settings.migrate %}
+migrate_{{ service.name }} () {
+    cnc toolbox run {{ environment.name }} --tag {{ deployer.tag_for_service(service.name) }} \
+    --service-name {{ service.name }} -- '{{ " ".join(service.settings.migrate) }}'; migrate_result=$?
+    if [ $migrate_result -ne 0 ]; then exit $migrate_result; fi
+}
+{% endif %}
+
+{% if service.settings.seed %}
+seed_{{ service.name }} () {
+    cnc toolbox run {{ environment.name }} --tag {{ deployer.tag_for_service(service.name) }} \
+    --service-name {{ service.name }} -- '{{ " ".join(service.settings.seed) }}'; seed_result=$?
+    if [ $seed_result -ne 0 ]; then exit $seed_result; fi
+}
+{% endif %}
+
+
+{% if service.settings.workers %}
+deploy_{{ service.name }}_workers () {
+    gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
+    kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-workers.yml
+}
+{% endif %}
+
+{% if service.settings.scheduled_tasks %}
+deploy_{{ service.name }}_tasks () {
+    gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
+
+    # solve a race condition in creating some common resources with workers
+    sleep 5
+
+    kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-tasks.yml
+}
+{% endif %}
+{% endif %} # service.is_backend
+
+deploy_{{ service.name }} () {
+    gcloud container clusters get-credentials --zone {{ environment.collection.region }} {{ environment.collection.instance_name }}
+    kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-deployment.yml
+}
+
+{% endblock %}

@@ -1,0 +1,126 @@
+#!/bin/bash
+
+TOOLBOX_ACTIVE_TEMP_FILEPATH=/tmp/cnc_toolbox_active
+touch $TOOLBOX_ACTIVE_TEMP_FILEPATH
+
+# This kills all processes spawned by this script on exit
+trap cleanup_toolbox EXIT
+
+# Echo caller identity
+echo -e "\nYour currently authenticated accounts:\n$(gcloud auth list)"
+echo -e "\nCurrent configuration:\n$(gcloud config list)"
+
+# Ensure docker configured
+gcloud auth configure-docker {{ environment.collection.region }}-docker.pkg.dev
+
+{%- if environment.database_resources or environment.cache_resources %}
+cleanup_toolbox () {
+    rm $TOOLBOX_ACTIVE_TEMP_FILEPATH
+
+    group_id=$(ps -p $port_forwarding_parent_process_id -o pgid= | tr -d "[:space:]")
+    child_process_ids=$(pgrep -g $group_id)
+    for pid in $child_process_ids
+    do
+        if [[ $pid != $port_forwarding_parent_process_id && $pid != $group_id ]]
+        then
+            kill $pid > /dev/null 2>&1
+        fi
+    done
+
+    {%- for resource in environment.database_resources + environment.cache_resources %}
+    if test -f /tmp/cnc_ssh_output_{{ loop.index }}
+    then
+        rm /tmp/cnc_ssh_output_{{ loop.index }}
+    fi
+    {%- endfor %}
+}
+
+start_resource_port_forwarding () {
+    PID_FALLBACK="none"
+    while test -f $TOOLBOX_ACTIVE_TEMP_FILEPATH
+    do
+    {% for resource in environment.database_resources + environment.cache_resources %}
+        if ! test -d /proc/${SSH_PID_{{ loop.index }}:-$PID_FALLBACK}/ > /dev/null
+        then
+            SSH_RETRY_COUNT_{{ loop.index }}=${SSH_RETRY_COUNT_{{ loop.index }}:-0}
+            if [ $SSH_RETRY_COUNT_{{ loop.index }} -eq 0 ]
+            then
+                echo -e "\nStarting port-forwarding session for {{ resource.name }}..."
+            fi
+
+            gcloud --project={{ collection.account_id }} \
+            compute ssh toolbox@{{ collection.instance_name }}-bastion --ssh-flag="-4" \
+            --zone={{ collection.region }}-b --ssh-key-expire-after=7200m -- -N -L \
+            {{ resource.settings.toolbox_ssh_port_mapping }} > /tmp/cnc_ssh_output_{{ loop.index }} 2>&1 &
+            SSH_PID_{{ loop.index }}=$!
+
+            if [ $SSH_RETRY_COUNT_{{ loop.index }} -gt 3 ]
+            then
+                cmd_output=$(</tmp/cnc_ssh_output_{{ loop.index }})
+                echo -e "\nWarning: issue starting port forwarding session for {{ resource.name }}" \
+                "(failed_attempts: $SSH_RETRY_COUNT_{{ loop.index }})\n$cmd_output"
+            fi
+
+            SSH_RETRY_COUNT_{{ loop.index }}=`expr $SSH_RETRY_COUNT_{{ loop.index }} + 1`
+        fi
+    {% endfor %}
+    sleep 10
+    done &
+}
+
+start_resource_port_forwarding
+port_forwarding_parent_process_id=$!
+{%- endif %}{# {%- if environment.database_resources or environment.cache_resources %} #}
+
+{{ render_template("Dockerfile.j2", "Dockerfile") }}
+# copy config from default location
+if ! test -d "{{ toolbox.rendered_files_path }}"/.config
+then
+    mkdir {{ toolbox.rendered_files_path }}/.config
+fi
+
+GCP_DEFAULT_CONFIG_DIR=${CLOUDSDK_CONFIG:-~/.config/gcloud}
+if test -d "$GCP_DEFAULT_CONFIG_DIR"
+then
+    cp -r $GCP_DEFAULT_CONFIG_DIR {{ toolbox.rendered_files_path }}/.config/gcloud
+else
+    mkdir -p {{ toolbox.rendered_files_path }}/.config/gcloud
+fi
+
+# If google credentials file is set then we copy
+# to known location and set correct GOOGLE_APPLICATION_CREDENTIALS path
+# for the toolbox Dockerfile
+if test -v GOOGLE_APPLICATION_CREDENTIALS
+then
+    if test -e "$GOOGLE_APPLICATION_CREDENTIALS"
+    then
+        cp $GOOGLE_APPLICATION_CREDENTIALS {{ toolbox.rendered_files_path }}/service_account.json
+        TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS="/_cnc_temp/service_account.json"
+    fi
+fi
+touch {{ toolbox.rendered_files_path }}/service_account.json
+
+docker build -t {{ service.instance_name }}_toolbox \
+--build-arg GOOGLE_APPLICATION_CREDENTIALS=$TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS \
+-f {{ toolbox.rendered_files_path }}/Dockerfile {{ toolbox.rendered_files_path }}
+
+{%- if command %}
+{# Allow time for port forwarding processes to start #}
+sleep ${CNC_TOOLBOX_CMD_DELAY_SECONDS:-15}
+{%- endif %}
+
+# Start & exec into docker container
+docker run --entrypoint sh \
+{%- for variable in toolbox.environment_items -%}
+-e {{ variable.name }}={{ variable.value }} \
+{%- endfor -%}
+--network ${CNC_TOOLBOX_NETWORK:-host} \
+{%- if command %}
+--rm {{ service.instance_name }}_toolbox -c '{{ command }}'; command_result=$?
+{%- else %}
+-it --rm {{ service.instance_name }}_toolbox
+{%- endif %}
+
+{%- if command %}
+exit $command_result
+{%- endif %}

@@ -1,0 +1,47 @@
+#!/bin/bash
+set -e
+
+trap 'send_{{ service.name }}_status_hook $?' EXIT
+
+if ! command -v bash >/dev/null 2>&1; then
+    echo "Bash not found. Exiting."
+    exit 1
+fi
+
+{% block install_commands %}
+source {{ builder.rendered_files_path }}/build-{{ service.name }}-functions.sh
+gcloud auth configure-docker {{ environment.collection.region }}-docker.pkg.dev
+send_{{ service.name }}_status_hook 0 "working"
+{% endblock %}
+
+{% block pre_build_commands %}
+{% endblock %}
+
+{%- block render_templates %}
+{%- if service.is_frontend %}
+{{ render_template("Dockerfile.run.j2", "Dockerfile.{}".format(service.name)) }}
+{{ render_template("nginx.conf.j2", "{}-nginx.conf".format(service.name)) }}
+{%- endif %}
+{%- endblock %}
+
+{% block build_commands %}
+
+{% if service.image and (not service.build) %}
+verify_{{ service.name }}_image_exists
+{% else %}
+build_{{ service.name }}_image
+{% endif %}
+
+{% if service.build %}
+push_{{ service.name }}_image_tags
+{% endif %}
+
+{% if service.is_frontend %}
+build_{{ service.name }}_assets
+build_{{ service.name }}_run_image
+{% endif %}
+
+{% endblock %}
+
+{% block post_build_commands %}
+{% endblock %}

@@ -1,0 +1,25 @@
+x-cnc:
+  resources:
+  - name: db2
+    type: database
+    version: 15
+    engine: postgres
+
+services:
+  app:
+    x-cnc:
+      type: backend
+    build:
+      context: ./app
+
+  api:
+    x-cnc:
+      type: backend
+    build:
+      context: ./api
+
+  db1:
+    x-cnc:
+      type: database
+      version: 15
+    image: postgres:15

@@ -1,0 +1,44 @@
+resource "aws_route53_zone" "{{ env_collection.instance_name }}" {
+    name = "{{ env_collection.base_domain }}"
+}
+
+output "hosted_zone_ns_records" {
+    value = "${aws_route53_zone.{{ env_collection.instance_name }}.name_servers}"
+}
+
+{% if env_collection.hosted_zone_ns_records %}
+
+{% if env_collection.load_database_snapshot %}
+data "aws_iam_policy_document" "{{ env_collection.instance_name }}_snapshot_loader" {
+    statement {
+        effect = "Allow"
+        resources = [{% for path in env_collection.snapshot_file_paths %}"arn:aws:s3:::{{ path }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+        actions = ["s3:*"]
+    }
+}
+
+resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_snapshot_loader" {
+    name = "{{ app.name }}_snapshot_ecs_execution_role_policy"
+    policy = "${data.aws_iam_policy_document.{{ env_collection.instance_name }}_snapshot_loader.json}"
+    role = "${aws_iam_role.{{ env_collection.instance_name }}_ecs.id}"
+}
+{% endif %} {# if env_collection.load_database_snapshot #}
+
+{# {% if env_collection.frontend_services %}{% endif %}if env_collection.frontend_services #}
+
+{% if env_collection.backend_services %}
+{% include "partials/collection/vpc_configuration.tf.j2" %}
+{% include "partials/collection/has_backend_services.tf.j2" %}
+{% endif %}{# if env_collection.backend_services #}
+
+{% if env_collection.has_active_deployments %}
+{% include "partials/collection/has_active_deployments.tf.j2" %}
+{% if env_collection.frontend_services %}
+{% include "partials/collection/has_active_frontend_deployments.tf.j2" %}
+{% endif %}{# if env_collection.frontend_services #}
+{% if env_collection.backend_services %}
+{% include "partials/collection/has_active_backend_deployments.tf.j2" %}
+{% endif %}{# if env_collection.backend_services #}
+{% endif %} {# if env_collection.has_active_deployments #}
+
+{% endif %} {# if hosted_zone_ns_records #}

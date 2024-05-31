@@ -1,0 +1,50 @@
+{# Backend deploy status check logic - only checks status of deploy, does not kick off deploy
+see backend_deploy.yml.jinja2 #}
+    echo -e "\\nChecking deployment status for {{ task_name }}...\\n"
+    task_revision=$(cat {{ deployer.rendered_files_path }}/task_rev_{{ task_name }}.txt)
+    task_rev={{ task_name }}:$task_revision
+    {% with
+        wait_for="services-stable",
+        wait_task_name="Deployment",
+        wait_cmd_args=("--services " + task_name),
+        num_retries=(service.settings.timeouts.deploy//10)
+    %}
+        {% include "partials/ecs_wait_with_retries.sh.j2" %}
+    {% endwith %}
+
+    describe_result=$(aws ecs describe-services --region "{{ environment.collection.region }}" --cluster {{ environment.application.name }}-cluster --services {{ task_name }})
+    primary_deploy_status=$(echo $describe_result | jq '.services[0].deployments[] | select(.status=="PRIMARY") | .rolloutState')
+    primary_deploy_status=$(echo $primary_deploy_status | sed 's/"//g')
+
+    max_retries=9
+    count=0
+
+    while [ "$primary_deploy_status" == "IN_PROGRESS" ]
+    do
+        count=`expr $count + 1`
+        if [ $count -eq $max_retries ]
+        then
+            exit 1
+        fi
+        # Its possible to be considered "stable" while still in progress..
+        # sleep to allow time for healthchecks to pass
+        echo -e \\nDeployment still in progress, waiting for healthchecks to pass...\\n
+        sleep 10
+        describe_result=$(aws ecs describe-services --region "{{ environment.collection.region }}" --cluster {{ environment.application.name }}-cluster --services {{ task_name }})
+        primary_deploy_status=$(echo $describe_result | jq '.services[0].deployments[] | select(.status=="PRIMARY") | .rolloutState')
+        primary_deploy_status=$(echo $primary_deploy_status | sed 's/"//g')
+    done
+
+    final_task_revision=$(echo $describe_result | jq '.services[0].deployments[] | select(.status=="PRIMARY") | .taskDefinition')
+    final_task_rev=$(echo $final_task_revision | sed -e 's/^"//' -e 's/"$//' -e 's/^.\+\///')
+
+    if [ "${COHERENCE_BUILD_DEBUG_MODE:-0}" -eq 1 ]; then
+        echo $describe_result
+        echo $final_task_rev
+        echo $primary_deploy_status
+    fi
+
+    if [ "$final_task_rev" != "$task_rev" ] || [ "$primary_deploy_status" != "COMPLETED" ]; then
+        echo -e "\\nDeploy failed... check events and stopped tasks in the {{ task_name }} ecs service for more information.\\n"
+        exit 1
+    fi

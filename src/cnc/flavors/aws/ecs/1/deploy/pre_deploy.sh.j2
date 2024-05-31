@@ -1,0 +1,5 @@
+source {{ deployer.rendered_files_path }}/pre-deploy-{{ environment.name }}-functions.sh
+
+{% for service in environment.backend_services %}
+update_{{ service.name }}_ecs_task_definitions
+{% endfor %}

@@ -1,0 +1,29 @@
+name: my-backend-test-app
+provider: aws
+region: us-east-1
+flavor: ecs
+version: 1
+
+collections:
+- name: preview
+  base_domain: my-backend-test-app.testnewsite.coherencesites.com
+  account_id: "foo-bar-123"
+  existing_resources:
+    vpc:
+      instance_name: vpc-0aa28c08518eda64e
+      public_subnet_ids:
+        - "subnet-04e772928102604dc"
+        - "subnet-02e772928102604dc"
+      private_subnet_ids:
+        - "subnet-03e772928102604dc"
+        - "subnet-05e772928102604dc"
+  data:
+    infrastructure_outputs:
+      hosted_zone_ns_records:
+        value: ['record1', 'record2']
+
+  environments:
+  - name: main
+    environment_variables:
+    - name: foo
+      value: bar

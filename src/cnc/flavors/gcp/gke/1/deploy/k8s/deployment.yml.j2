@@ -1,0 +1,54 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ service.environment.instance_name }}-deploy
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: {{ service.environment.instance_name }}-deploy
+  name: {{ service.instance_name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ service.instance_name }}-app
+  namespace: {{ service.environment.instance_name }}-deploy
+spec:
+  replicas: {{ service.deploy.replicas }}
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: {{ service.instance_name }}-app
+  template:
+    metadata:
+      labels:
+        app: {{ service.instance_name }}-app
+    spec:
+      containers:
+      - name: {{ service.name }}
+        image: {{ service.image_for_tag(deployer.tag_for_service(service.name)) }}
+        ports:
+        {% if service.is_frontend %}
+          - containerPort: {{ service.port }}
+        {% else %}
+          - containerPort: {{ service.port }}
+        {% endif %}
+        resources:
+          requests:
+            cpu: 200m
+        env:
+      {% for item in service.environment_items %}
+        - name: {{ item.name }}
+          value: "{{ item.value }}"
+      {% endfor %}
+        {% if service.command %}
+        command:
+        - "bash"
+        - "-c"
+        - |
+          {{ service.joined_command }}
+        {% endif %}
+        securityContext:
+          runAsUser: 0

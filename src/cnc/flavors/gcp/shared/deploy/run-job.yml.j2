@@ -1,0 +1,8 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: {{ service.instance_name }}
+
+{% with is_job=True %}
+{% include "run-container.yml.j2" %}
+{% endwith %}

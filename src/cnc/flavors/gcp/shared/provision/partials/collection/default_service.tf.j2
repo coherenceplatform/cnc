@@ -1,0 +1,87 @@
+{% if env_collection.has_active_deployments %}
+{% if not env_collection.includes_production %}
+
+resource "google_cloud_run_service" "{{ env_collection.instance_name }}_default" {
+  name     = "{{ env_collection.instance_name }}-default"
+  location = "{{ env_collection.region }}"
+
+  template {
+    spec {
+      containers {
+        image = "us-east1-docker.pkg.dev/coherence-public/public/nginx-error-image"
+        ports {
+            container_port = 80
+        }
+      }
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+
+  lifecycle {
+    ignore_changes = all
+  }
+
+  depends_on = [google_project_service.run]
+
+  timeouts {
+    create = "2m"
+  }
+}
+
+resource "google_compute_region_network_endpoint_group" "{{ env_collection.instance_name }}_default" {
+    provider              = google-beta
+    name                  = "{{ env_collection.instance_name }}-default"
+    network_endpoint_type = "SERVERLESS"
+    region                = "{{ env_collection.region }}"
+
+    cloud_run {
+        service = google_cloud_run_service.{{ env_collection.instance_name }}_default.name
+    }
+
+    depends_on = [google_project_service.compute, google_cloud_run_service.{{ env_collection.instance_name }}_default]
+}
+
+resource "google_compute_backend_service" "{{ env_collection.instance_name }}_default" {
+    name      = "{{ env_collection.instance_name }}-default"
+
+    protocol  = "HTTP"
+    port_name = "http"
+    timeout_sec = 30
+
+    enable_cdn  = true
+    log_config {
+      enable = true
+      sample_rate = "1.0"
+    }
+
+    backend {
+        group = google_compute_region_network_endpoint_group.{{ env_collection.instance_name }}_default.id
+    }
+
+    depends_on = [
+      google_project_service.compute,
+      google_compute_region_network_endpoint_group.{{ env_collection.instance_name }}_default
+    ]
+}
+
+data "google_iam_policy" "{{ env_collection.instance_name }}_default" {
+    binding {
+        role = "roles/run.invoker"
+        members = [
+            "allUsers",
+        ]
+    }
+}
+
+resource "google_cloud_run_service_iam_policy" "{{ env_collection.instance_name }}_default" {
+    location = google_cloud_run_service.{{ env_collection.instance_name }}_default.location
+    project = google_cloud_run_service.{{ env_collection.instance_name }}_default.project
+    service = google_cloud_run_service.{{ env_collection.instance_name }}_default.name
+    policy_data = data.google_iam_policy.{{ env_collection.instance_name }}_default.policy_data
+}
+{% endif %}
+{% endif %}

@@ -1,0 +1,8 @@
+FROM {{ service.image_for_tag(toolbox.tag_for_service(service.name)) }}
+
+ARG GOOGLE_APPLICATION_CREDENTIALS
+ENV GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS
+
+# GOOGLE_APPLICATION_CREDENTIALS will be set to this filepath
+# when appropriate. see: main.sh.j2
+COPY service_account.json /_cnc_temp/service_account.json

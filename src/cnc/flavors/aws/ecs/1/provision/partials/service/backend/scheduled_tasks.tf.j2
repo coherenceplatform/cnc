@@ -1,0 +1,57 @@
+{% for task in service.settings.scheduled_tasks %}
+resource "aws_ecs_task_definition" "{{ service.instance_name }}_{{ task.name }}" {
+    family = "{{ service.instance_name }}_{{ task.name }}"
+    container_definitions = jsonencode([
+        {
+            name = "{{ service.instance_name }}_{{ task.name }}"
+            image = "${aws_ecr_repository.{{ service.instance_name }}.repository_url}:latest"
+            portMappings = []
+            entryPoint = ["sh"]
+            command = [
+                "-c",
+                "{{ task.command }}"
+            ]
+        }
+    ])
+    requires_compatibilities = ["FARGATE"]
+    network_mode = "awsvpc"
+    cpu = "{{ task.system.cpu }}"
+    memory = "{{ task.system.memory }}"
+    execution_role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.arn}"
+    task_role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.arn}"
+
+    lifecycle {
+        ignore_changes = all
+    }
+}
+
+resource "aws_cloudwatch_event_rule" "{{ service.instance_name }}_{{ task.name }}" {
+    name = "{{ service.instance_name[:39] }}-{{ task.name[:24] }}"
+    schedule_expression = "cron({{ task.schedule }})"
+}
+
+resource "aws_cloudwatch_event_target" "{{ service.instance_name }}_{{ task.name }}" {
+    rule = "${aws_cloudwatch_event_rule.{{ service.instance_name }}_{{ task.name }}.name}"
+    target_id = "{{ service.instance_name }}-{{ task.name }}"
+    arn = "${aws_ecs_cluster.{{ env_collection.instance_name }}.id}"
+    role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_events.arn}"
+
+    ecs_target {
+        task_count = 1
+        task_definition_arn = "${aws_ecs_task_definition.{{ service.instance_name }}_{{ task.name }}.arn}"
+        launch_type = "FARGATE"
+
+        network_configuration {
+            security_groups = "${concat([aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id], [aws_security_group.{{ env_collection.instance_name }}_db_access.id], [aws_security_group.{{ env_collection.instance_name }}_cache_access.id])}"
+            subnets = concat(
+                local.private_subnet_ids,
+                length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+            )
+        }
+    }
+
+    lifecycle {
+        ignore_changes = [ecs_target]
+    }
+}
+{% endfor %}

@@ -1,0 +1,666 @@
+{% if environment.domains %}
+{% for domain in environment.custom_domains %}
+resource "aws_route53_zone" "{{ re.sub('\W', '', domain) }}" {
+    name = "{{ domain }}"
+}
+
+output "{{ re.sub('\W', '', domain) }}_ns_records" {
+    value = "${aws_route53_zone.{{ re.sub('\W', '', domain) }}.name_servers}"
+}
+{% endfor %}
+{% endif %}
+
+{% if env_collection.hosted_zone_ns_records %}
+{% if environment.active_deployment %}
+
+{% include "partials/environment/msg_queue_and_obj_storage.tf.j2" %}
+{% include "partials/environment/efs.tf.j2" %}
+
+resource "aws_secretsmanager_secret" "{{ environment.instance_name }}_secrets" {
+    name = "{{ environment.instance_name }}-secrets"
+    {% if environment.is_preview %}
+    recovery_window_in_days = 0
+    {% endif %}
+}
+
+resource "aws_secretsmanager_secret_version" "{{ environment.instance_name }}_secrets" {
+    secret_id = aws_secretsmanager_secret.{{ environment.instance_name }}_secrets.id
+    secret_string = jsonencode({
+        {% for resource in environment.config.resources %}
+        {% for k, v in resource.settings.managed_secret_values_for_tf.items() %}
+        {{ k }} = "{{ v }}"
+        {% endfor %}
+        {% endfor %}
+    })
+}
+
+{% for resource in environment.cache_resources %}
+resource "aws_elasticache_cluster" "{{ resource.instance_name }}" {
+    cluster_id = "{{ resource.instance_name.replace('--', '-') }}"
+    engine = "redis"
+    node_type = "cache.t3.micro"
+    num_cache_nodes = 1
+    {% set redis_version = resource.settings.version | int %}
+    {% if redis_version == 4 %}
+    parameter_group_name = "default.redis4.0"
+    engine_version = "4.0.10"
+    {% elif redis_version == 5 %}
+    parameter_group_name = "default.redis5.0"
+    engine_version = "5.0.6"
+    {% elif redis_version == 6 %}
+    parameter_group_name = "default.redis6.x"
+    engine_version = "6.2"
+    {% else %}
+    parameter_group_name = "default.redis7"
+    engine_version = "7.0"
+    {% endif %}
+
+    security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_cache.id]
+
+    subnet_group_name = "${aws_elasticache_subnet_group.{{ env_collection.instance_name }}.name}"
+
+    lifecycle {
+        ignore_changes = all
+    }
+}
+
+output "{{ resource.settings.redis_ip_output_id }}" {
+  value = "${aws_elasticache_cluster.{{ resource.instance_name }}.cache_nodes.0.address}"
+}
+
+output "{{ resource.settings.redis_port_output_id }}" {
+  value = "${aws_elasticache_cluster.{{ resource.instance_name }}.cache_nodes.0.port}"
+}
+{% endfor %}{# for resource in environment.resources_by_type("cache") #}
+
+resource "aws_acm_certificate" "{{ environment.instance_name }}" {
+    domain_name = "*.{{ env_collection.base_domain }}"
+    subject_alternative_names = ["*.{{ environment.domain }}"]
+    validation_method = "DNS"
+
+    lifecycle {
+        create_before_destroy = true
+    }
+}
+
+{% if not env_collection.region == "us-east-1" %}
+resource "aws_acm_certificate" "{{ environment.instance_name }}_cloudfront" {
+    provider = aws.us_east_1
+    domain_name = "*.{{ env_collection.base_domain }}"
+    subject_alternative_names = ["*.{{ environment.domain }}"]
+    validation_method = "DNS"
+
+    lifecycle {
+        create_before_destroy = true
+    }
+}
+resource "aws_acm_certificate_validation" "{{ environment.instance_name }}_cloudfront" {
+    provider = aws.us_east_1
+    certificate_arn         = aws_acm_certificate.{{ environment.instance_name }}_cloudfront.arn
+    validation_record_fqdns = [for record in aws_route53_record.{{ environment.instance_name }}_cert_validation: record.fqdn]
+
+    timeouts {
+        create = "10m"
+    }
+}
+{% endif %}
+
+{% if environment.domains %}
+{% for domain in environment.domains %}
+{% if environment.custom_ns_records_for(domain) %}
+
+resource "aws_acm_certificate" "{{ re.sub('\W', '', domain) }}" {
+    domain_name = "*.{{ domain }}"
+    subject_alternative_names = [
+        "*.{{ domain }}",
+        "{{ domain }}"
+    ]
+    validation_method = "DNS"
+
+    lifecycle {
+        create_before_destroy = true
+    }
+}
+
+{% if not env_collection.region == "us-east-1" %}
+resource "aws_acm_certificate" "{{ re.sub('\W', '', domain) }}_cloudfront" {
+    provider = aws.us_east_1
+    domain_name = "*.{{ domain }}"
+    subject_alternative_names = [
+        "*.{{ domain }}",
+        "{{ domain }}"
+    ]
+    validation_method = "DNS"
+
+    lifecycle {
+        create_before_destroy = true
+    }
+}
+
+resource "aws_acm_certificate_validation" "{{ re.sub('\W', '', domain) }}_cloudfront" {
+    provider = aws.us_east_1
+    certificate_arn         = aws_acm_certificate.{{ re.sub('\W', '', domain) }}_cloudfront.arn
+    validation_record_fqdns = [for record in aws_route53_record.{{ re.sub('\W', '', domain) }}_validation: record.fqdn]
+
+    timeouts {
+        create = "10m"
+    }
+}
+{% endif %}
+
+resource "aws_acm_certificate_validation" "{{ re.sub('\W', '', domain) }}" {
+    certificate_arn         = aws_acm_certificate.{{ re.sub('\W', '', domain) }}.arn
+    validation_record_fqdns = [for record in aws_route53_record.{{ re.sub('\W', '', domain) }}_validation: record.fqdn]
+
+    timeouts {
+        create = "10m"
+    }
+}
+
+resource "aws_route53_record" "{{ re.sub('\W', '', domain) }}_validation" {
+    for_each = {
+        for dvo in aws_acm_certificate.{{ re.sub('\W', '', domain) }}.domain_validation_options: dvo.domain_name => {
+            name = dvo.resource_record_name
+            record = dvo.resource_record_value
+            type = dvo.resource_record_type
+        }
+    }
+    allow_overwrite = true
+    name = each.value.name
+    records = [each.value.record]
+    ttl = 60
+    type = each.value.type
+    zone_id = aws_route53_zone.{{ re.sub('\W', '', domain) }}.zone_id
+
+    lifecycle {
+        ignore_changes = [ttl]
+    }
+}
+
+resource "aws_route53_record" "{{ re.sub('\W', '', domain) }}_cname" {
+    zone_id = aws_route53_zone.{{ re.sub('\W', '', domain) }}.zone_id
+    name = "{{ domain }}"
+    type = "A"
+    alias {
+        name =  aws_cloudfront_distribution.{{ re.sub('\W', '', domain) }}.domain_name
+        zone_id =  aws_cloudfront_distribution.{{ re.sub('\W', '', domain) }}.hosted_zone_id
+        evaluate_target_health = false
+    }
+}
+
+resource "aws_route53_record" "{{ re.sub('\W', '', domain) }}_sub_cname" {
+    zone_id = aws_route53_zone.{{ re.sub('\W', '', domain) }}.zone_id
+    name = "*.{{ domain }}"
+    type = "A"
+    alias {
+        name =  aws_cloudfront_distribution.{{ re.sub('\W', '', domain) }}.domain_name
+        zone_id =  aws_cloudfront_distribution.{{ re.sub('\W', '', domain) }}.hosted_zone_id
+        evaluate_target_health = false
+    }
+}
+
+{% endif %}
+{% endfor %}
+
+{% endif %}
+
+resource "aws_acm_certificate_validation" "{{ environment.instance_name }}" {
+    certificate_arn         = aws_acm_certificate.{{ environment.instance_name }}.arn
+    validation_record_fqdns = [for record in aws_route53_record.{{ environment.instance_name }}_cert_validation: record.fqdn]
+
+    timeouts {
+        create = "10m"
+    }
+}
+
+resource "aws_route53_record" "{{ environment.instance_name }}_cert_validation" {
+    for_each = {
+        for dvo in aws_acm_certificate.{{ environment.instance_name }}.domain_validation_options: dvo.domain_name => {
+            name = dvo.resource_record_name
+            record = dvo.resource_record_value
+            type = dvo.resource_record_type
+        }
+    }
+    allow_overwrite = true
+    name = each.value.name
+    records = [each.value.record]
+    ttl = 60
+    type = each.value.type
+    zone_id = aws_route53_zone.{{ env_collection.instance_name }}.zone_id
+
+    depends_on = [aws_acm_certificate.{{ environment.instance_name }}]
+
+    lifecycle {
+        ignore_changes = [ttl]
+    }
+}
+
+resource "aws_route53_record" "{{ environment.instance_name }}_sub_cname" {
+    zone_id = aws_route53_zone.{{ env_collection.instance_name }}.zone_id
+    name = "*.{{ environment.domain }}"
+    type = "A"
+    alias {
+        name =  aws_cloudfront_distribution.{{ environment.instance_name }}_{{ frontend_hash }}.domain_name
+        zone_id =  aws_cloudfront_distribution.{{ environment.instance_name }}_{{ frontend_hash }}.hosted_zone_id
+        evaluate_target_health = false
+    }
+}
+
+{% if env_collection.backend_services %}
+resource "aws_lb_listener_certificate" "{{ environment.instance_name }}" {
+    listener_arn    = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
+    certificate_arn = aws_acm_certificate_validation.{{ environment.instance_name }}.certificate_arn
+}
+
+{% if environment.domains %}
+{% for domain in environment.domains %}
+{% if environment.custom_ns_records_for(domain) %}
+
+resource "aws_lb_listener_certificate" "{{ re.sub('\W', '', domain) }}" {
+    listener_arn    = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
+    certificate_arn = aws_acm_certificate_validation.{{ re.sub('\W', '', domain) }}.certificate_arn
+}
+
+{% endif %}
+{% endfor %}
+
+{% endif %}
+{% endif %}
+
+resource "aws_route53_record" "{{ environment.instance_name }}_cname" {
+    zone_id = aws_route53_zone.{{ env_collection.instance_name }}.zone_id
+    name = "{{ environment.domain }}"
+    type = "A"
+    alias {
+        name =  aws_cloudfront_distribution.{{ environment.instance_name }}_{{ frontend_hash }}.domain_name
+        zone_id =  aws_cloudfront_distribution.{{ environment.instance_name }}_{{ frontend_hash }}.hosted_zone_id
+        evaluate_target_health = false
+    }
+}
+
+output "{{ environment.instance_name }}_cloudfront_id" {
+    value = aws_cloudfront_distribution.{{ environment.instance_name }}_{{ frontend_hash }}.id
+}
+
+resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ frontend_hash }}" {
+    aliases = ["{{ environment.domain }}", "*.{{ environment.domain }}"]
+
+    logging_config {
+        bucket = "${aws_s3_bucket.{{ env_collection.instance_name }}_cloudfront_logs.bucket_regional_domain_name}"
+        prefix = "{{ environment.instance_name }}"
+    }
+
+    enabled = true
+
+    {% for service in sorted(environment.web_services, key=svc_path_lambda, reverse=True) %}
+
+    {% if service.is_frontend %}
+    origin {
+        domain_name = "${aws_s3_bucket_website_configuration.{{ service.instance_name }}_website.website_endpoint}"
+        origin_id = "{{ service.instance_name }}"
+
+        custom_origin_config {
+            http_port = 80
+            https_port = 443
+            origin_protocol_policy = "http-only"
+            origin_ssl_protocols = ["TLSv1.2"]
+            origin_keepalive_timeout = 60
+            origin_read_timeout = 60
+        }
+    }
+
+    {% if not service.settings.url_path == "/" %}
+    ordered_cache_behavior {
+        path_pattern = "/{{ service.settings.url_path.strip('/') }}"
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ service.instance_name }}"
+        {% if service.settings.cdn.enabled %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        {% else %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
+        {% endif %}
+
+        {% if service.settings.custom_headers %}
+        response_headers_policy_id = "${aws_cloudfront_response_headers_policy.custom_headers_policy.id}"
+        {% endif %}
+
+        lambda_function_association {
+            event_type = "origin-response"
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+        }
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    ordered_cache_behavior {
+        path_pattern = "{{ service.settings.url_path }}*"
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ service.instance_name }}"
+        {% if service.settings.cdn.enabled %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        {% else %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
+        {% endif %}
+
+        {% if service.settings.custom_headers %}
+        response_headers_policy_id = "${aws_cloudfront_response_headers_policy.{{ service.instance_name }}.id}"
+        {% endif %}
+
+        lambda_function_association {
+            event_type = "origin-response"
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+        }
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    {% endif %}
+    {% else %}
+    origin {
+        domain_name = replace(aws_alb.{{ env_collection.instance_name }}.dns_name, "/^https?://([^/]*).*/", "$1")
+        origin_id = "{{ service.instance_name }}"
+
+        custom_origin_config {
+            http_port = 80
+            https_port = 443
+            origin_protocol_policy = "https-only"
+            origin_ssl_protocols = ["TLSv1.2"]
+            origin_keepalive_timeout = 60
+            origin_read_timeout = 60
+        }
+    }
+
+    {% if not service.settings.url_path == "/" %}
+    ordered_cache_behavior {
+        path_pattern = "/{{ service.settings.url_path.strip('/') }}"
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ service.instance_name }}"
+
+        {% if service.settings.cdn.enabled %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        {% else %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
+        {% endif %}
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    {% endif %}
+
+    ordered_cache_behavior {
+        path_pattern = "{{ service.settings.url_path }}*"
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ service.instance_name }}"
+
+        {% if service.settings.cdn.enabled %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        {% else %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
+        {% endif %}
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    {% endif %}
+
+    {% endfor %}
+
+    {% if environment.default_service.is_frontend %}
+    default_root_object = "{{ environment.default_service.settings.url_path.lstrip('/') }}index.html"
+
+    default_cache_behavior {
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ environment.default_service.instance_name }}"
+
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+
+        {% if environment.default_service.settings.custom_headers %}
+        response_headers_policy_id = "${aws_cloudfront_response_headers_policy.{{ environment.default_service.instance_name }}.id}"
+        {% endif %}
+
+        lambda_function_association {
+            event_type = "origin-response"
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+        }
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    {% else %}
+    default_cache_behavior {
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ environment.default_service.instance_name }}"
+
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    {% endif %}
+
+    restrictions {
+        geo_restriction {
+            restriction_type = "none"
+        }
+    }
+
+    viewer_certificate {
+        {% if env_collection.region == "us-east-1" %}
+        acm_certificate_arn = aws_acm_certificate_validation.{{ environment.instance_name }}.certificate_arn
+        {% else %}
+        acm_certificate_arn = aws_acm_certificate_validation.{{ environment.instance_name }}_cloudfront.certificate_arn
+        {% endif %}
+        ssl_support_method = "sni-only"
+    }
+
+    lifecycle {
+        ignore_changes = [web_acl_id]
+    }
+}
+
+{% if environment.domains %}
+{% for domain in environment.domains %}
+{% if environment.custom_ns_records_for(domain) %}
+resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
+    aliases = ["{{ domain }}"]
+
+    logging_config {
+        bucket = "${aws_s3_bucket.{{ env_collection.instance_name }}_cloudfront_logs.bucket_regional_domain_name}"
+        prefix = "{{ environment.instance_name }}"
+    }
+
+    enabled = true
+
+    {% for service in sorted(environment.web_services, key=svc_path_lambda, reverse=True) %}
+
+    {% if service.is_frontend %}
+    origin {
+        domain_name = "${aws_s3_bucket_website_configuration.{{ service.instance_name }}_website.website_endpoint}"
+        origin_id = "{{ service.instance_name }}"
+
+        custom_origin_config {
+            http_port = 80
+            https_port = 443
+            origin_protocol_policy = "http-only"
+            origin_ssl_protocols = ["TLSv1.2"]
+            origin_keepalive_timeout = 60
+            origin_read_timeout = 60
+        }
+    }
+    {% if not service.settings.url_path == "/" %}
+    ordered_cache_behavior {
+        path_pattern = "/{{ service.settings.url_path.strip('/') }}"
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ service.instance_name }}"
+
+        {% if service.settings.cdn.enabled %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        {% else %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
+        {% endif %}
+
+        {% if service.settings.custom_headers %}
+        response_headers_policy_id = "${aws_cloudfront_response_headers_policy.{{ service.instance_name }}.id}"
+        {% endif %}
+
+        lambda_function_association {
+            event_type = "origin-response"
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+        }
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    ordered_cache_behavior {
+        path_pattern = "{{ service.settings.url_path }}*"
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ service.instance_name }}"
+
+        {% if service.settings.cdn.enabled %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        {% else %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
+        {% endif %}
+
+        {% if service.settings.custom_headers %}
+        response_headers_policy_id = "${aws_cloudfront_response_headers_policy.{{ service.instance_name }}.id}"
+        {% endif %}
+
+        lambda_function_association {
+            event_type = "origin-response"
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+        }
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    {% endif %}
+    {% else %}
+    origin {
+        domain_name = replace(aws_alb.{{ env_collection.instance_name }}.dns_name, "/^https?://([^/]*).*/", "$1")
+        origin_id = "{{ service.instance_name }}"
+
+        custom_origin_config {
+            http_port = 80
+            https_port = 443
+            origin_protocol_policy = "https-only"
+            origin_ssl_protocols = ["TLSv1.2"]
+            origin_keepalive_timeout = 60
+            origin_read_timeout = 60
+        }
+    }
+
+    {% if not service.settings.url_path == "/" %}
+    ordered_cache_behavior {
+        path_pattern = "/{{ service.settings.url_path.strip('/') }}"
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ service.instance_name }}"
+
+        {% if service.settings.cdn.enabled %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        {% else %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
+        {% endif %}
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    {% endif %}
+
+    ordered_cache_behavior {
+        path_pattern = "{{ service.settings.url_path }}*"
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ service.instance_name }}"
+
+        {% if service.settings.cdn.enabled %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        {% else %}
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
+        {% endif %}
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    {% endif %}
+
+    {% endfor %}
+
+    {% if environment.default_service.is_frontend %}
+    default_root_object = "{{ environment.default_service.settings.url_path.lstrip('/') }}{{ environment.default_service.index_file_name }}"
+
+    default_cache_behavior {
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ environment.default_service.instance_name }}"
+
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+
+        {% if environment.default_service.settings.custom_headers %}
+        response_headers_policy_id = "${aws_cloudfront_response_headers_policy.{{ environment.default_service.instance_name }}.id}"
+        {% endif %}
+
+        lambda_function_association {
+            event_type = "origin-response"
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+        }
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    {% else %}
+    default_cache_behavior {
+        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+        cached_methods = ["GET", "HEAD"]
+        target_origin_id = "{{ environment.default_service.instance_name }}"
+
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
+
+        viewer_protocol_policy = "redirect-to-https"
+    }
+    {% endif %}
+
+    restrictions {
+        geo_restriction {
+            restriction_type = "none"
+        }
+    }
+
+    viewer_certificate {
+        {% if env_collection.region == "us-east-1" %}
+        acm_certificate_arn = aws_acm_certificate_validation.{{ re.sub('\W', '', domain) }}.certificate_arn
+        {% else %}
+        acm_certificate_arn = aws_acm_certificate_validation.{{ re.sub('\W', '', domain) }}_cloudfront.certificate_arn
+        {% endif %}
+
+        ssl_support_method = "sni-only"
+    }
+
+    lifecycle {
+        ignore_changes = [web_acl_id]
+    }
+}
+{% endif %}{# {% if environment.domains %} #}
+{% endfor %}{# {% for domain in environment.domains %} #}
+{% endif %}{# {% if environment.custom_ns_records_for(domain) %} #}
+
+{% endif %}{# if environment.active_deployment #}
+{% endif %}{# if hosted_zone_ns_records #}

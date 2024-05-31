@@ -1,0 +1,5 @@
+provider_links_templates:
+    # TODO: change this to k8s link
+    backend: "https://console.cloud.google.com/run/detail/{service.environment.collection.region}/{service.instance_name}/revisions?project={service.environment.collection.account_id}"
+    # worker
+    # cron

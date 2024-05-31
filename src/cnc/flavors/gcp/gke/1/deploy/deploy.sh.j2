@@ -1,0 +1,32 @@
+{% block install_commands %}
+source deploy-{{ service.name }}-functions.sh
+{% endblock %}
+
+{% block build_commands %}
+
+{% if service.is_backend %}
+
+{% if service.settings.migrate %}
+- migrate_{{ service.name }}
+{% endif %}
+
+{% if not service.environment.is_production and service.settings.seed %}
+- seed_{{ service.name }}
+{% endif %}
+
+{% if service.settings.workers %}
+- deploy_{{ service.name }}_workers
+{% endif %}
+
+{% if service.settings.scheduled_tasks %}
+- deploy_{{ service.name }}_tasks
+{% endif %}
+
+{% endif %}
+
+- deploy_{{ service.name }}
+
+{% endblock %}
+
+{% block finally_build_commands %}
+{% endblock %}

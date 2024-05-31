@@ -1,0 +1,85 @@
+{% block state %}
+terraform {
+  backend "local" {
+    path = "{{ config_renderer.working_dir }}/.terraform/{{ config_renderer.tf_state_namespace }}.tfstate"
+  }
+}
+{% endblock %}
+
+{% if not output_only %}
+
+{% block providers %}
+{% include "partials/collection/providers.tf.j2" %}
+{% endblock providers %}
+
+{% block common_setup_resources %}
+{% include "partials/collection/common_setup_resources.tf.j2" %}
+{% endblock common_setup_resources %}
+
+{% block default_service %}
+{% include "partials/collection/default_service.tf.j2" %}
+{% endblock default_service %}
+
+{% block vpc_networking %}
+{% include "partials/collection/vpc_networking.tf.j2" %}
+{% endblock vpc_networking %}
+
+{% block gke_cluster %}
+{% include "partials/collection/gke_cluster.tf.j2" %}
+{% endblock gke_cluster %}
+
+{% block bastion_instance %}
+{% include "partials/collection/bastion_instance.tf.j2" %}
+{% endblock bastion_instance %}
+
+{# Per active environment #}
+{% for environment in env_collection.valid_environments %}
+{% block environment_resources scoped %}
+{# {% include "partials/environment_level_resources.tf.j2" %} #}
+{% endblock environment_resources %}
+{% endfor %}
+
+{# Per active service #}
+{% for service in env_collection.all_services %}
+{% set environment = service.environment %}
+{% set vpc_enabled = true %}
+
+{% block service_resources scoped %}
+{% endblock service_resources %}
+
+{% block cloud_run_service scoped %}
+{% include "partials/service/cloud_run_service.tf.j2" %}
+{% endblock cloud_run_service %}
+
+{% block cloud_run_service_networking scoped %}
+{% include "partials/service/cloud_run_service_networking.tf.j2" %}
+{% endblock cloud_run_service_networking %}
+
+{% block cache scoped %}
+{% include "partials/service/cache.tf.j2" %}
+{% endblock cache %}
+{% endfor %}
+
+{# Per active|paused environment #}
+{% for environment in env_collection.valid_environments %}
+{% set vpc_enabled = true %}
+
+{% block active_and_paused_envs scoped %}
+{% endblock active_and_paused_envs %}
+
+{% block resource_managed_secrets scoped %}
+{% include "partials/environment/resource_managed_secrets.tf.j2" %}
+{% endblock resource_managed_secrets %}
+
+{% block object_storage_resources scoped %}
+{% include "partials/environment/object_storage_resources.tf.j2" %}
+{% endblock object_storage_resources %}
+
+{% block database_resources scoped %}
+{% include "partials/environment/database_resources.tf.j2" %}
+{% endblock database_resources %}
+{% endfor %}
+
+{% block custom scoped %}
+{% endblock custom %}
+{% endif %}{# {% if not output_only %} #}

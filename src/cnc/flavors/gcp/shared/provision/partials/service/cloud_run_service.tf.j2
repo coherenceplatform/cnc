@@ -1,0 +1,59 @@
+{%- if service.environment.active_deployment and service.settings.is_web %}
+resource "google_cloud_run_service" "{{ service.instance_name }}" {
+    project = "{{ env_collection.account_id }}"
+    name = "{{ service.instance_name }}"
+    location = "{{ env_collection.region }}"
+
+    template {
+        spec {
+        containers {
+            image = "us-docker.pkg.dev/cloudrun/container/hello"
+        }
+        }
+    }
+
+    traffic {
+        percent = 100
+        latest_revision = true
+    }
+
+    lifecycle {
+        ignore_changes = all
+    }
+
+    depends_on = [
+        {%- if vpc_enabled %}
+        google_service_networking_connection.private_service_connection,
+        {%- endif %}
+        google_project_service.run
+    ]
+
+    timeouts {
+        create = "2m"
+    }
+}
+
+output "{{ service.instance_name }}_cloud_run_url" {
+    value = google_cloud_run_service.{{ service.instance_name }}.status.0.url
+}
+
+{%- if service.is_backend %}
+resource "google_cloud_run_v2_job" "{{ service.instance_name }}" {
+  project = "{{ env_collection.account_id }}"
+  name = "{{ service.instance_name }}"
+  location = "{{ env_collection.region }}"
+
+  lifecycle {
+        ignore_changes = all
+    }
+
+  template {
+    template {
+      containers {
+        image = "us-docker.pkg.dev/cloudrun/container/hello"
+      }
+    }
+  }
+}
+{%- endif %}
+{%- endif %}

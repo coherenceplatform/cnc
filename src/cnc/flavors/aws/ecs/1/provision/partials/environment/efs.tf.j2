@@ -1,0 +1,35 @@
+{% for resource in environment.filesystem_resources %}
+{% if not efs_mountpoint_status.created %}
+{% if resource.settings.existing_filesystem_id %}
+resource "aws_efs_mount_target" "{{ resource.settings.existing_filesystem_id }}" {
+    count = length(concat(
+        local.private_subnet_ids,
+        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+    ))
+    subnet_id = element(concat(
+        local.private_subnet_ids,
+        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+    ), count.index)
+    file_system_id = "{{ resource.settings.existing_filesystem_id }}"
+    security_groups = [aws_security_group.{{ env_collection.instance_name }}-efs-access.id]
+    depends_on = [aws_security_group.{{ env_collection.instance_name }}-efs-access]
+}
+
+resource "aws_security_group" "{{ env_collection.instance_name }}-efs-access" {
+    name = "{{ env_collection.instance_name }}-efs-access"
+    description = "Allow ecs/efs communication"
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+
+    ingress {
+        from_port = 2049
+        to_port = 2049
+        protocol = "tcp"
+        security_groups = [aws_security_group.{{ env_collection.instance_name }}_ecs.id]
+    }
+
+    depends_on = [{{ env_collection.vpc_resource_address }}]
+}
+{% set efs_mountpoint_status.created = True %}
+{% endif %}
+{% endif %}
+{% endfor %}

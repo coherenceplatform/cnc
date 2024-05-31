@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Echo caller identity
+echo -e "\nYour currently authenticated accounts:\n$(gcloud auth list)"
+echo -e "\nCurrent configuration:\n$(gcloud config list)"
+
+# Ensure docker configured
+gcloud auth configure-docker {{ environment.collection.region }}-docker.pkg.dev
+
+{{ render_template("Dockerfile.j2", "Dockerfile") }}
+# copy config from default location
+if ! test -d "{{ toolbox.rendered_files_path }}"/.config
+then
+    mkdir {{ toolbox.rendered_files_path }}/.config
+fi
+
+GCP_DEFAULT_CONFIG_DIR=${CLOUDSDK_CONFIG:-~/.config/gcloud}
+if test -d "$GCP_DEFAULT_CONFIG_DIR"
+then
+    cp -r $GCP_DEFAULT_CONFIG_DIR {{ toolbox.rendered_files_path }}/.config/gcloud
+else
+    mkdir -p {{ toolbox.rendered_files_path }}/.config/gcloud
+fi
+
+# If google credentials file is set then we copy
+# to known location and set correct GOOGLE_APPLICATION_CREDENTIALS path
+# for the toolbox Dockerfile
+if test -v GOOGLE_APPLICATION_CREDENTIALS
+then
+    if test -e "$GOOGLE_APPLICATION_CREDENTIALS"
+    then
+        cp $GOOGLE_APPLICATION_CREDENTIALS {{ toolbox.rendered_files_path }}/service_account.json
+        TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS="/_cnc_temp/service_account.json"
+    fi
+fi
+touch {{ toolbox.rendered_files_path }}/service_account.json
+
+docker build -t {{ service.instance_name }}_toolbox \
+--build-arg GOOGLE_APPLICATION_CREDENTIALS=$TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS \
+-f {{ toolbox.rendered_files_path }}/Dockerfile {{ toolbox.rendered_files_path }}
+
+# Start & exec into docker container
+docker run --entrypoint sh \
+{%- for variable in toolbox.environment_items -%}
+-e {{ variable.name }}={{ variable.value }} \
+{%- endfor -%}
+--network ${CNC_TOOLBOX_NETWORK:-host} \
+{%- if command %}
+--rm --name app {{ service.instance_name }}_toolbox -c '{{ command }}'; command_result=$?
+{%- else %}
+-it --rm --name app {{ service.instance_name }}_toolbox
+{%- endif %}
+
+{%- if command %}
+exit $command_result
+{%- endif %}

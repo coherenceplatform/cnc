@@ -1,0 +1,51 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ service.instance_name }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: {{ service.instance_name }}
+  name: {{ service.instance_name }}
+{% for worker in service.settings.workers %}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ service.name }}-{{ worker.name }}
+  namespace: {{ service.instance_name }}
+spec:
+  replicas: {{ worker.replicas }}
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: {{ service.name }}-{{ worker.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ service.name }}-{{ worker.name }}
+        {% if worker.is_ext_duration_enabled %}
+        duration: extended
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+        {% endif %}
+    spec:
+      terminationGracePeriodSeconds: 10800
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: cloud.google.com/gke-spot
+                operator: {% if service.environment.is_static %}NotIn{% else %}In{% endif %}
+                values:
+                - "true"
+      serviceAccountName: {{ service.instance_name }}
+      containers:
+{% filter indent(width=16) %}
+{% include "k8s/service_containers/backend-worker.yml" %}
+{% endfilter %}
+
+{% endfor %}

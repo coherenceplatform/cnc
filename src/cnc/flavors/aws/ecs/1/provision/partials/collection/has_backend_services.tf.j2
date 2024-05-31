@@ -1,0 +1,384 @@
+{# TODO: should we get all private subnets here instead of just one? #}
+output "{{ env_collection.instance_name }}_private" {
+    value = element(concat(
+        local.private_subnet_ids,
+        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+    ), 0)
+}
+
+resource "aws_security_group" "{{ env_collection.instance_name }}_default" {
+    name = "{{ env_collection.instance_name }}-default"
+    description = "Default security group to allow inbound/outbound traffic from the VPC"
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+
+    ingress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        self = true
+    }
+
+    egress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        self = true
+    }
+
+    depends_on = [{{ env_collection.vpc_resource_address }}]
+}
+
+resource "aws_security_group" "{{ env_collection.instance_name }}_cache_access" {
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+    name = "{{ env_collection.instance_name }}-cache-access"
+    description = "Allow access to Elasticache"
+}
+
+resource "aws_security_group" "{{ env_collection.instance_name }}_cache" {
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+    name = "{{ env_collection.instance_name }}-cache"
+    description = "Elasticache Security Group"
+
+    # Allow traffic from the SG
+    ingress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        self = true
+    }
+
+    # Allow traffic for tcp:6379
+    ingress {
+        from_port = 6379
+        to_port = 6379
+        protocol = "tcp"
+        security_groups = [aws_security_group.{{ env_collection.instance_name }}_cache_access.id]
+    }
+
+    # Outbound internet access
+    egress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+resource "aws_elasticache_subnet_group" "{{ env_collection.instance_name }}" {
+    name = "{{ env_collection.instance_name }}"
+
+    description = "Elasticache subnet group"
+    subnet_ids = concat(
+        local.private_subnet_ids,
+        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+    )
+}
+
+resource "aws_db_subnet_group" "{{ env_collection.instance_name }}" {
+    name = "{{ env_collection.instance_name }}"
+    description = "RDS subnet group"
+    subnet_ids = concat(
+        local.private_subnet_ids,
+        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+    )
+}
+
+resource "aws_security_group" "{{ env_collection.instance_name }}_db_access" {
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+    name = "{{ env_collection.instance_name }}-db-access"
+    description = "Allow access to RDS"
+}
+
+resource "aws_security_group" "{{ env_collection.instance_name }}_db" {
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+    name = "{{ env_collection.instance_name }}-db"
+    description = "RDS Security Group"
+
+    # Allow traffic from the SG
+    ingress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        self = true
+    }
+
+{% if has_mysql_db %}
+    ingress {
+        from_port = 3306
+        to_port = 3306
+        protocol = "tcp"
+        security_groups = [aws_security_group.{{ env_collection.instance_name }}_db_access.id]
+    }
+{% endif %}
+
+{% if has_mssql_db %}
+    ingress {
+        from_port = 1433
+        to_port = 1433
+        protocol = "tcp"
+        security_groups = [aws_security_group.{{ env_collection.instance_name }}_db_access.id]
+    }
+{% endif %}
+
+{% if has_postgres_db %}
+    ingress {
+        from_port = 5432
+        to_port = 5432
+        protocol = "tcp"
+        security_groups = [aws_security_group.{{ env_collection.instance_name }}_db_access.id]
+    }
+{% endif %}
+
+    # Outbound internet access
+    egress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+data "aws_iam_policy_document" "db_proxy_service_role" {
+    statement {
+        effect = "Allow"
+        actions = ["sts:AssumeRole"]
+        principals {
+          type = "Service"
+          identifiers = ["rds.amazonaws.com"]
+        }
+    }
+}
+
+resource "aws_iam_role" "{{ env_collection.instance_name }}_db_proxy" {
+    name = "{{ env_collection.instance_name }}-db-proxy"
+    assume_role_policy = "${data.aws_iam_policy_document.db_proxy_service_role.json}"
+
+    provisioner "local-exec" {
+        command = "sleep 30"
+    }
+}
+
+data "aws_iam_policy_document" "db_proxy_service_policy" {
+    statement {
+        effect = "Allow"
+        resources = ["*"]
+        actions = ["secretsManager:GetSecretValue"]
+    }
+}
+
+resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_db_proxy" {
+    name = "{{ env_collection.instance_name }}-db-proxy"
+    policy = "${data.aws_iam_policy_document.db_proxy_service_policy.json}"
+    role = "${aws_iam_role.{{ env_collection.instance_name }}_db_proxy.id}"
+}
+
+resource "aws_ecs_cluster" "{{ env_collection.instance_name }}" {
+    name = "{{ app.name }}-cluster"
+}
+
+resource "aws_ecs_cluster_capacity_providers" "{{ env_collection.instance_name }}" {
+  cluster_name = "${aws_ecs_cluster.{{ env_collection.instance_name }}.name}"
+
+  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+
+  default_capacity_provider_strategy {
+    base              = 1
+    weight            = 100
+    capacity_provider = "FARGATE"
+  }
+}
+
+data "aws_iam_policy_document" "ecs_service_role" {
+    statement {
+        effect = "Allow"
+        actions = ["sts:AssumeRole"]
+        principals {
+          type = "Service"
+          identifiers = ["ecs.amazonaws.com"]
+        }
+    }
+}
+
+resource "aws_iam_role" "{{ env_collection.instance_name }}_ecs_service" {
+    name = "{{ env_collection.instance_name }}-ecs-service"
+    assume_role_policy = "${data.aws_iam_policy_document.ecs_service_role.json}"
+}
+
+data "aws_iam_policy_document" "ecs_service_policy" {
+    statement {
+        effect = "Allow"
+        resources = ["*"]
+        actions = [
+            "elasticloadbalancing:Describe*",
+            "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+            "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+            "ec2:Describe*",
+            "ec2:AuthorizeSecurityGroupIngress"
+        ]
+    }
+}
+
+resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_ecs_service" {
+    name = "{{ env_collection.instance_name }}-ecs-service"
+    policy = "${data.aws_iam_policy_document.ecs_service_policy.json}"
+    role = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_service.id}"
+}
+
+data "aws_iam_policy_document" "ecs_execution_role" {
+    statement {
+        effect = "Allow"
+        actions = ["sts:AssumeRole"]
+        principals {
+            type = "Service"
+            identifiers = ["ecs-tasks.amazonaws.com"]
+        }
+    }
+}
+
+resource "aws_iam_role" "{{ env_collection.instance_name }}_ecs_task" {
+    name = "{{ env_collection.instance_name }}-ecs-task"
+    assume_role_policy = "${data.aws_iam_policy_document.ecs_execution_role.json}"
+}
+
+data "aws_iam_policy_document" "ecs_execution_role_policy" {
+    statement {
+        effect = "Allow"
+        actions = [
+            "ecr:GetAuthorizationToken",
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:GetDownloadUrlForLayer",
+            "ecr:BatchGetImage",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+            "secretsmanager:GetSecretValue",
+        ]
+        resources = ["*"]
+    }
+    {% if env_collection.has_object_storage %}
+    statement {
+        effect = "Allow"
+        actions = [
+            "s3:*Object",
+            "s3:ListBucket"
+        ]
+        resources = [
+            {% for bucket in env_collection.object_storage_resources %}
+            aws_s3_bucket.{{ bucket.settings.bucket_name }}.arn,
+            {% endfor %}
+
+        ]
+    }
+
+    statement {
+        effect = "Allow"
+        actions = [
+            "s3:*Object",
+            "s3:PutObjectAcl"
+        ]
+        resources = [
+            {% for bucket in env_collection.object_storage_resources %}
+            format("%s/%s",aws_s3_bucket.{{ bucket.settings.bucket_name }}.arn,"*"),
+            {% endfor %}
+
+        ]
+    }
+    {% endif %}
+    {% if env_collection.has_message_queues %}
+    statement {
+        effect = "Allow"
+        actions = [
+            "sqs:*"
+        ]
+        resources = ["*"]
+    }
+    {% endif %}
+}
+
+resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_ecs_task" {
+    name = "{{ env_collection.instance_name }}-ecs-task"
+    policy = "${data.aws_iam_policy_document.ecs_execution_role_policy.json}"
+    role = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.id}"
+}
+
+resource "aws_security_group" "{{ env_collection.instance_name }}_ecs" {
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+    name = "{{ env_collection.instance_name }}-ecs"
+    description = "Allow egress from container"
+
+    egress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    ingress {
+        from_port = 0
+        to_port = 0
+        protocol = "icmp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+data "aws_iam_policy_document" "ecs_autoscale_role" {
+    statement {
+        effect = "Allow"
+        actions = ["sts:AssumeRole"]
+        principals {
+            type = "Service"
+            identifiers = ["application-autoscaling.amazonaws.com"]
+        }
+    }
+}
+
+resource "aws_iam_role" "{{ env_collection.instance_name }}_autoscaling" {
+    name = "{{ env_collection.instance_name }}-autoscaling"
+    assume_role_policy = "${data.aws_iam_policy_document.ecs_autoscale_role.json}"
+}
+
+data "aws_iam_policy_document" "ecs_autoscale_role_policy" {
+    statement {
+        effect = "Allow"
+        resources = ["*"]
+        actions = [
+            "ecr:GetAuthorizationToken",
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:GetDownloadUrlForLayer",
+            "ecr:BatchGetImage",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+            "secretsmanager:GetSecretValue",
+        ]
+    }
+}
+
+resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_autoscaling" {
+    name = "{{ app.name }}-ecs-autoscale-role-policy"
+    policy = "${data.aws_iam_policy_document.ecs_autoscale_role_policy.json}"
+    role = "${aws_iam_role.{{ env_collection.instance_name }}_autoscaling.id}"
+}
+
+data "aws_iam_policy_document" "ecs_events_role" {
+    statement {
+        effect = "Allow"
+        actions = ["sts:AssumeRole"]
+        principals {
+          type = "Service"
+          identifiers = ["events.amazonaws.com"]
+        }
+    }
+}
+
+resource "aws_iam_role" "{{ env_collection.instance_name }}_ecs_events" {
+    name = "{{ env_collection.instance_name }}-ecs-events"
+    assume_role_policy = "${data.aws_iam_policy_document.ecs_events_role.json}"
+}
+
+resource "aws_iam_role_policy_attachment" "{{ env_collection.instance_name }}_ecs_events" {
+    role = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_events.name}"
+    policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceEventsRole"
+}
+
+output "security_groups" {
+    value = "[${aws_security_group.{{ env_collection.instance_name }}_default.id}, ${aws_security_group.{{ env_collection.instance_name }}_ecs.id}, ${aws_security_group.{{ env_collection.instance_name }}_db_access.id}, ${aws_security_group.{{ env_collection.instance_name }}_cache_access.id}]"
+}

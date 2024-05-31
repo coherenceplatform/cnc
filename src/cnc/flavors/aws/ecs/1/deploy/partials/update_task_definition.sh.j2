@@ -1,0 +1,12 @@
+    echo "Updating task definition for {{ task_name }}..."
+    task_update_result=$(aws ecs register-task-definition --cli-input-json file://{{ deployer.rendered_files_path }}/{{ task_filepath }})
+    task_update_resp_code=$?
+
+    if [ $task_update_resp_code -ne 0 ]; then
+        echo $task_update_result
+        exit $task_update_resp_code
+    fi
+
+    TASK_REV_{{ task_name.replace("-", "_") }}=$(echo $task_update_result | jq '.taskDefinition.revision')
+    echo $TASK_REV_{{ task_name.replace("-", "_") }} > {{ deployer.rendered_files_path }}/task_rev_{{ task_name }}.txt
+    echo "Task definition for {{ task_name }} updated successfully."

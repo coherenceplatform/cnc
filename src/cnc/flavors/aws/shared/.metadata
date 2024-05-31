@@ -1,0 +1,4 @@
+provider_links_templates:
+    backend: "https://{service.environment.collection.region}.console.aws.amazon.com/ecs/v2/clusters/{service.environment.instance_name}-cluster/services/{service.instance_name}_web/deployments?region={service.environment.collection.region}"
+    # worker
+    # cron

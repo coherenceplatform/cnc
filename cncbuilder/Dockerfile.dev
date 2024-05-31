@@ -1,0 +1,9 @@
+FROM cnc_base
+
+WORKDIR /tmp/cnc
+
+COPY . .
+
+RUN pip install .
+
+WORKDIR /app

@@ -1,0 +1,36 @@
+name: Lint and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: "poetry"
+    - name: Install dependencies
+      run: |
+        poetry install --with dev
+    - name: Test with pytest
+      run: |
+        poetry run pytest
+    - name: Lint and format
+      run: |
+        poetry run ./lint.sh

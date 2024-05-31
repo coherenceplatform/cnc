@@ -1,0 +1,46 @@
+FROM python:3.12
+
+ENV PATH $PATH:/root/google-cloud-sdk/bin
+ARG DOCKER_VERSION="5:24.0.9-1~debian.12~bookworm"
+
+WORKDIR /tmp
+
+RUN apt-get update && apt-get install -y lsb-release && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | \
+    gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) \
+    signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
+    https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+
+RUN apt-get update && apt-get dist-upgrade && \
+    apt-get install -y less \
+    jq \
+    groff \
+    mandoc \
+    docker-ce=${DOCKER_VERSION} \
+    docker-ce-cli=${DOCKER_VERSION} \
+    docker-compose \
+    docker-compose-plugin && \
+    apt-get autoremove && \
+    apt-get clean
+
+RUN curl -sSL https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -o terraform.zip && \
+    unzip terraform.zip && \
+    mv terraform /usr/local/bin/ && \
+    rm terraform.zip
+
+RUN curl -sSL https://sdk.cloud.google.com | bash
+
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install
+
+RUN curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb" && \
+    dpkg -i session-manager-plugin.deb
+
+RUN curl -sSL https://nixpacks.com/install.sh | bash
+
+WORKDIR /app
+
+CMD ["/bin/bash"]

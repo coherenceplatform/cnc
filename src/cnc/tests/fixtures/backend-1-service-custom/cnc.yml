@@ -1,0 +1,6 @@
+services:
+  app:
+    x-cnc:
+      type: backend
+    build:
+      context: .

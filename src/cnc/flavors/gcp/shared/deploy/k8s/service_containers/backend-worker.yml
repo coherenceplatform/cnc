@@ -1,0 +1,30 @@
+- image: {{ service.image_for_tag(deployer.tag_for_service(service.name)) }}
+  name: {{ service.name }}-{% if worker %}{{ worker.name }}{% elif task %}{{ task.name }}{% endif %}
+  resources:
+    limits:
+      {% if worker %}
+      cpu: "{{ worker.system.gke_autopilot_cpu }}"
+      memory: "{{ worker.system.gke_autopilot_memory }}"
+      {% elif task %}
+      cpu: "{{ task.system.gke_autopilot_cpu }}"
+      memory: "{{ task.system.gke_autopilot_memory }}"
+      {% endif %}
+      ephemeral-storage: "5Gi"
+  env:
+  - name: CNC_PROVISIONED
+    value: "1"
+{% for item in service.environment_items %}
+  - name: "{{ item.name }}"
+    value: "{{ item.value }}"
+{% endfor %}
+  command:
+  - "bash"
+  - "-c"
+  - |
+    sleep 20
+{% if worker %}
+    {{ worker.joined_command }}
+{% elif task %}
+    {{ task.joined_command }}
+{% endif %}
+

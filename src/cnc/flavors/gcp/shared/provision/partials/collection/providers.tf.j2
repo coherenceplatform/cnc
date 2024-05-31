@@ -1,0 +1,40 @@
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "google" {
+  project     = "{{ env_collection.account_id }}"
+  region      = "{{ env_collection.region }}"
+
+  default_labels = {
+    environment = "{{ env_collection.name }}"
+    managed_by = "cnc"
+    application = "{{ app.name }}"
+  }
+}
+
+provider "google-beta" {
+  project = "{{ env_collection.account_id }}"
+  region = "{{ env_collection.region }}"
+
+  default_labels = {
+    environment = "{{ env_collection.name }}"
+    managed_by = "cnc"
+    application = "{{ app.name }}"
+  }
+}
+
+
+data "google_project" "project" {
+  project_id = "{{ env_collection.account_id }}"
+}

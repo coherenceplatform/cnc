@@ -1,0 +1,132 @@
+{% if env_collection.hosted_zone_ns_records %}
+{% for resource in environment.database_resources %}
+{% if not resource.settings.use_existing %}
+
+resource "aws_secretsmanager_secret" "{{ resource.instance_name }}_db_creds" {
+    name = "{{ resource.settings.database_credentials_secret_id }}"
+    {% if environment.is_preview %}
+    recovery_window_in_days = 0
+    {% endif %}
+}
+
+resource "aws_secretsmanager_secret_version" "{{ resource.instance_name }}_db_creds" {
+    secret_id = aws_secretsmanager_secret.{{ resource.instance_name }}_db_creds.id
+    secret_string = jsonencode({
+        username = "{{ resource.settings.username }}"
+        password = "{{ resource.settings.database_password }}"
+    })
+}
+
+{% if environment.active_deployment %}
+resource "aws_db_instance" "{{ resource.instance_name }}" {
+    identifier = "{{ resource.settings.identifier }}"
+    allocated_storage = "20"
+    engine = "{{ resource.settings.engine }}"
+    instance_class = "{{ resource.settings.instance_class }}"
+    multi_az = false
+    engine_version = "{{ resource.settings.version }}"
+    username = "{{ resource.settings.username }}"
+    password = "{{ resource.settings.database_password }}"
+    db_subnet_group_name = "${aws_db_subnet_group.{{ env_collection.instance_name }}.id}"
+    vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_db.id]
+    skip_final_snapshot = true
+    allow_major_version_upgrade = true
+
+    {%- if resource.settings.db_name %}
+    db_name = "{{ resource.settings.db_name }}"
+    {%- endif %}
+
+    {%- if resource.settings.license_model %}
+    license_model = "license-included"
+    {% endif %}
+
+    {%- if not resource.settings.minor_version_specified %}
+    auto_minor_version_upgrade  = false
+    {%- endif %}
+
+    {%- if environment.is_static %}
+    deletion_protection = true
+    {%- endif %}
+
+    provisioner "local-exec" {
+        command = "sleep 60"
+    }
+
+    lifecycle {
+        ignore_changes = [allocated_storage, instance_class]
+    }
+}
+{% endif %}
+
+{% else %}
+
+data "aws_secretsmanager_secret" "{{ resource.instance_name }}_db_creds" {
+    name = "{{ resource.settings.use_existing.secret_id }}"
+}
+
+{% if not resource.settings.use_existing.cluster_mode %}
+data "aws_db_instance" "{{ resource.instance_name }}" {
+   db_instance_identifier = "{{ resource.settings.identifier }}"
+}
+{% elif not resource.settings.use_db_proxy %}
+data "aws_rds_cluster" "{{ resource.instance_name }}" {
+   cluster_identifier = "{{ resource.settings.identifier }}"
+}
+{% endif %}
+
+{% endif %}
+
+{% if environment.active_deployment %}
+
+output "{{ resource.settings.host_output_id }}" {
+    value = "{{ resource.settings.host_output_tf_value_string }}"
+}
+
+{% if resource.settings.use_db_proxy %}
+
+resource "aws_db_proxy" "{{ resource.instance_name }}" {
+    name = "{{ resource.instance_name }}"
+    engine_family = "{{ resource.settings.engine_family }}"
+    vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_db.id]
+    role_arn = aws_iam_role.{{ env_collection.instance_name }}_db_proxy.arn
+
+    vpc_subnet_ids = concat(
+        local.private_subnet_ids,
+        local.public_subnet_ids,
+        length(local.public_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_public.*.id,
+        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+    )
+
+    auth {
+        auth_scheme = "SECRETS"
+        secret_arn = {% if resource.settings.use_existing %}data.{% endif %}aws_secretsmanager_secret.{{ resource.instance_name }}_db_creds.arn
+        iam_auth = "DISABLED"
+    }
+
+    depends_on = [
+        aws_iam_role.{{ env_collection.instance_name }}_db_proxy,
+        aws_iam_role_policy.{{ env_collection.instance_name }}_db_proxy
+    ]
+
+    provisioner "local-exec" {
+        command = "sleep 60"
+    }
+}
+
+resource "aws_db_proxy_default_target_group" "{{ resource.instance_name }}" {
+    db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
+}
+
+resource "aws_db_proxy_target" "{{ resource.instance_name }}" {
+    {%- if resource.settings.cluster_mode %}
+    db_cluster_identifier = "{{ resource.settings.identifier }}"
+    {%- else %}
+    db_instance_identifier = "{{ resource.settings.identifier }}"
+    {%- endif %}
+    db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
+    target_group_name = aws_db_proxy_default_target_group.{{ resource.instance_name }}.name
+}
+{%- endif %} # if resource.settings.use_db_proxy
+{%- endif %} # if environment.active_deployment
+{%- endfor %}{# {% for resource in environment.resources_by_type("database") %} #}
+{%- endif %}{# if not hosted_zone_ns_records #}

@@ -1,0 +1,98 @@
+worker_processes  auto;
+
+error_log  /dev/stdout warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    access_log  /dev/stdout;
+    error_log  /dev/stdout;
+    sendfile        on;
+    tcp_nopush     on;
+    keepalive_timeout  65;
+
+    server {
+        listen 80;
+        server_name _;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_buffers 4 16k;
+        proxy_buffer_size 8k;
+        proxy_busy_buffers_size 16k;
+
+        gzip on;
+        gzip_proxied any;
+        gzip_comp_level 6;
+        gzip_buffers 16 8k;
+        gzip_http_version 1.1;
+        gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+
+        root /usr/share/nginx/html;
+
+    {%- if service.settings.cors and service.settings.cors.allowed_origins %}
+        add_header 'Access-Control-Allow-Methods' 'GET';
+        {%- for allowed_origin in service.settings.cors.allowed_origins %}
+        add_header 'Access-Control-Allow-Origin' '{{ allowed_origin }}';
+        {%- endfor %}
+    {%- endif %}
+    {% for header in service.settings.custom_response_headers %}
+        add_header '{{ header.name }}' '{{ header.value }}';
+    {% endfor %}
+
+{% if service.settings.index_file_name %}
+        index {{ service.settings.url_path.lstrip("/") }}{% if not service.settings.url_path == "/" %}/{% endif %}{{ service.settings.index_file_name }};
+
+        ## Allow Cache for Static Files
+        location ~* ^.+\.(?:css|cur|js|jpe?g|gif|htc|ico|png|html|xml|otf|ttf|eot|woff|woff2|svg)$ {
+            {%- if service.settings.cors %}
+            {%- if service.settings.cors.allowed_origins %}
+            add_header 'Access-Control-Allow-Methods' 'GET';
+            {%- endif %}
+            {%- for allowed_origin in service.settings.cors.allowed_origins %}
+            add_header 'Access-Control-Allow-Origin' '{{ allowed_origin }}';
+            {%- endfor %}
+            {%- endif %}
+
+            add_header Cache-Control "public";
+            {%- for header in service.settings.custom_response_headers %}
+            add_header '{{ header.name }}' '{{ header.value }}';
+            {%- endfor %}
+        }
+
+        location = /index.html {
+            add_header Cache-Control "no-store";
+            {%- if service.settings.cors and service.settings.cors.allowed_origins %}
+            add_header 'Access-Control-Allow-Methods' 'GET';
+            {%- for allowed_origin in service.cors.allowed_origins %}
+            add_header 'Access-Control-Allow-Origin' '{{ allowed_origin }}';
+            {%- endfor %}
+            {%- endif %}
+
+            {% for header in service.settings.custom_response_headers %}
+            add_header '{{ header.name }}' '{{ header.value }}';
+            {% endfor %}
+            try_files $uri {{ service.settings.url_path }}{% if not service.settings.url_path.endswith("/") %}/{% endif %}{{ service.settings.index_file_name }};
+        }
+
+        location / {
+            try_files $uri {{ service.settings.url_path }}{% if not service.settings.url_path.endswith("/") %}/{% endif %}{{ service.settings.index_file_name }};
+        }
+
+{% endif %}
+
+        location /_ping {
+            default_type text/html;
+            return 200 "<!DOCTYPE html><h2>pong!</h2>\n";
+        }
+
+    }
+}

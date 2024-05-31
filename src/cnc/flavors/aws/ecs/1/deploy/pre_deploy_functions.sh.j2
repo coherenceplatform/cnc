@@ -1,0 +1,32 @@
+{% for service in environment.backend_services %}
+update_{{ service.name }}_ecs_task_definitions () {
+    {% with
+        task_name=service.instance_name,
+        task_filepath="ecs-web-{}.json".format(service.name)
+    %}
+    {% include "partials/update_task_definition.sh.j2" %}
+    {% endwith %}
+
+    {% if service.settings.workers %}
+    {% for worker in service.settings.workers %}
+    {% with
+        task_name='_'.join([service.instance_name, worker.name]),
+        task_filepath="ecs-worker-{}-{}.json".format(service.name, worker.name)
+    %}
+    {% include "partials/update_task_definition.sh.j2" %}
+    {% endwith %}
+    {% endfor %}
+    {% endif %}
+
+    {% if service.settings.scheduled_tasks %}
+    {% for task in service.settings.scheduled_tasks %}
+    {% with
+        task_name='_'.join([service.instance_name, task.name]),
+        task_filepath="ecs-sched-{}-{}.json".format(service.name, task.name)
+    %}
+    {% include "partials/update_task_definition.sh.j2" %}
+    {% endwith %}
+    {% endfor %}
+    {% endif %}
+}
+{% endfor %}

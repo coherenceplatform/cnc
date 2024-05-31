@@ -1,0 +1,7 @@
+{% extends "deploy_functions_base.sh.j2" %}
+
+{% block render_functions %}
+{{ render_template("all-access-policy.yml.j2", "policy-all-{}.yml".format(service.name)) }}
+{{ render_template("run-svc.yml.j2", "run-{}.yml".format(service.name)) }}
+{{ render_template("run-job.yml.j2", "job-{}.yml".format(service.name)) }}
+{% endblock %}

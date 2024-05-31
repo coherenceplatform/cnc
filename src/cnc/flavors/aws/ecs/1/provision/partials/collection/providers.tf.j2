@@ -1,0 +1,36 @@
+provider "aws" {
+    region = "{{ env_collection.region }}"
+    allowed_account_ids = ["{{ env_collection.account_id }}"]
+
+    default_tags {
+        tags = {
+            Environment = "{{ env_collection.name }}"
+            ManagedBy = "cnc"
+            Application = "{{ app.name }}"
+        }
+    }
+}
+
+{# To be used with lambda edge functions as they must be locked to us-east-1 #}
+provider "aws" {
+    alias  = "us_east_1"
+    region = "us-east-1"
+    allowed_account_ids = ["{{ env_collection.account_id }}"]
+
+    default_tags {
+        tags = {
+            Environment = "{{ env_collection.name }}"
+            ManagedBy = "cnc"
+            Application = "{{ app.name }}"
+        }
+    }
+}
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.25"
+    }
+  }
+}

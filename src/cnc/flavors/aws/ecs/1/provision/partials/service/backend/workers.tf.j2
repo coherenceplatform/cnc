@@ -1,0 +1,140 @@
+{% for worker in service.settings.workers %}
+resource "aws_ecs_task_definition" "{{ service.instance_name }}_{{ worker.name }}" {
+    family = "{{ service.instance_name }}_{{ worker.name }}"
+    container_definitions = jsonencode([
+        {
+            name = "{{ service.instance_name }}_{{ worker.name }}"
+            image = "public.ecr.aws/docker/library/hello-world:latest"
+            portMappings = [{
+                containerPort = 80
+                hostPort = 80
+            }]
+        }
+    ])
+    requires_compatibilities = ["FARGATE"]
+    network_mode = "awsvpc"
+    cpu = "{{ worker.system.cpu }}"
+    memory = "{{ worker.system.memory }}"
+    execution_role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.arn}"
+    task_role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_ecs_task.arn}"
+
+    lifecycle {
+        ignore_changes = all
+    }
+}
+
+resource "aws_ecs_service" "{{ service.instance_name }}_{{ worker.name }}" {
+    name = "{{ service.instance_name }}_{{ worker.name }}"
+    task_definition = "${aws_ecs_task_definition.{{ service.instance_name }}_{{ worker.name }}.family}"
+    desired_count = 0
+    cluster = "${aws_ecs_cluster.{{ env_collection.instance_name }}.id}"
+    depends_on = [aws_iam_role_policy.{{ env_collection.instance_name }}_ecs_task, aws_alb_target_group.{{ service.instance_name }}]
+
+    network_configuration {
+        security_groups = "${concat([aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id], [aws_security_group.{{ env_collection.instance_name }}_db_access.id], [aws_security_group.{{ env_collection.instance_name }}_cache_access.id])}"
+        subnets = concat(
+            local.private_subnet_ids,
+            length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+        )
+    }
+
+    deployment_circuit_breaker {
+        enable = true
+        rollback = true
+    }
+
+    {% if not service.environment.is_static %}
+    capacity_provider_strategy {
+        capacity_provider = "FARGATE_SPOT"
+        weight            = 100
+    }
+    {% else %}
+    launch_type = "FARGATE"
+    {% endif %}
+
+    lifecycle {
+        ignore_changes = [desired_count, task_definition]
+    }
+}
+
+resource "aws_appautoscaling_target" "{{ service.instance_name }}_{{ worker.name }}" {
+    service_namespace = "ecs"
+    resource_id = "service/${aws_ecs_cluster.{{ env_collection.instance_name }}.name}/${aws_ecs_service.{{ service.instance_name }}_{{ worker.name }}.name}"
+    scalable_dimension = "ecs:service:DesiredCount"
+    role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_autoscaling.arn}"
+    {% if environment.is_production %}
+    min_capacity = {{ worker.replicas }}
+    max_capacity = {{ [worker.replicas, service.system.platform.max_scale] | max }}
+    {% else %}
+    min_capacity = {{ worker.replicas }}
+    max_capacity = {{ [worker.replicas, 4] | max }}
+    {% endif %}
+
+    lifecycle {
+        ignore_changes = [role_arn]
+    }
+}
+
+resource "aws_appautoscaling_policy" "{{ service.instance_name }}_{{ worker.name }}_up" {
+    name = "{{ service.instance_name }}-{{ worker.name }}-up"
+    service_namespace = "ecs"
+    resource_id = "service/${aws_ecs_cluster.{{ env_collection.instance_name }}.name}/${aws_ecs_service.{{ service.instance_name }}_{{ worker.name }}.name}"
+    scalable_dimension = "ecs:service:DesiredCount"
+
+    step_scaling_policy_configuration {
+        adjustment_type = "ChangeInCapacity"
+        cooldown = 60
+        metric_aggregation_type = "Maximum"
+
+        step_adjustment {
+            metric_interval_lower_bound = 0
+            scaling_adjustment = 1
+        }
+    }
+
+    depends_on = [aws_appautoscaling_target.{{ service.instance_name }}_{{ worker.name }}]
+}
+
+resource "aws_appautoscaling_policy" "{{ service.instance_name }}_{{ worker.name }}_down" {
+    name = "{{ service.instance_name }}-{{ worker.name }}-down"
+    service_namespace = "ecs"
+    resource_id = "service/${aws_ecs_cluster.{{ env_collection.instance_name }}.name}/${aws_ecs_service.{{ service.instance_name }}_{{ worker.name }}.name}"
+    scalable_dimension = "ecs:service:DesiredCount"
+
+    step_scaling_policy_configuration {
+        adjustment_type = "ChangeInCapacity"
+        cooldown = 60
+        metric_aggregation_type = "Maximum"
+
+        step_adjustment {
+            metric_interval_lower_bound = 0
+            scaling_adjustment = -1
+        }
+    }
+
+    depends_on = [aws_appautoscaling_target.{{ service.instance_name }}_{{ worker.name }}]
+}
+
+resource "aws_cloudwatch_metric_alarm" "{{ service.instance_name }}_{{ worker.name }}_cpu_high" {
+    alarm_name = "{{ service.instance_name }}-{{ worker.name }}-cpu-utilization-high"
+    comparison_operator = "GreaterThanOrEqualToThreshold"
+    evaluation_periods = "3"
+    metric_name = "CPUUtilization"
+    namespace = "AWS/ECS"
+    period = "60"
+    statistic = "Maximum"
+    threshold = "70"
+
+    dimensions = {
+        ClusterName = "${aws_ecs_cluster.{{ env_collection.instance_name }}.name}"
+        ServiceName = "${aws_ecs_service.{{ service.instance_name }}_{{ worker.name }}.name}"
+    }
+
+    alarm_actions = ["${aws_appautoscaling_policy.{{ service.instance_name }}_{{ worker.name }}_up.arn}"]
+    ok_actions = ["${aws_appautoscaling_policy.{{ service.instance_name }}_{{ worker.name }}_down.arn}"]
+
+    lifecycle {
+        ignore_changes = all
+    }
+}
+{% endfor %}

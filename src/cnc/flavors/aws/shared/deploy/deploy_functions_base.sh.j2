@@ -1,0 +1,301 @@
+#!/bin/bash
+
+if ! command -v bash >/dev/null 2>&1; then
+    echo "Bash not found. Exiting."
+    exit 1
+fi
+
+{% block shared_functions %}
+run_pre_build_commands () {
+    echo `aws --version`
+    {% if service %}
+    mkdir -p ~/.docker/cli-plugins
+    cp /usr/local/bin/docker-buildx ~/.docker/cli-plugins/docker-buildx
+    {% endif %}
+}
+
+login_to_registries () {
+    echo -e \\nLogging into Amazon ECR...\\n
+    aws ecr get-login-password --region {{ environment.collection.region }} | \
+    docker login -u AWS --password-stdin {{ service.image_registry_url().split('/')[0] }}
+
+    echo -e \\nLogging into dockerhub...\\n
+    docker login -u ${DOCKER_USERNAME:-$CO_DOCKER_USERNAME} -p ${DOCKER_PASSWORD:-$CO_DOCKER_PASSWORD}
+    if [ "${COHERENCE_BUILD_DEBUG_MODE:-0}" -eq 1 ]; then
+        cat ~/.docker/config.json
+        touch ~/.co-docker-username
+        echo -n "${DOCKER_USERNAME:-$CO_DOCKER_USERNAME}" | cut -c1-3 >> ~/.co-docker-username
+        echo " ${DOCKER_USERNAME:-$CO_DOCKER_USERNAME}" | cut -c5- >> ~/.co-docker-username
+        echo -e "\\nLogged into dockerhub as $(cat ~/.co-docker-username)\\n"
+    fi
+}
+
+run_install_commands () {
+    echo "install..."
+}
+
+send_{{ service.name }}_status_hook () {
+    echo -e \\nSending deploy status webhook...\\n
+
+    if [ $1 -eq 0 ]; then
+        cnc_build_status=${2:-"success"}
+    else
+        cnc_build_status="failed"
+    fi
+
+    data='{
+        "token": "{{ deployer.webhook_token }}",
+        "status": "'"$cnc_build_status"'",
+        "stage": "deploy",
+        "service": "{{ service.name }}"
+    }'
+    echo "===== {{ service.name }} deploy status ====="
+    echo "$data" | jq .
+    echo "===== {{ service.name }} deploy status ====="
+
+    which curl; curl_exists=$?
+    if [ $curl_exists -ne 0 ]; then
+        echo -e \\nWarning: Cannot find curl binary, skipping deploy status webhook...\\n
+    else
+        {% if deployer.webhook_url %}
+        webhook_status=$(curl -X PUT -H "Content-Type: application/json" \
+        -d "$data" -w "%{http_code}\n" \
+        {{ deployer.webhook_url }})
+
+        if [ "$webhook_status" != "200" ]; then
+            echo -e \\nDeploy status webhook failed.
+        else
+            echo -e \\nDeploy status webhook succeeded.
+        fi
+        {% else %}
+        echo -e \\nNo webhook URL provided. Skipping deploy status webhook...
+        {% endif %}
+    fi
+}
+{% endblock %}
+
+{% block render_functions %}
+{% if service.is_backend %}
+{{
+    render_template(
+        "ecs_web_task.json.j2",
+        "ecs-web-{}.json".format(service.name),
+        additional_context={
+            "task_name": service.instance_name,
+            "command": service.joined_command,
+            "expose_ports": True
+        }
+    )
+}}
+
+{% if service.is_backend and service.settings.workers %}
+{% for worker in service.settings.workers %}
+{{
+    render_template(
+        "ecs_web_task.json.j2",
+        "ecs-worker-{}-{}.json".format(service.name, worker.name),
+        additional_context={
+            "task_name": '_'.join([service.instance_name, worker.name]),
+            "command": worker.joined_command,
+            "expose_ports": False
+        }
+    )
+}}
+{% endfor %}
+{% endif %}
+
+{% if service.is_backend and service.settings.scheduled_tasks %}
+{% for task in service.settings.scheduled_tasks %}
+{{
+    render_template(
+        "ecs_web_task.json.j2",
+        "ecs-sched-{}-{}.json".format(service.name, task.name),
+        additional_context={
+            "task_name": '_'.join([service.instance_name, task.name]),
+            "command": task.joined_command,
+            "expose_ports": False
+        }
+    )
+}}
+{% endfor %}
+{% endif %}
+
+{% endif %} # endif is_backend
+{% endblock %}
+
+{% block deploy_functions %}
+
+{% if service.is_frontend %}
+build_{{ service.name }}_frontend_assets () {
+    echo -e "\nLogging into Amazon ECR..."
+    aws ecr get-login-password --region {{ environment.collection.region }} | \
+    docker login -u AWS --password-stdin {{ service.image_registry_url().split('/')[0] }}
+
+    echo -e "\\nBuilding assets...\\n"
+    mkdir -p .{% if service.build.context != "." %}/{{ service.build.context }}{% endif %}/{{ service.settings.assets_path }}
+    docker run --entrypoint sh {% for variable in service.environment_variables %}-e {{ variable.name }}={{ variable.value }} {% endfor %} -d --name app {{ service.image_for_tag(deployer.tag_for_service(service.name)) }} -c "sleep 5000"
+    docker exec app sh -c "{{ ' '.join(service.settings.build) }}"; build_result=$?
+    if [ $build_result -ne 0 ]; then docker logs app && exit $build_result; fi
+    docker cp app:$(docker exec app pwd)/{{service.settings.assets_path }}/. .{% if service.build.context != "." %}/{{ service.build.context }}{% endif %}/{{ service.settings.assets_path }}{% if service.settings.url_path != "/" %}/{% endif %}{{ service.settings.url_path.lstrip("/").rstrip("/") }}; copy_result=$?
+    if [ $copy_result -ne 0 ]; then exit $copy_result; fi
+    docker stop app
+    docker rm app
+}
+
+deploy_{{ service.name }}_to_s3 () {
+    echo -e \\nDeploying {{ service.name }} to Amazon S3...\\n
+    aws s3 sync --region "{{ environment.collection.region }}" .{% if service.build.context != "." %}/{{ service.build.context }}{% endif %}/{{ service.settings.assets_path }}{% if service.settings.url_path != "/" %}/{% endif %}{{ service.settings.url_path.lstrip("/").rstrip("/") }} s3://{{ service.instance_name }}-website --acl public-read --delete; upload_result=$?
+    if [ $upload_result -ne 0 ]; then echo "Upload failed" && exit $upload_result; fi
+}
+{% endif %} # endif frontend
+
+{% if service.is_backend %}
+
+{# Migrate #}
+{% if service.settings.migrate %}
+run_{{ service.name }}_migrate () {
+    echo -e \\nRunning migrate task...\\n
+    cnc toolbox run {{ environment.name }} --tag {{ deployer.tag_for_service(service.name) }} \
+    --service-name {{ service.name }} -- '{{ " ".join(service.settings.migrate) }}'; migrate_result=$?
+    if [ $migrate_result -ne 0 ]; then exit $migrate_result; fi
+}
+{% endif %} # endif migrate
+
+{# Snapshot #}
+{% if (not service.environment.is_production) and load_database_snapshot %}
+load_{{ service.name }}_snapshot () {
+    echo -e \\nRunning snapshot loading task...\\n
+    snapshot_result=$(aws ecs run-task --region "{{ environment.collection.region }}" --launch-type FARGATE --cluster {{ environment.application.name }}-cluster --task-definition {{ service.instance_name }}_snapshot_seed --network-configuration "awsvpcConfiguration={subnets=[{{ environment.collection.get_terraform_output('{{ env_collection.instance_name }}_private') }}],securityGroups={{ environment.collection.get_terraform_output('security_groups') }}}")
+    snapshot_container_arn=$(echo $snapshot_result | jq '.tasks[0].taskArn' | sed -e 's/^"//' -e 's/"$//')
+    container_name={{ service.name }}-snapshot
+    {% with
+        wait_for="tasks-stopped",
+        wait_task_name="Snapshot task",
+        wait_cmd_args="--tasks $snapshot_container_arn",
+        num_retries=(service.settings.timeouts.snapshot//10)
+    %}
+        {% include "partials/ecs_wait_with_retries.sh.j2" %}
+    {% endwith %}
+
+    terminated_status=$(aws ecs describe-tasks --region "{{ environment.collection.region }}" --cluster {{ environment.application.name }}-cluster --tasks $snapshot_container_arn --query "tasks[0].containers[?name=='$container_name'].exitCode" --output text)
+    snapshot_task_id=$(echo $snapshot_container_arn | sed -nr 's/.*\/(\w.+$)/\1/p')
+
+    echo -e \\nFetching snapshot task logs...\\n
+    ecs-cli logs --task-id $snapshot_task_id --task-def {{ service.instance_name }}_snapshot_seed; log_status=$?
+    if [ $log_status -ne 0 ]; then echo "Container running snapshot load command exited with no log output" && exit 1; fi
+    if [ $terminated_status -ne 0 ]; then exit 1; fi
+}
+{% endif %} # endif snapshot
+
+{# Seed #}
+{% if not service.environment.is_production and (service.is_backend and service.settings.seed) %}
+seed_{{ service.name }}_databases () {
+    echo -e \\nRunning seed task...\\n
+    cnc toolbox run {{ environment.name }} --tag {{ deployer.tag_for_service(service.name) }} \
+    --service-name {{ service.name }} -- '{{ " ".join(service.settings.seed) }}'; seed_result=$?
+    if [ $seed_result -ne 0 ]; then exit $seed_result; fi
+}
+{% endif %} # endif seed
+
+deploy_{{ service.name }}_to_ecs () {
+    {% if environment.is_production %}
+    {% set service_min_scale = service.settings.system.platform.min_scale %}
+    {% else %}
+    {% set service_min_scale = 1 %}
+    {% endif %}
+
+    {% with
+        task_name=service.instance_name,
+        task_filepath="ecs-web-{}.json".format(service.name),
+        min_scale=service_min_scale
+    %}
+    {% include "partials/backend_deploy.sh.j2" %}
+    {% endwith %}
+}
+
+check_{{ service.name }}_ecs_service_deploy_status () {
+    {% if environment.is_production %}
+    {% set service_min_scale = service.settings.system.platform.min_scale %}
+    {% else %}
+    {% set service_min_scale = 1 %}
+    {% endif %}
+
+    {% with
+        task_name=service.instance_name,
+        task_filepath="ecs-web-{}.json".format(service.name),
+        min_scale=service_min_scale
+    %}
+    {% include "partials/backend_deploy_status_check.sh.j2" %}
+    {% endwith %}
+}
+
+{% if service.is_backend and service.settings.workers %}
+deploy_{{ service.name }}_workers_to_ecs () {
+    {% for worker in service.settings.workers %}
+    {% with
+        task_name='_'.join([service.instance_name, worker.name]),
+        task_filepath="ecs-worker-{}-{}.json".format(service.name, worker.name),
+        min_scale=worker.replicas
+    %}
+    {% include "partials/backend_deploy.sh.j2" %}
+    {% endwith %}
+    {% endfor %}
+}
+
+check_{{ service.name }}_ecs_workers_deploy_status () {
+    {% for worker in service.settings.workers %}
+    {% with
+        task_name='_'.join([service.instance_name, worker.name]),
+        task_filepath="ecs-worker-{}-{}.json".format(service.name, worker.name),
+        min_scale=worker.replicas
+    %}
+    {% include "partials/backend_deploy_status_check.sh.j2" %}
+    {% endwith %}
+    {% endfor %}
+}
+{% endif %}
+
+{% if service.settings.scheduled_tasks %}
+deploy_{{ service.name }}_scheduled_tasks() {
+    echo -e "\nUpdating scheduled tasks...\n"
+
+    {% for task in service.settings.scheduled_tasks %}
+    task_revision=$(cat {{ deployer.rendered_files_path }}/task_rev_{{ '_'.join([service.instance_name, task.name]) }}.txt)
+    taskDefinition="arn:aws:ecs:{{ environment.collection.region }}:{{ environment.collection.account_id }}:task-definition/{{ service.instance_name }}_{{ task.name }}:$task_revision"
+
+    if [ "${COHERENCE_BUILD_DEBUG_MODE:-0}" -eq 1 ]; then
+        echo -e "\nService task revisions:\n"
+        cat service_task_revisions.json
+        echo -e "\nParsed task definition:\n"
+        echo $taskDefinition
+    fi
+
+    eventsRule=$(aws events list-targets-by-rule \
+        --region "{{ environment.collection.region }}" \
+        --rule "{{ service.instance_name[:39] }}-{{ task.name[:24] }}")
+
+    printf "%s\n" "${eventsRule}" | jq '.Targets[0].EcsParameters.TaskDefinitionArn="'"${taskDefinition}"'"' > {{ task.name }}Events.json
+
+    aws events put-targets \
+        --region "{{ environment.collection.region }}" \
+        --rule "{{ service.instance_name[:39] }}-{{ task.name[:24] }}" \
+        --cli-input-json file://{{ task.name }}Events.json
+    target_result=$?
+
+    if [ "${COHERENCE_BUILD_DEBUG_MODE:-0}" -eq 1 ]; then
+        echo -e "\nParsed eventsRule:\n"
+        printf "%s\n" "${eventsRule}"
+        echo -e "\nEvents json file content:\n"
+        cat {{ task.name }}Events.json
+    fi
+
+    if [ $target_result -ne 0 ]; then
+        exit $target_result
+    fi
+    {% endfor %}
+}
+{% endif %} # endif scheduled_tasks
+
+{% endif %}
+
+{% endblock %}
