@@ -53,22 +53,25 @@ def perform(
         service_tags=service_tags,
         default_tag=default_tag,
     )
-    builder.perform(
+    _ret = builder.perform(
         should_cleanup=cleanup,
         should_regenerate_config=generate,
         debug=debug,
     )
 
-    deployer = DeployStageManager(
-        environment,
-        service_tags=service_tags,
-        default_tag=default_tag,
-    )
-    deployer.perform(
-        should_cleanup=cleanup,
-        should_regenerate_config=generate,
-        debug=debug,
-    )
+    if _ret == 0:
+        deployer = DeployStageManager(
+            environment,
+            service_tags=service_tags,
+            default_tag=default_tag,
+        )
+        deployer.perform(
+            should_cleanup=cleanup,
+            should_regenerate_config=generate,
+            debug=debug,
+        )
+    else:
+        log.warning(f"Build failed (exit code {_ret}), did not deploy!")
 
     log.debug(
         f"All set updating for {service_tags}/{default_tag} in {int(time.time() - start_time)} seconds"
