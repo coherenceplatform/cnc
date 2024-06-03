@@ -36,12 +36,11 @@ jobs:
       with:
         context: .
         file: ./cncbuilder/Dockerfile.base
-        push: false
-        load: true
-        tags: cnc_base:latest
+        push: true
+        tags: us-docker.pkg.dev/coherence-public/public/cnc_base:latest
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
-
+        
     - name: Build and push prod image
       uses: docker/build-push-action@v2
       with:
@@ -49,3 +48,5 @@ jobs:
         file: ./cncbuilder/Dockerfile
         push: true
         tags: us-docker.pkg.dev/coherence-public/public/cnc:latest
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
