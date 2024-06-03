@@ -5,13 +5,30 @@ ARG DOCKER_VERSION="5:24.0.9-1~debian.12~bookworm"
 
 WORKDIR /tmp
 
-RUN apt-get update && apt-get install -y lsb-release && \
-    curl -fsSL https://download.docker.com/linux/debian/gpg | \
+RUN apt-get update && apt-get install -y lsb-release \
+    apt-transport-https ca-certificates
+
+# Docker packages
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | \
     gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) \
     signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
     https://download.docker.com/linux/debian \
     $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+
+# Kubernetes packages
+RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | \
+    gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg && \
+    echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] \
+    https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | \
+    tee /etc/apt/sources.list.d/kubernetes.list
+
+# Google Cloud SDK packages
+RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] \
+    https://packages.cloud.google.com/apt cloud-sdk main" | \
+    tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 
 RUN apt-get update && apt-get dist-upgrade && \
     apt-get install -y less \
@@ -21,7 +38,9 @@ RUN apt-get update && apt-get dist-upgrade && \
     docker-ce=${DOCKER_VERSION} \
     docker-ce-cli=${DOCKER_VERSION} \
     docker-compose \
-    docker-compose-plugin && \
+    docker-compose-plugin \
+    kubectl \
+    google-cloud-sdk-gke-gcloud-auth-plugin && \
     apt-get autoremove && \
     apt-get clean
 
