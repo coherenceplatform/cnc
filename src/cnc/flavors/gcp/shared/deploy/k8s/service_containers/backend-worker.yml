@@ -1,6 +1,15 @@
 - image: {{ service.image_for_tag(deployer.tag_for_service(service.name)) }}
   name: {{ service.name }}-{% if worker %}{{ worker.name }}{% elif task %}{{ task.name }}{% endif %}
   resources:
+    requests:
+      {% if worker %}
+      cpu: "{{ worker.system.gke_autopilot_cpu }}"
+      memory: "{{ worker.system.gke_autopilot_memory }}"
+      {% elif task %}
+      cpu: "{{ task.system.gke_autopilot_cpu }}"
+      memory: "{{ task.system.gke_autopilot_memory }}"
+      {% endif %}
+      ephemeral-storage: "5Gi"
     limits:
       {% if worker %}
       cpu: "{{ worker.system.gke_autopilot_cpu }}"

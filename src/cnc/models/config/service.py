@@ -287,7 +287,7 @@ class Service(BaseModel):
     def environment_secrets(self):
         # aliases are included by the filtered_environment_items method
         return (
-            self.config.managed_environment_secrets
+            self.config.managed_environment_secrets_for_service(service=self)
             + self.filtered_environment_items(
                 variable_type=EnvironmentVariableTypes.VARIABLE_TYPE_SECRET
             )
@@ -297,7 +297,7 @@ class Service(BaseModel):
     def environment_variables(self):
         # aliases are included by the filtered_environment_items method
         return (
-            self.config.managed_environment_variables
+            self.config.managed_environment_variables_for_service(service=self)
             + self.filtered_environment_items(
                 variable_type=EnvironmentVariableTypes.VARIABLE_TYPE_STANDARD
             )

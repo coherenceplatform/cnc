@@ -205,6 +205,13 @@ class AppConfig(BaseModel):
 
     @property
     def managed_environment_variables(self):
+        return self.managed_environment_variables_for_service()
+
+    @property
+    def managed_environment_secrets(self):
+        return self.managed_environment_secrets_for_service()
+
+    def managed_environment_variables_for_service(self, service=None):
         _vars = {
             "CNC_APPLICATION_NAME": self.environment.application.name,
             "CNC_ENVIRONMENT_NAME": self.environment.name,
@@ -212,7 +219,8 @@ class AppConfig(BaseModel):
             "CNC_ENVIRONMENT_REGION": self.environment.collection.region,
         }
 
-        for service in self.services:
+        sorted_services = sorted(self.services, key=lambda s: s == service)
+        for service in sorted_services:
             _vars.update(service.settings.managed_environment_variables)
 
         variable_objects = []
@@ -222,11 +230,11 @@ class AppConfig(BaseModel):
 
         return variable_objects
 
-    @property
-    def managed_environment_secrets(self):
+    def managed_environment_secrets_for_service(self, service=None):
         _vars = {}
 
-        for resource in self.resources:
+        sorted_resources = sorted(self.resources, key=lambda s: s == service)
+        for resource in sorted_resources:
             _vars.update(resource.settings.managed_environment_secrets)
 
         return [
