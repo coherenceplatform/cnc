@@ -43,11 +43,16 @@ send_{{ service.name }}_status_hook () {
         cnc_build_status="failed"
     fi
 
+    if test -f {{ deployer.rendered_files_path }}/task_rev_{{ '_'.join([service.instance_name, task.name]) }}.txt; then
+        task_revision=$(cat {{ deployer.rendered_files_path }}/task_rev_{{ '_'.join([service.instance_name, task.name]) }}.txt) || true
+    fi
+
     data='{
         "token": "{{ deployer.webhook_token }}",
         "status": "'"$cnc_build_status"'",
         "stage": "deploy",
-        "service": "{{ service.name }}"
+        "service": "{{ service.name }}",
+        "revision_id": "'"$task_revision"'"
     }'
     echo "===== {{ service.name }} deploy status ====="
     echo "$data" | jq .
