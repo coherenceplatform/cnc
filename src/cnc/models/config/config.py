@@ -130,13 +130,6 @@ class AppConfig(BaseModel):
     def has_backend(self):
         return any(s.is_backend for s in self.services)
 
-    @property
-    def build_machine_type(self):
-        build_settings = self.settings.build_settings
-        if build_settings:
-            if build_settings.platform_settings:
-                return build_settings.platform_settings.machine_type
-
     def filtered_environment_items(
         self, service_name=None, variable_type=None, pattern=None
     ):
