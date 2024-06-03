@@ -35,9 +35,9 @@ resource "google_project_iam_member" "project-app-ssh-bastion" {
 
 resource "google_compute_firewall" "rules" {
   project     = "{{ env_collection.account_id }}"
-  name        = "allow-bastion-ssh"
+  name        = "bastion-{{ env_collection.instance_name }}"
   network     = google_compute_network.app-network.id
-  description = "Allow ssh to bastion"
+  description = "Allow ssh to bastion for {{ env_collection.instance_name }}"
 
   allow {
     protocol  = "tcp"
