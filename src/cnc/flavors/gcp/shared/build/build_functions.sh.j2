@@ -32,7 +32,7 @@ send_{{ service.name }}_status_hook () {
         {% if builder.webhook_url %}
         webhook_status=$(curl -X PUT -H "Content-Type: application/json" \
         -d "$data" -w "%{http_code}\n" \
-        {{ builder.webhook_url }})
+        {{ builder.webhook_url }}) || true
 
         if [ "$webhook_status" != "200" ]; then
             echo -e \\nBuild status webhook failed.
