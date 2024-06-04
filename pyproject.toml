@@ -10,6 +10,8 @@ readme = "README.md"
 packages = [
     { include = "cnc", from = "src" },
 ]
+homepage="https://github.com/coherenceplatform/cnc"
+repository="https://github.com/coherenceplatform/cnc"
 
 [tool.poetry.scripts]
 cnc = 'cnc.main:app'
