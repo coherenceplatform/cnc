@@ -2,7 +2,7 @@ name: PyPI Release
 
 on:
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
   build:
@@ -14,11 +14,11 @@ jobs:
       run: |
           python3 -m pip install --upgrade build twine toml
 
-  - name: Set package version
-    run: |
-      PACKAGE_VERSION=${GITHUB_REF#refs/tags/}
-      echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
-      sed -i "s/version = .*/version = \"$PACKAGE_VERSION\"/" pyproject.toml
+    - name: Set package version
+      run: |
+        PACKAGE_VERSION=${GITHUB_REF#refs/tags/}
+        echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
+        sed -i "s/version = .*/version = \"$PACKAGE_VERSION\"/" pyproject.toml
 
     - name: Check if version already exists on PyPI
       run: |
