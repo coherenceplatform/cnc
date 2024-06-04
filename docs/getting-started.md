@@ -4,6 +4,7 @@
 This guide covers the installation of the CNC framework and the necessary cloud CLI tools. CNC simplifies deploying applications to the cloud by utilizing infrastructure as code principles.
 
 ### Prerequisites
+
 - Access to a terminal
 - Python 3.9-3.11 installed on your machine
 - Cloud provider account (AWS (`aws` or Google Cloud `gcloud`) and authenticated CLI
@@ -13,10 +14,14 @@ This guide covers the installation of the CNC framework and the necessary cloud 
 
 ## Installation Steps
 
-### Install CNC:
+### Install CNC
 ```
 pip install cocnc
 ```
+
+### Docker
+
+We also offer a `docker` image with all of this installed, `us-docker.pkg.dev/coherence-public/public/cnc:latest`. You'll need to handle authenticating the cloud CLI as well as mounting the docker socket to use it. Better instructions here coming soon!
 
 ### Install and authenticate cloud CLI:
 
@@ -24,11 +29,17 @@ This would be either the `aws` or `gcloud` CLI. Read more at [aws](https://docs.
 
 For google:
 
+You need to do both of these.
+
 ```
 gcloud auth application-default login
+gcloud auth login
 ```
 
 For AWS:
+
+Choose the appropriate one.
+
 ```
 aws configure // aws sso configure
 ```

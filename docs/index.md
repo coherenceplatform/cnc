@@ -2,7 +2,7 @@
 <picture>
   <source srcset="/images/cnc_logo_white.svg" media="(prefers-color-scheme: dark)">
   <source srcset="/images/cnc_logo_black.svg" media="(prefers-color-scheme: light)">
-  <img src="cnc_logo_black.svg" alt="cnc logo" width="200" height="auto">
+  <img src="/images/cnc_logo_black.svg" alt="cnc logo" width="200" height="auto">
 </picture>
 </p>
 
@@ -32,6 +32,7 @@ Core Lifecycle Events Managed by `cnc`:
 - Toolbox: A `toolbox` is a managed shell against a `cnc`-managed environment, making it easy to get a REPL or run database migrations, for example
 
 Getting Started with `cnc`:
+
 - Experience `cnc` in just a few minutes: install and see for yourself the power of cnc in under 5 minutes without needing any cloud permissions or incurring any costs.
 - Rapid Deployment: Have your first environment up and running in less than 15 minutes, demonstrating the straightforward power of cnc.
 
