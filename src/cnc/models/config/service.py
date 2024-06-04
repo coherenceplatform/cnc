@@ -50,7 +50,7 @@ class BuildSettings(BaseModel):
 
     @property
     def dockerfile_is_default(self):
-        return self.raw_dockerfile is None
+        return (not self.raw_dockerfile)
 
 
 class DeployResources(BaseModel):
