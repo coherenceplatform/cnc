@@ -43,6 +43,10 @@ send_{{ service.name }}_status_hook () {
         cnc_build_status="failed"
     fi
 
+    if test -f {{ deployer.rendered_files_path }}/task_rev_{{ service.instance_name }}.txt; then
+        task_revision=$(cat {{ deployer.rendered_files_path }}/task_rev_{{ service.instance_name }}.txt)
+    fi
+
     data='{
         "token": "{{ deployer.webhook_token }}",
         "status": "'"$cnc_build_status"'",
@@ -166,7 +170,7 @@ run_{{ service.name }}_migrate () {
 {% if (not service.environment.is_production) and load_database_snapshot %}
 load_{{ service.name }}_snapshot () {
     echo -e \\nRunning snapshot loading task...\\n
-    snapshot_result=$(aws ecs run-task --region "{{ environment.collection.region }}" --launch-type FARGATE --cluster {{ environment.application.name }}-cluster --task-definition {{ service.instance_name }}_snapshot_seed --network-configuration "awsvpcConfiguration={subnets=[{{ environment.collection.get_terraform_output('{{ env_collection.instance_name }}_private') }}],securityGroups={{ environment.collection.get_terraform_output('security_groups') }}}")
+    snapshot_result=$(aws ecs run-task --region "{{ environment.collection.region }}" --launch-type FARGATE --cluster {{ environment.collection.instance_name }} --task-definition {{ service.instance_name }}_snapshot_seed --network-configuration "awsvpcConfiguration={subnets=[{{ environment.collection.get_terraform_output('{{ env_collection.instance_name }}_private') }}],securityGroups={{ environment.collection.get_terraform_output('security_groups') }}}")
     snapshot_container_arn=$(echo $snapshot_result | jq '.tasks[0].taskArn' | sed -e 's/^"//' -e 's/"$//')
     container_name={{ service.name }}-snapshot
     {% with
@@ -178,7 +182,7 @@ load_{{ service.name }}_snapshot () {
         {% include "partials/ecs_wait_with_retries.sh.j2" %}
     {% endwith %}
 
-    terminated_status=$(aws ecs describe-tasks --region "{{ environment.collection.region }}" --cluster {{ environment.application.name }}-cluster --tasks $snapshot_container_arn --query "tasks[0].containers[?name=='$container_name'].exitCode" --output text)
+    terminated_status=$(aws ecs describe-tasks --region "{{ environment.collection.region }}" --cluster {{ environment.collection.instance_name }} --tasks $snapshot_container_arn --query "tasks[0].containers[?name=='$container_name'].exitCode" --output text)
     snapshot_task_id=$(echo $snapshot_container_arn | sed -nr 's/.*\/(\w.+$)/\1/p')
 
     echo -e \\nFetching snapshot task logs...\\n
@@ -200,7 +204,7 @@ seed_{{ service.name }}_databases () {
 
 deploy_{{ service.name }}_to_ecs () {
     {% if environment.is_production %}
-    {% set service_min_scale = service.settings.system.platform.min_scale %}
+    {% set service_min_scale = service.settings.system.platform_settings.min_scale %}
     {% else %}
     {% set service_min_scale = 1 %}
     {% endif %}
@@ -216,7 +220,7 @@ deploy_{{ service.name }}_to_ecs () {
 
 check_{{ service.name }}_ecs_service_deploy_status () {
     {% if environment.is_production %}
-    {% set service_min_scale = service.settings.system.platform.min_scale %}
+    {% set service_min_scale = service.settings.system.platform_settings.min_scale %}
     {% else %}
     {% set service_min_scale = 1 %}
     {% endif %}

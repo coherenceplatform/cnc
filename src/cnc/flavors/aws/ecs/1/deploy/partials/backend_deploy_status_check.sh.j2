@@ -12,7 +12,7 @@ see backend_deploy.yml.jinja2 #}
         {% include "partials/ecs_wait_with_retries.sh.j2" %}
     {% endwith %}
 
-    describe_result=$(aws ecs describe-services --region "{{ environment.collection.region }}" --cluster {{ environment.application.name }}-cluster --services {{ task_name }})
+    describe_result=$(aws ecs describe-services --region "{{ environment.collection.region }}" --cluster {{ environment.collection.instance_name }} --services {{ task_name }})
     primary_deploy_status=$(echo $describe_result | jq '.services[0].deployments[] | select(.status=="PRIMARY") | .rolloutState')
     primary_deploy_status=$(echo $primary_deploy_status | sed 's/"//g')
 
@@ -30,7 +30,7 @@ see backend_deploy.yml.jinja2 #}
         # sleep to allow time for healthchecks to pass
         echo -e \\nDeployment still in progress, waiting for healthchecks to pass...\\n
         sleep 10
-        describe_result=$(aws ecs describe-services --region "{{ environment.collection.region }}" --cluster {{ environment.application.name }}-cluster --services {{ task_name }})
+        describe_result=$(aws ecs describe-services --region "{{ environment.collection.region }}" --cluster {{ environment.collection.instance_name }} --services {{ task_name }})
         primary_deploy_status=$(echo $describe_result | jq '.services[0].deployments[] | select(.status=="PRIMARY") | .rolloutState')
         primary_deploy_status=$(echo $primary_deploy_status | sed 's/"//g')
     done
