@@ -84,7 +84,7 @@ collections:
       value: bar
 ```
 
-`cnc` has robust environment configuration options, including support for environment variables from cloud secrets, terraform outputs, or aliasing from other variables. Read more about configuration [here](./docs/README.md).
+`cnc` has robust environment configuration options, including support for environment variables from cloud secrets, terraform outputs, or aliasing from other variables. Read more about configuration [here](https://cncframework.com/configuration/overview/).
 
 
 ### See what CNC is doing
@@ -122,12 +122,12 @@ cnc update dev --service-tags app=v1
 
 This will do a `build` and a `deploy` under the hood.
 
-For more details, see the step-by-step [Getting Started Guide](./docs/README.md).
+For more details, see the step-by-step [Getting Started Guide](https://cncframework.com/getting-started/).
 
 
 # Documentation
 
-Access full documentation and in-depth tutorials at [the CNC Documentation](./docs/README.md).
+Access full documentation and in-depth tutorials at [the CNC Documentation](https://cncframework.com).
 
 # Community & Support
 

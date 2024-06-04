@@ -1,4 +1,5 @@
-site_name: CNC Docs
+site_name: CNC Framework Site
 site_url: https://cncframework.com
+repo_url: https://github.com/coherenceplatform/cnc
 theme:
   name: material
