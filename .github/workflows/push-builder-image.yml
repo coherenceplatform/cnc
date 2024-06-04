@@ -1,11 +1,14 @@
 name: Build and Push Docker image
 
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["PyPI Release"]
+    types:
+      - completed
 
 jobs:
   build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
