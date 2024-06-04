@@ -18,7 +18,7 @@ jobs:
       run: |
         PACKAGE_VERSION=${GITHUB_REF#refs/tags/}
         echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
-        sed -i "s/version = .*/version = \"$PACKAGE_VERSION\"/" pyproject.toml
+        sed -i "s/^version = .*/version = \"$PACKAGE_VERSION\"/" pyproject.toml
 
     - name: Check if version already exists on PyPI
       run: |
