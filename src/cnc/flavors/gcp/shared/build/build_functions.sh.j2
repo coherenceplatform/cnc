@@ -69,8 +69,8 @@ build_{{ service.name }}_image () {
     docker buildx build {% for variable in service.environment_items %}--build-arg {{ variable.name }}={{ variable.value }} {% endfor %}\
     --load \
     --platform linux/amd64 \
-    --cache-to=type=inline \
-    --cache-from=type=registry,ref={{ service.image_for_tag("latest") }} \
+    --cache-to=type=registry,ref={{ service.image_for_tag('cache') }},mode=max \
+    --cache-from=type=registry,ref={{ service.image_for_tag('cache') }} \
     -t {{ service.image_for_tag("latest") }} \
     -t {{ service.image_for_tag(builder.tag_for_service(service.name)) }} \
     -f {{ service.build.dockerfile }} \

@@ -47,7 +47,8 @@ send_{{ service.name }}_status_hook () {
         "token": "{{ deployer.webhook_token }}",
         "status": "'"$cnc_build_status"'",
         "stage": "deploy",
-        "service": "{{ service.name }}"
+        "service": "{{ service.name }}",
+        "revision_id": "'"$task_revision"'"
     }'
     echo "===== {{ service.name }} deploy status ====="
     echo "$data" | jq .

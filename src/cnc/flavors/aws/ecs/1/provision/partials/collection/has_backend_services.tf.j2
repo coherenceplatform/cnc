@@ -173,7 +173,7 @@ resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_db_proxy" {
 }
 
 resource "aws_ecs_cluster" "{{ env_collection.instance_name }}" {
-    name = "{{ app.name }}-cluster"
+    name = "{{ env_collection.instance_name }}"
 }
 
 resource "aws_ecs_cluster_capacity_providers" "{{ env_collection.instance_name }}" {
