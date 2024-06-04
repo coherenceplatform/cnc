@@ -6,11 +6,11 @@ see backend_deploy_status_check.sh.j2 #}
     task_revision=$(cat {{ deployer.rendered_files_path }}/task_rev_{{ task_name }}.txt)
     task_rev={{ task_name }}:$task_revision
 
-    init_describe_result=$(aws ecs describe-services --region "{{ environment.collection.region }}" --cluster {{ environment.application.name }}-cluster --services {{ task_name }})
+    init_describe_result=$(aws ecs describe-services --region "{{ environment.collection.region }}" --cluster {{ environment.collection.instance_name }} --services {{ task_name }})
     current_desired_count=$(echo $init_describe_result | jq '.services[0].desiredCount')
     min_desired_count={{ min_scale }}
     if [ $current_desired_count -lt $min_desired_count ]; then DESIRED_COUNT=$min_desired_count; else DESIRED_COUNT=$current_desired_count; fi
-    update_result=$(aws ecs update-service --region "{{ environment.collection.region }}" --cluster {{ environment.application.name }}-cluster --service {{ task_name }} --task-definition $task_rev --desired-count $DESIRED_COUNT --force-new-deployment)
+    update_result=$(aws ecs update-service --region "{{ environment.collection.region }}" --cluster {{ environment.collection.instance_name }} --service {{ task_name }} --task-definition $task_rev --desired-count $DESIRED_COUNT --force-new-deployment)
     updated_task_revision=$(echo $update_result | jq '.service.deployments[0].taskDefinition')
     updated_task_rev=$(echo $updated_task_revision | sed -e 's/^"//' -e 's/"$//' -e 's/^.\+\///')
 
