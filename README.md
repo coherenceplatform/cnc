@@ -1,8 +1,8 @@
 <p align="center">
 <picture>
-  <source srcset="cnc_logo_white.svg" media="(prefers-color-scheme: dark)">
-  <source srcset="cnc_logo_black.svg" media="(prefers-color-scheme: light)">
-  <img src="cnc_logo_black.svg" alt="cnc logo" width="200" height="auto">
+  <source srcset="https://cncframework.com/images/cnc_logo_white.svg" media="(prefers-color-scheme: dark)">
+  <source srcset="https://cncframework.com/images/cnc_logo_black.svg" media="(prefers-color-scheme: light)">
+  <img src="https://cncframework.com/images/cnc_logo_black.svg" alt="cnc logo" width="200" height="auto">
 </picture>
 </p>
 

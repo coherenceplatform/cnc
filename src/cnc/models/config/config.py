@@ -208,7 +208,8 @@ class AppConfig(BaseModel):
         _vars = {
             "CNC_APPLICATION_NAME": self.environment.application.name,
             "CNC_ENVIRONMENT_NAME": self.environment.name,
-            "CNC_ENVIRONMENT_DOMAIN": self.environment.domains[0] if self.environment.domains else "",
+            "CNC_ENVIRONMENT_DOMAIN": self.environment.domains[0]["domain"] if self.environment.domains else "",
+            "CNC_ENVIRONMENT_CUSTOM_DOMAIN": self.environment.custom_domains[0] if self.environment.custom_domains else "",
             "CNC_ENVIRONMENT_REGION": self.environment.collection.region,
         }
 

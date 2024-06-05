@@ -2,7 +2,7 @@
 <picture>
   <source srcset="/images/cnc_logo_white.svg" media="(prefers-color-scheme: dark)">
   <source srcset="/images/cnc_logo_black.svg" media="(prefers-color-scheme: light)">
-  <img src="cnc_logo_black.svg" alt="cnc logo" width="200" height="auto">
+  <img src="/images/cnc_logo_black.svg" alt="cnc logo" width="200" height="auto">
 </picture>
 </p>
 
@@ -18,12 +18,21 @@ As a purely CLI-based and agentless tool with simple configuration and sane defa
 
 Core Lifecycle Events Managed by `cnc`:
 
+<p align="center">
+<picture>
+  <source srcset="/images/cnc_diagram_light.png" media="(prefers-color-scheme: light)">
+  <source srcset="/images/cnc_diagram_dark.png" media="(prefers-color-scheme: dark)">
+  <img src="/images/cnc_diagram_light.png" alt="cnc diagram" width="auto" height="auto">
+</picture>
+</p>
+
 - Provision: Uses terraform to create, manage, and dismantle cloud resources, ensuring each environment is crafted to fit its specific purpose.
 - Build: Assembles the necessary deployment artifacts for each environment, from docker containers to static assets for web applications.
 - Deploy: Seamlessly updates infrastructure to deploy new artifacts, such as modifying k8s manifests or updating ECS services.
 - Toolbox: A `toolbox` is a managed shell against a `cnc`-managed environment, making it easy to get a REPL or run database migrations, for example
 
 Getting Started with `cnc`:
+
 - Experience `cnc` in just a few minutes: install and see for yourself the power of cnc in under 5 minutes without needing any cloud permissions or incurring any costs.
 - Rapid Deployment: Have your first environment up and running in less than 15 minutes, demonstrating the straightforward power of cnc.
 

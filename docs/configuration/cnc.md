@@ -2,10 +2,12 @@
 # The CNC configuration file
 
 `cnc` uses a superset of [docker-compose](https://docs.docker.com/compose/compose-file/) for configuration. Following the [conventions](https://docs.docker.com/compose/compose-file/11-extension/) set by `docker-compose`, `cnc` adds two key `x-cnc` extension locations.
+
 - One extension is at the root of the document (sibling to `services`) and is used for app-wide configuration such as build machine type.
 - The other is in each `service` itself. The `type` key is the most important one. Supported types depend on the included flavor but the two most common are `frontend` for static site and `backend` for a container.
 
 The goal of this document is to provide:
+
 - A comprehensive example with comments on each line to help understand the possible configuration.
 - Instructions on how to see the JSON Schema of all the allowed configuration options, which is auto-generated and can be used for tooling and validation as well as understanding.
 
@@ -88,6 +90,11 @@ services:
       # MUST be idempotent!!
       # runs in the container
       seed: ["prisma", "seed"]
+      # system holds infra config info
+      system:
+        # health check is required on AWS apps
+        # can be anything that return 200-399 HTTP code
+        health_check: /
 
       workers:
       # will run a daemon without LB connection

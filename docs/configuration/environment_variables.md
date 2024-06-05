@@ -3,6 +3,7 @@
 Variables are defined in `environments.yml`. Each environment defines its own variables. You can use [YAML Anchors](https://support.atlassian.com/bitbucket-cloud/docs/yaml-anchors/) to re-use the same variables across many environments.
 
 ## Types
+
 - `standard` where the `value` is defined
 - `secret` where the `secret_id` is provided. `cnc` will not create this secret, you create it in your cloud and `cnc` will populate appropriately in the app's lifecycle
 - `output` where a `terraform` output value is referenced. See the bottom for useful info on output name templating.
@@ -11,11 +12,13 @@ Variables are defined in `environments.yml`. Each environment defines its own va
 ## CNC Managed
 
 Certain values such as environment name are automatically provided by `cnc`. These are:
+
 - `CNC_APPLICATION_NAME`
 - `CNC_ENVIRONMENT_NAME`
 - `CNC_ENVIRONMENT_DOMAIN`
 
 Additionally, if resources such as database are configured, you'll see variables:
+
 - `DB_PASSWORD`
 - `DATABASE_URL`
 - `REDIS_URL`

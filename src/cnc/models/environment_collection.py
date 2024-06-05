@@ -231,13 +231,14 @@ class EnvironmentCollection(BaseModel):
         domains = []
         for environment in self.environments:
             domains.extend(environment.domains)
-        return sorted(domains)
+        return sorted(domains, key=lambda x: x.get("domain"))
 
     @property
     def domain_buckets(self):
         buckets = {}
 
-        for domain in self.domains:
+        for domain_info in self.domains:
+            domain = domain_info.get("domain", "")
             # 6 buckets = approx. 70 domains on gcp
             bucket = int((hashlib.sha256(domain.encode()).hexdigest()), 16) % 6
 

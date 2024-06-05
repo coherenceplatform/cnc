@@ -1,4 +1,4 @@
-{% if environment.domains %}
+{% if environment.custom_domains %}
 {% for domain in environment.custom_domains %}
 resource "aws_route53_zone" "{{ re.sub('\W', '', domain) }}" {
     name = "{{ domain }}"
@@ -106,7 +106,8 @@ resource "aws_acm_certificate_validation" "{{ environment.instance_name }}_cloud
 {% endif %}
 
 {% if environment.domains %}
-{% for domain in environment.domains %}
+{% for domain_info in environment.domains %}
+{% with domain = domain_info.get("domain", "") %}
 {% if environment.custom_ns_records_for(domain) %}
 
 resource "aws_acm_certificate" "{{ re.sub('\W', '', domain) }}" {
@@ -200,6 +201,7 @@ resource "aws_route53_record" "{{ re.sub('\W', '', domain) }}_sub_cname" {
 }
 
 {% endif %}
+{% endwith %}
 {% endfor %}
 
 {% endif %}
@@ -253,7 +255,8 @@ resource "aws_lb_listener_certificate" "{{ environment.instance_name }}" {
 }
 
 {% if environment.domains %}
-{% for domain in environment.domains %}
+{% for domain_info in environment.domains %}
+{% with domain = domain_info.get("domain", "") %}
 {% if environment.custom_ns_records_for(domain) %}
 
 resource "aws_lb_listener_certificate" "{{ re.sub('\W', '', domain) }}" {
@@ -262,6 +265,7 @@ resource "aws_lb_listener_certificate" "{{ re.sub('\W', '', domain) }}" {
 }
 
 {% endif %}
+{% endwith %}
 {% endfor %}
 
 {% endif %}
@@ -469,7 +473,8 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
 }
 
 {% if environment.domains %}
-{% for domain in environment.domains %}
+{% for domain_info in environment.domains %}
+{% with domain = domain_info.get("domain", "") %}
 {% if environment.custom_ns_records_for(domain) %}
 resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
     aliases = ["{{ domain }}"]
@@ -659,6 +664,7 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
     }
 }
 {% endif %}{# {% if environment.domains %} #}
+{% endwith %}
 {% endfor %}{# {% for domain in environment.domains %} #}
 {% endif %}{# {% if environment.custom_ns_records_for(domain) %} #}
 

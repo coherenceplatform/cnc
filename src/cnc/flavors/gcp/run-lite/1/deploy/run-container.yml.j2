@@ -3,7 +3,9 @@ spec:
   template:
     metadata:
       annotations:
+      {%- if not is_job %}
         autoscaling.knative.dev/minScale: "{{ service.deploy.replicas }}"
+      {% endif %}
         run.googleapis.com/execution-environment: "gen2"
     {%- if is_job %}
     spec:
