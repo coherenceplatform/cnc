@@ -60,9 +60,7 @@ jobs:
         context: .
         file: ./cncbuilder/Dockerfile
         push: true
-        tags:
-        - us-docker.pkg.dev/coherence-public/public/cnc:latest
-        - us-docker.pkg.dev/coherence-public/public/cnc:${{ env.VERSION }}
+        tags: us-docker.pkg.dev/coherence-public/public/cnc:latest, us-docker.pkg.dev/coherence-public/public/cnc:${{ env.VERSION }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
         build-args: CNC_VERSION=${{ env.VERSION }}
