@@ -84,10 +84,14 @@ class EnvironmentCollection(BaseModel):
     # ------------------------------
     @property
     def cloud_resource_namespace(self):
-        return self.__class__.calculate_cloud_resource_namespace(self.account_id, self.application.name, self.name)
+        return self.__class__.calculate_cloud_resource_namespace(
+            self.account_id, self.application.name, self.name
+        )
 
     @classmethod
-    def calculate_cloud_resource_namespace(cls, account_id, application_name, collection_name):
+    def calculate_cloud_resource_namespace(
+        cls, account_id, application_name, collection_name
+    ):
         _hash = hashlib.sha256()
         _hash.update(account_id.encode())
         _hash.update(application_name.encode())

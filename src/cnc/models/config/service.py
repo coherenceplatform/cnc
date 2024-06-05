@@ -50,7 +50,7 @@ class BuildSettings(BaseModel):
 
     @property
     def dockerfile_is_default(self):
-        return (not self.raw_dockerfile)
+        return not self.raw_dockerfile
 
 
 class DeployResources(BaseModel):
@@ -286,21 +286,19 @@ class Service(BaseModel):
     @property
     def environment_secrets(self):
         # aliases are included by the filtered_environment_items method
-        return (
-            self.config.managed_environment_secrets_for_service(service=self)
-            + self.filtered_environment_items(
-                variable_type=EnvironmentVariableTypes.VARIABLE_TYPE_SECRET
-            )
+        return self.config.managed_environment_secrets_for_service(
+            service=self
+        ) + self.filtered_environment_items(
+            variable_type=EnvironmentVariableTypes.VARIABLE_TYPE_SECRET
         )
 
     @property
     def environment_variables(self):
         # aliases are included by the filtered_environment_items method
-        return (
-            self.config.managed_environment_variables_for_service(service=self)
-            + self.filtered_environment_items(
-                variable_type=EnvironmentVariableTypes.VARIABLE_TYPE_STANDARD
-            )
+        return self.config.managed_environment_variables_for_service(
+            service=self
+        ) + self.filtered_environment_items(
+            variable_type=EnvironmentVariableTypes.VARIABLE_TYPE_STANDARD
         )
 
     @property

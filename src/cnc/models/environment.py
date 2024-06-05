@@ -197,7 +197,7 @@ class Environment(BaseModel):
         domains = [{"service_name": None, "domain": self.domain}]
         for domain in self.custom_domains:
             domains.append({"service_name": None, "domain": domain})
-            
+
         return domains
 
     @property
