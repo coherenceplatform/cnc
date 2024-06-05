@@ -34,8 +34,15 @@ jobs:
         username: _json_key
         password: ${{ secrets.GCR_JSON_KEY }}
 
-    - name: Extract version from tag
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+    - name: Download version artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: version
+       
+    - name: Set package version from artifact
+      run: |
+        VERSION=$(cat version.txt)
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
 
     - name: Build base image
       uses: docker/build-push-action@v2
@@ -53,7 +60,9 @@ jobs:
         context: .
         file: ./cncbuilder/Dockerfile
         push: true
-        tags: us-docker.pkg.dev/coherence-public/public/cnc:latest
+        tags:
+        - us-docker.pkg.dev/coherence-public/public/cnc:latest
+        - us-docker.pkg.dev/coherence-public/public/cnc:${{ env.VERSION }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
         build-args: CNC_VERSION=${{ env.VERSION }}

@@ -14,11 +14,18 @@ jobs:
       run: |
           python3 -m pip install --upgrade build twine toml
 
-    - name: Set package version
+    - name: Set package version and create artifact
       run: |
         PACKAGE_VERSION=${GITHUB_REF#refs/tags/}
         echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
+        echo $PACKAGE_VERSION > version.txt
         sed -i "s/^version = .*/version = \"$PACKAGE_VERSION\"/" pyproject.toml
+
+    - name: Upload version as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: version
+        path: version.txt
 
     - name: Check if version already exists on PyPI
       run: |

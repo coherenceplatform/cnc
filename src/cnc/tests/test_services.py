@@ -43,7 +43,15 @@ class ServiceDomainsTestCase(CNCBaseTestCase):
             return_value="https://foo-bar-123.run.app",
         ):
             self.assertEqual(service.domain, "https://foo-bar-123.run.app")
-            self.assertEqual(environment.domains, [{"service_name": service.name, "domain": "https://foo-bar-123.run.app"}])
+            self.assertEqual(
+                environment.domains,
+                [
+                    {
+                        "service_name": service.name,
+                        "domain": "https://foo-bar-123.run.app",
+                    }
+                ],
+            )
 
     def test_environment_domain_present(self):
         app = Application.from_environments_yml("environments.yml")
