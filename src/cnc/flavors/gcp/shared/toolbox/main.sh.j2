@@ -101,6 +101,7 @@ fi
 touch {{ toolbox.rendered_files_path }}/service_account.json
 
 docker build -t {{ service.instance_name }}_toolbox \
+--platform linux/amd64 \
 --build-arg GOOGLE_APPLICATION_CREDENTIALS=$TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS \
 -f {{ toolbox.rendered_files_path }}/Dockerfile {{ toolbox.rendered_files_path }}
 
