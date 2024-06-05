@@ -186,7 +186,18 @@ class Environment(BaseModel):
     def service_domains(self):
         domains = []
         for service in self.services:
-            domains.append(service.domain)
+            domains.append({"service_name": service.name, "domain": service.domain})
+        return domains
+
+    @property
+    def domains(self):
+        if self.collection.has_service_domains:
+            return self.service_domains
+
+        domains = [{"service_name": None, "domain": self.domain}]
+        for domain in self.custom_domains:
+            domains.append({"service_name": None, "domain": domain})
+            
         return domains
 
     @property
@@ -209,12 +220,6 @@ class Environment(BaseModel):
             return self.backend_services[0]
 
         return None
-
-    @property
-    def domains(self):
-        if self.collection.has_service_domains:
-            return self.service_domains + self.custom_domains
-        return [self.domain] + self.custom_domains
 
     @property
     def existing_resources(self):

@@ -31,7 +31,8 @@ resource "aws_lb_listener_rule" "{{ env_collection.instance_name }}_{{ lb_rules.
 {% set lb_rules.priority = lb_rules.priority + 1 %}
 
 {% if service.environment.domains %}
-{% for domain in service.environment.domains %}
+{% for domain_info in environment.domains %}
+{% with domain = domain_info.get("domain", "") %}
 {% if service.environment.custom_ns_records_for(domain) %}
 resource "aws_lb_listener_rule" "{{ env_collection.instance_name }}_{{ lb_rules.priority }}" {
     listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
@@ -64,6 +65,7 @@ resource "aws_lb_listener_rule" "{{ env_collection.instance_name }}_{{ lb_rules.
 }
 {% set lb_rules.priority = lb_rules.priority + 1 %}
 {% endif %}
+{% endwith %}
 {% endfor %}
 {% endif %}
 

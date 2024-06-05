@@ -172,10 +172,11 @@ resource "google_compute_url_map" "{{ env_collection.instance_name }}-map" {
     {% for service in env_collection.all_web_services %}{% if service.environment.active_deployment %}google_compute_backend_service.{{ service.instance_name }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}
   ]
 
+
 {% for environment in env_collection.valid_environments %}
 {% if environment.active_deployment %}
   host_rule {
-    hosts        = [{% for domain in environment.domains %}"{{ domain }}", "*.{{ domain }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+    hosts        = [{% for domain_info in environment.domains %}{% with domain = domain_info.get("domain", "") %}"{{ domain }}", "*.{{ domain }}"{% endwith %}{% if not loop.last %}, {% endif %}{% endfor %}]
     path_matcher = "{{ environment.instance_name }}"
   }
 
@@ -197,7 +198,8 @@ resource "google_compute_url_map" "{{ env_collection.instance_name }}-map" {
   }
 
 {% for service in environment.web_services %}
-{% for domain in environment.domains %}
+{% for domain_info in environment.domains %}
+{% with domain = domain_info.get("domain", "") %}
   test {
     service = google_compute_backend_service.{{ service.instance_name }}.id
     host    = "{{ domain }}"
@@ -215,10 +217,13 @@ resource "google_compute_url_map" "{{ env_collection.instance_name }}-map" {
     host    = "{{ domain }}"
     path    = "{{ service.settings.url_path }}"
   }
-  {% endfor %}
+{% endwith %}
+{% endfor %}
 {% endfor %}
 
 {% endif %} {# if environment.active_deployment #}
-{% endfor %}
+{% endfor %} {# for environment in env_collection.valid_environments #}
+
 }
-{% endif %}
+
+{% endif %} {# if collection.has_active_deployments #}
