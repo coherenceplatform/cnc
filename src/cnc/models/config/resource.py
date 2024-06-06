@@ -262,25 +262,6 @@ class DatabaseResourceSettings(BaseResourceSettings):
         return _env
 
     @property
-    def managed_environment_secrets(self):
-        if self.collection.application.provider_is_aws:
-            secret_id = f"{self.collection.application.name[:5]}-{self.environment.name}-{self.collection.name}-secrets"
-            password_secret_id = f"{secret_id}:{self.service.instance_name}_password"
-            url_secret_id = f"{secret_id}:{self.service.instance_name}_url"
-        else:
-            password_secret_id = "foo"
-            url_secret_id = "foo"
-
-        _env = {
-            f"{self.env_var_base}_DB_PASSWORD": password_secret_id,
-            "DB_PASSWORD": password_secret_id,
-            f"{self.env_var_base}_DATABASE_URL": url_secret_id,
-            "DATABASE_URL": url_secret_id,
-        }
-
-        return _env
-
-    @property
     def cloud_resource_version(self):
         # see https://cloud.google.com/sql/docs/mysql/admin-api/rest/v1beta4/SqlDatabaseVersion
         if self.engine in ["postgres", "mysql"]:
