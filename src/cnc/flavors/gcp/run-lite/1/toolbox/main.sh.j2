@@ -35,6 +35,8 @@ then
 fi
 touch {{ toolbox.rendered_files_path }}/service_account.json
 
+docker pull {{ service.image_for_tag(toolbox.tag_for_service(service.name)) }}
+
 docker build -t {{ service.instance_name }}_toolbox \
 --platform linux/amd64 \
 --build-arg GOOGLE_APPLICATION_CREDENTIALS=$TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS \

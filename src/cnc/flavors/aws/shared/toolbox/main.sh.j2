@@ -95,6 +95,8 @@ then
     cp $CREDS_FILE_PATH {{ toolbox.rendered_files_path }}/.aws/credentials
 fi
 
+docker pull {{ service.image_for_tag(toolbox.tag_for_service(service.name)) }}
+
 docker build -t {{ service.instance_name }}_toolbox \
 --platform linux/amd64 \
 --build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
