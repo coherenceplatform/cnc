@@ -42,7 +42,8 @@ send_{{ service.name }}_status_hook () {
     else
         {% if deployer.webhook_url %}
         webhook_status=$(curl -X PUT -H "Content-Type: application/json" \
-        -d "$data" -w "%{http_code}\n" \
+        -o /dev/null \
+        -d "$data" -w "%{http_code}" \
         {{ deployer.webhook_url }}) || true
 
         if [ "$webhook_status" != "200" ]; then
