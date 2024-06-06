@@ -151,9 +151,9 @@ class AppConfig(BaseModel):
 
         service_vars = []
         for env_item in regex_vars_by_name:
-            if service_name is None:
+            if service_name in [None, ""]:
                 service_vars.append(env_item)
-            elif (env_item.service is None) or (env_item.service == service_name):
+            elif (env_item.service in [None, ""]) or (env_item.service == service_name):
                 service_vars.append(env_item)
 
         type_vars = []
