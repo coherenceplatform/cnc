@@ -7,7 +7,7 @@ This guide covers the installation of the CNC framework and the necessary cloud 
 
 - Access to a terminal
 - Python 3.9-3.11 installed on your machine
-- Cloud provider account (AWS (`aws` or Google Cloud `gcloud`) and authenticated CLI
+- Cloud provider account (AWS `aws` or Google Cloud `gcloud`) and authenticated CLI
 - `docker` 
 - `terraform` 
 - `jq`
@@ -21,7 +21,7 @@ pip install cocnc
 
 ### Docker
 
-We also offer a `docker` image with all of this installed, `us-docker.pkg.dev/coherence-public/public/cnc:latest`. You'll need to handle authenticating the cloud CLI as well as mounting the docker socket to use it. Better instructions here coming soon!
+We also offer a `docker` image with all of this installed, `us-docker.pkg.dev/coherence-public/public/cnc:latest`. You'll need to handle authenticating the cloud CLI as well as mounting the local docker socket with `-v` to use it. Better instructions here coming soon!
 
 ### Install and authenticate cloud CLI:
 
@@ -155,7 +155,7 @@ There is an `update` command to make the build/deploy cycle easier.
 cnc update perform dev --service-tag app=v1
 ```
 
-For `build`, `update` and `deploy` you can pass `--service-tag SERVICE_NAME=TAG` and `--service SERVICE_NAME`. git SHA is a great `TAG`, the default is `latest`. If you do not specify any `--service`, will perform for all services in the config.
+For `build`, `update` and `deploy` you can pass `--service-tag SERVICE_NAME=TAG` and `--service SERVICE_NAME`. git SHA is a great `TAG`, the default is `latest`. If you do not specify any `--service`, will perform for all services in the config. The `-t` flag is a shortcut for `--service-tag`.
 
 ### Get a shell in the environment
 

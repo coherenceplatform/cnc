@@ -379,7 +379,7 @@ class ProvisionStageManager(CollectionTemplatedBase):
             full_command,
             cwd=self.rendered_files_path,
             capture_output=capture_output,
-            env=dict(os.environ, TF_PLUGIN_CACHE_DIR=tf_cache_dir),
+            env=dict(os.environ, TF_PLUGIN_CACHE_DIR=tf_cache_dir, COLUMNS="1000"),
         )
 
         end = int(time.time())

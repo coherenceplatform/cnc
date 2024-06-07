@@ -1,10 +1,12 @@
 
 # The CNC configuration file
 
-`cnc` uses a superset of [docker-compose](https://docs.docker.com/compose/compose-file/) for configuration. Following the [conventions](https://docs.docker.com/compose/compose-file/11-extension/) set by `docker-compose`, `cnc` adds two key `x-cnc` extension locations.
+`cnc` uses a superset of [docker-compose](https://docs.docker.com/compose/compose-file/) for configuration. Following the [conventions](https://docs.docker.com/compose/compose-file/11-extension/) set by `docker-compose`, `cnc` adds two key `x-cnc` annotations.
 
-- One extension is at the root of the document (sibling to `services`) and is used for app-wide configuration such as build machine type.
+- One extension is at the root of the document (sibling to `services`) and is used for app-wide configuration such as resource definitions that don't have a container (e.g. S3 buckets or some message queues).
 - The other is in each `service` itself. The `type` key is the most important one. Supported types depend on the included flavor but the two most common are `frontend` for static site and `backend` for a container.
+
+You can use an existing `docker-compose` file and add these annotations, `cnc` will ignore any services that do not have the `x-cnc` configuration added.
 
 The goal of this document is to provide:
 
