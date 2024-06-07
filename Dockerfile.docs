@@ -3,6 +3,7 @@ FROM python:3.12
 RUN pip install mkdocs-material
 
 COPY mkdocs.yml .
+COPY overrides/ overrides/
 COPY docs/ docs/
 
 CMD mkdocs serve -a 0.0.0.0:{$PORT:-8000}
