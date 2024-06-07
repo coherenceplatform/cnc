@@ -1,8 +1,6 @@
 <p align="center">
 <picture>
-  <source srcset="https://cncframework.com/images/cnc_logo_white.svg" media="(prefers-color-scheme: dark)">
-  <source srcset="https://cncframework.com/images/cnc_logo_black.svg" media="(prefers-color-scheme: light)">
-  <img src="https://cncframework.com/images/cnc_logo_black.svg" alt="cnc logo" width="200" height="auto">
+  <img src="https://cncframework.com/images/cnc_logo_white.svg" alt="cnc logo" width="200" height="auto">
 </picture>
 </p>
 
@@ -14,11 +12,8 @@
 
 Core Lifecycle Events Managed by `cnc`:
 
-p align="center">
 <picture>
-  <source srcset="/images/cnc_diagram_light.png" media="(prefers-color-scheme: light)">
-  <source srcset="/images/cnc_diagram_dark.png" media="(prefers-color-scheme: dark)">
-  <img src="/images/cnc_diagram_light.png" alt="cnc diagram" width="auto" height="auto">
+  <img src="/images/cnc_diagram_dark.png" alt="cnc diagram" width="auto" height="auto">
 </picture>
 </p>
 
