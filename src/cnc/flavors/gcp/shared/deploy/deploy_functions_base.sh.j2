@@ -105,17 +105,17 @@ seed_{{ service.name }} () {
 deploy_{{ service.name }}_workers () {
     gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
     {% for item in service.environment_items %}
-    "$(echo -e '{{ variable.value }}')" | base64 > temp.txt
+    echo -e '{{ item.value }}' | base64 > temp.txt
     cat <<EOF | kubectl apply -f -
     apiVersion: v1
     kind: Secret
     metadata:
-      name: {{ item.name }}
+      name: {{ item.instance_name }}
       namespace: {{ service.instance_name }}
     type: Opaque
     data:
       value: $(cat temp.txt)
-    EOF
+EOF
     rm temp.txt
     {% endfor %}
     kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-workers.yml
@@ -130,7 +130,7 @@ deploy_{{ service.name }}_tasks () {
     sleep 5
 
     {% for item in service.environment_items %}
-    "$(echo -e '{{ variable.value }}')" | base64 > temp.txt
+    "$(echo -e '{{ item.value }}')" | base64 > temp.txt
     cat <<EOF | kubectl apply -f -
     apiVersion: v1
     kind: Secret
@@ -140,7 +140,7 @@ deploy_{{ service.name }}_tasks () {
     type: Opaque
     data:
       value: $(cat temp.txt)
-    EOF
+EOF
     rm temp.txt
     {% endfor %}
 

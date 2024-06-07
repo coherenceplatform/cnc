@@ -5,7 +5,7 @@ from jinja2 import Template
 from .base_model import BaseModel, IgnoredType
 
 from cnc.constants import EnvironmentVariableTypes, EnvironmentVariableDestinations
-
+from cnc.utils import clean_name_string
 from cnc.logger import get_logger
 
 log = get_logger(__name__)
@@ -37,6 +37,13 @@ class EnvironmentVariable(
                 "value or secret_id or output_name or alias must be specified"
             )
         return data
+
+    @property
+    def instance_name(self):
+        namespace = self.collection.instance_name
+        if self.environment:
+            namespace = self.environment.instance_name
+        return clean_name_string(f"{self.name}-{namespace}")
 
     @property
     def secret_id(self):
