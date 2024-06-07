@@ -79,7 +79,7 @@ collections:
 
 ### See CNC in action
 
-All this will do is manipulate text files in your `/tmp` directory and won't actually touch anything in your code or cloud. It's the best wayt to get to `Aha!` quickly before diving in deeper.
+All this will do is manipulate text files in your `/tmp` directory and won't actually touch anything in your code or cloud. It's the best way to get to `Aha!` quickly before diving in deeper.
 
 ```
 # print the terraform we would run, as generated from the 2 ymls above
