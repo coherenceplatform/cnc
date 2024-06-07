@@ -1,0 +1,43 @@
+
+
+
+:root {
+    --pampas: #e8e6e3;
+    --black: #0C0A10;
+    --gray-200: #d2cfdb;
+    --gray-400: #adaab8;
+    --gray-500: #85808D;
+    --gray-800: #2f2e36;
+    --gray-900: #1b191f;
+    --gray-1000: var(--black);
+    --electric-violet-400: #A495FF;
+    --md-text-font: 'Lausanne', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    --md-default-bg-color: var(--black);
+    --md-default-bg-color-lighter: var(--gray-800);
+    --md-typeset-color: var(--pampas);
+    --md-typeset-a-color: var(--electric-violet-400);
+    --md-code-bg-color: var(--md-default-bg-color-lighter);
+    --md-code-fg-color: var(--pampas);
+    --md-default-fg-color--light: var(--md-typeset-color);
+
+}
+
+.md-header {
+    background-color: black;
+}
+
+.md-typeset {
+    font-weight: 300;
+    color: var(--gray-200);
+    line-height: 1.5;
+}
+
+.md-main__inner {
+    margin-top: 1rem;
+}
+
+.md-typeset h3,
+.md-typeset h2,
+.md-typeset h1 {
+    color: var(--md-typeset-color);
+}
