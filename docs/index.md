@@ -1,8 +1,8 @@
 <p align="center">
 <picture>
-  <source srcset="/images/cnc_logo_white.svg" media="(prefers-color-scheme: dark)">
-  <source srcset="/images/cnc_logo_black.svg" media="(prefers-color-scheme: light)">
-  <img src="/images/cnc_logo_black.svg" alt="cnc logo" width="200" height="auto">
+  <source srcset="https://cncframework.com/images/cnc_logo_white.svg" media="(prefers-color-scheme: dark)">
+  <source srcset="https://cncframework.com/images/cnc_logo_black.svg" media="(prefers-color-scheme: light)">
+  <img src="https://cncframework.com/images/cnc_logo_black.svg" alt="cnc logo" width="200" height="auto">
 </picture>
 </p>
 
@@ -10,15 +10,11 @@
 
 ## Introduction
 
-`cnc` is a framework for precision cloud engineering. Rooted in the principles of Infrastructure as Code (IaC) using terraform, `cnc` translates high level service definitions into reference architecture based infrastructure across various environments — whether it’s for development, staging, production, or ephemeral environments. If you're looking to do "platform engineering" but hitting `curl` to a huge helm install (whether open-source or not) in an expensive k8s cluster has not solved your problems, `cnc` just might be something interesting to add to your stack. 
-
-As a purely CLI-based and agentless tool with simple configuration and sane defaults, `cnc` can run everywhere from on your local machine to complex hosted CI/CD infra. Our philosophy is to be lightweight, powerful, and to function as a force multiplier for engineers who need to manage and perform deployments. 
-
-`cnc` works by translating `docker-compose` into IaC files, artifact (docker/lambda/etc) build scripts, and deployments scripts. It has a set of smart script runners that allow you to use high-level environment configuration concepts in a sane way across all these environments seamlessly. You can view, edit, and debug the framework outputs easily. At [Coherence](withcoherence.com) we've spent years building this kind of software, and `cnc` represents our effort to make this more useful for both our customers and the community at large. Try it in 5 minutes below!
+`cnc` is an open-source framework that equips developers with the right tools to deploy applications with precision. Rooted in the principles of Infrastructure as Code (IaC) using terraform, `cnc` translates high level service definitions into reference architecture based infrastructure across various environments — whether it’s for development, staging, production, or ephemeral environments. For those who have used AWS's Amplify CLI, think of `cnc` as a broader, adaptable framework that supports your unique deployment needs.
 
 Core Lifecycle Events Managed by `cnc`:
 
-<p align="center">
+p align="center">
 <picture>
   <source srcset="/images/cnc_diagram_light.png" media="(prefers-color-scheme: light)">
   <source srcset="/images/cnc_diagram_dark.png" media="(prefers-color-scheme: dark)">
@@ -38,27 +34,18 @@ Getting Started with `cnc`:
 
 `cnc` is designed to be a powertool that empowers you to build and manage your infrastructure with the same attention to detail and creativity that you bring to your code. Just like web devs use frameworks to build better products, with `cnc`, you gain the freedom to implement your vision precisely as intended, making each project not only functional but finely tuned to your standards.
 
-## Getting Started
+## Hello World
 
-### Prerequisites
-
-Ensure that you have Docker installed, along with the `aws` or `gcloud` CLI tools, depending on your cloud provider.
+### Install CNC
 
 Intall `cnc` from the [PyPI Python Package Index](https://pypi.org/project/cocnc/). For example, using `pip`:
 ```
 pip install cocnc
 ```
 
-### Annotate docker-compose.yml or add cnc.yml
+### Save config files
 
-Mark the services that CNC should manage by adding the following snippet to your `docker-compose.yml`. You can annotate a subset of your existing `docker-compose.yml`, `cnc` will ignore services without the `x-cnc` extension. The default filename `cnc` looks for is `cnc.yml` so if you use `docker-compose.yml`, append the `-f docker-compose.yml`
-
-```yaml
-x-cnc:
-  type: backend
-```
-
-If you want a simple example just to see `cnc` in action below, you can use this, save as `cnc.yml`:
+You can make a new directory, nothing but the following 2 files is needed by `cnc`. Save as `cnc.yml`:
 
 ```yaml
 services:
@@ -75,9 +62,7 @@ services:
     image: postgres
 ```
 
-### Create environments.yml
-
-Define your application environment and specify cloud settings in environments.yml:
+Save as environments.yml:
 
 ```yaml
 name: my-first-app
@@ -97,10 +82,10 @@ collections:
       value: bar
 ```
 
-`cnc` has robust environment configuration options, including support for environment variables from cloud secrets, terraform outputs, or aliasing from other variables. Read more about configuration [here](./docs/README.md).
+`cnc` has robust environment configuration options, including support for environment variables from cloud secrets, terraform outputs, or aliasing from other variables. Read more about configuration [here](https://cncframework.com/configuration/overview/).
 
 
-### See what CNC is doing
+### See CNC in action
 
 All this will do is manipulate text files in your `/tmp` directory and won't actually touch anything in your code or cloud. It's the best wayt to get to `Aha!` quickly before diving in deeper.
 
@@ -120,27 +105,9 @@ cnc deploy perform dev --debug --no-cleanup
 
 Add a 2nd environment (e.g. `dev2`) to the `environments.yml` and run the commands again, see the power of the framework!
 
-### Deploy your first environment
-
-Authenticate with your cloud provider using the aws or gcloud CLI, then create your infrastructure with:
-
-```
-cnc provision apply
-```
-
-deploy your `dev` environment with:
-```
-cnc update dev --service-tags app=v1
-```
-
-This will do a `build` and a `deploy` under the hood.
-
-For more details, see the step-by-step [Getting Started Guide](./docs/README.md).
-
-
 # Documentation
 
-Access full documentation and in-depth tutorials at [the CNC Documentation](./docs/README.md).
+Access full documentation and in-depth tutorials at [the CNC Documentation](https://cncframework.com).
 
 # Community & Support
 
