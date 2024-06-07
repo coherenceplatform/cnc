@@ -130,12 +130,12 @@ deploy_{{ service.name }}_tasks () {
     sleep 5
 
     {% for item in service.environment_items %}
-    "$(echo -e '{{ item.value }}')" | base64 > temp.txt
+    echo -e '{{ item.value }}' | base64 > temp.txt
     cat <<EOF | kubectl apply -f -
     apiVersion: v1
     kind: Secret
     metadata:
-      name: {{ item.name }}
+      name: {{ item.instance_name }}
       namespace: {{ service.instance_name }}
     type: Opaque
     data:
