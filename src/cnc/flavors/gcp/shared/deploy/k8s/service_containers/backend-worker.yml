@@ -24,7 +24,10 @@
     value: "1"
 {% for item in service.environment_items %}
   - name: "{{ item.name }}"
-    value: "{{ item.value }}"
+    valueFrom:
+      secretKeyRef:
+        name: "{{ item.name }}"
+        key: "value"
 {% endfor %}
   command:
   - "bash"

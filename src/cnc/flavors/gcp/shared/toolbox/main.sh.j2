@@ -115,7 +115,7 @@ sleep ${CNC_TOOLBOX_CMD_DELAY_SECONDS:-15}
 # Start & exec into docker container
 docker run --entrypoint sh \
 {%- for variable in toolbox.environment_items -%}
--e {{ variable.name }}={{ variable.value }} \
+-e {{ variable.name }}="$(echo -e '{{ variable.value }}')" \
 {%- endfor -%}
 --network ${CNC_TOOLBOX_NETWORK:-host} \
 {%- if command %}

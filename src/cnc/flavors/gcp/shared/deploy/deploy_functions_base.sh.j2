@@ -104,6 +104,20 @@ seed_{{ service.name }} () {
 {% if service.settings.workers %}
 deploy_{{ service.name }}_workers () {
     gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
+    {% for item in service.environment_items %}
+    "$(echo -e '{{ variable.value }}')" | base64 > temp.txt
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: {{ item.name }}
+      namespace: {{ service.instance_name }}
+    type: Opaque
+    data:
+      value: $(cat temp.txt)
+    EOF
+    rm temp.txt
+    {% endfor %}
     kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-workers.yml
 }
 {% endif %}
@@ -114,6 +128,21 @@ deploy_{{ service.name }}_tasks () {
 
     # solve a race condition in creating some common resources with workers
     sleep 5
+
+    {% for item in service.environment_items %}
+    "$(echo -e '{{ variable.value }}')" | base64 > temp.txt
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: {{ item.name }}
+      namespace: {{ service.instance_name }}
+    type: Opaque
+    data:
+      value: $(cat temp.txt)
+    EOF
+    rm temp.txt
+    {% endfor %}
 
     kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-tasks.yml
 }
