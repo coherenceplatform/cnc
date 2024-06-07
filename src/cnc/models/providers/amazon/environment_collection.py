@@ -50,9 +50,16 @@ class AWSEnvironmentCollection(EnvironmentCollection):
             "domains": environment.domains,
         }
 
-    def preconfigure_infrastructure(self, should_cleanup=True):
+    def preconfigure_infrastructure(
+        self,
+        should_cleanup=True,
+        should_regenerate_config=True,
+    ):
         config = self.provision_stage_manager
-        is_ok = config.make_ready_for_use(should_cleanup=should_cleanup)
+        is_ok = config.make_ready_for_use(
+            should_cleanup=should_cleanup,
+            should_regenerate_config=should_regenerate_config,
+        )
 
         results = []
         steps = []
@@ -108,11 +115,18 @@ class AWSEnvironmentCollection(EnvironmentCollection):
 
         return {"ok": True, "results": results, "steps": steps}
 
-    def configure_infrastructure(self, should_cleanup=True):
+    def configure_infrastructure(
+        self,
+        should_cleanup=True,
+        should_regenerate_config=True,
+    ):
         config = self.provision_stage_manager
 
         if not config.saved_plan_exists(plan_filename="total"):
-            res = self.preconfigure(should_cleanup=should_cleanup)
+            res = self.preconfigure_infrastructure(
+                should_cleanup=should_cleanup,
+                should_regenerate_config=should_regenerate_config,
+            )
             if not res["ok"]:
                 return res
         else:

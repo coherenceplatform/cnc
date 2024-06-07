@@ -56,9 +56,16 @@ class GCPEnvironmentCollection(EnvironmentCollection):
             "domains": environment.domains,
         }
 
-    def preconfigure_infrastructure(self, should_cleanup=True):
+    def preconfigure_infrastructure(
+        self,
+        should_cleanup=True,
+        should_regenerate_config=True,
+    ):
         config = self.provision_stage_manager
-        config.make_ready_for_use(should_cleanup=should_cleanup)
+        config.make_ready_for_use(
+            should_cleanup=should_cleanup,
+            should_regenerate_config=should_regenerate_config,
+        )
 
         results = []
         steps = []
@@ -104,7 +111,11 @@ class GCPEnvironmentCollection(EnvironmentCollection):
 
         return {"ok": True, "results": results, "steps": steps}
 
-    def configure_infrastructure(self, should_cleanup=True):
+    def configure_infrastructure(
+        self,
+        should_cleanup=True,
+        should_regenerate_config=True,
+    ):
         can_configure = True
         config = self.provision_stage_manager
 
@@ -112,7 +123,10 @@ class GCPEnvironmentCollection(EnvironmentCollection):
         steps = []
 
         if not config.saved_plan_exists(plan_filename="total_1"):
-            res = self.preconfigure(should_cleanup=should_cleanup)
+            res = self.preconfigure_infrastructure(
+                should_cleanup=should_cleanup,
+                should_regenerate_config=should_regenerate_config,
+            )
             if not res["ok"]:
                 return res
 
