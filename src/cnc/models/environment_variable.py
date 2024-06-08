@@ -1,3 +1,5 @@
+import hashlib
+
 from typing import Optional
 from pydantic import model_validator, ValidationInfo, Field
 from jinja2 import Template
@@ -40,10 +42,16 @@ class EnvironmentVariable(
 
     @property
     def instance_name(self):
-        namespace = self.collection.instance_name
+        base_name = self.collection.instance_name
         if self.environment:
-            namespace = self.environment.instance_name
-        return clean_name_string(f"{self.name}-{namespace}")
+            base_name = self.environment.instance_name
+
+        _hash = hashlib.sha256()
+        _hash.update(base_name.encode())
+        _hash.update(self.name.encode())
+        namespace = f"{_hash.hexdigest()[:11]}"
+
+        return clean_name_string(f"e{namespace}-{self.name}")
 
     @property
     def secret_id(self):
