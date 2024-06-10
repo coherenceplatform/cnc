@@ -147,6 +147,8 @@ class Application(BaseModel):
     def metadata_file(self):
         src_dir = Path(__file__).parent.parent
 
+        # TODO: check for a metadata file in the custom template directory, if configured
+
         # copy flavor-specific metadata file
         flavor_metadata = (
             f"{src_dir}/flavors/{self.provider}"

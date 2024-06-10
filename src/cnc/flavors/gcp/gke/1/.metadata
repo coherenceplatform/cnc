@@ -1,5 +1,7 @@
 provider_links_templates:
-    # TODO: change this to k8s link
-    backend: "https://console.cloud.google.com/run/detail/{service.environment.collection.region}/{service.instance_name}/revisions?project={service.environment.collection.account_id}"
-    # worker
-    # cron
+    frontend: "https://console.cloud.google.com/kubernetes/deployment/{{ service.environment.collection.region }}/{{ service.environment.collection.instance_name }}/{{ service.environment.instance_name }}-deploy/{{ service.instance_name }}/?project={{ service.environment.collection.account_id }}"
+    backend: "https://console.cloud.google.com/kubernetes/deployment/{{ service.environment.collection.region }}/{{ service.environment.collection.instance_name }}/{{ service.environment.instance_name }}-deploy/{{ service.instance_name }}/?project={{ service.environment.collection.account_id }}"
+    worker: "https://console.cloud.google.com/kubernetes/deployment/{{ service.environment.collection.region }}/{{ service.environment.collection.instance_name }}/{{ service.environment.instance_name }}/{{ worker.name }}/?project={{ service.environment.collection.account_id }}"
+    task: "https://console.cloud.google.com/kubernetes/deployment/{{ service.environment.collection.region }}/{{ service.environment.collection.instance_name }}/{{ service.environment.instance_name }}/{{ task.name }}/?project={{ service.environment.collection.account_id }}"
+    database: "https://console.cloud.google.com/sql/instances/{{ service.instance_name }}/overview?project={{ service.environment.collection.account_id }}"
+    cache: "https://console.cloud.google.com/memorystore/redis/locations/{{ service.environment.collection.region }}/instances/{{ service.instance_name }}/details/overview?project={{ service.environment.collection.account_id }}"
