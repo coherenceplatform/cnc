@@ -1,3 +1,5 @@
+import hashlib
+
 from typing import Optional
 from pydantic import model_validator, ValidationInfo, Field
 from jinja2 import Template
@@ -5,7 +7,7 @@ from jinja2 import Template
 from .base_model import BaseModel, IgnoredType
 
 from cnc.constants import EnvironmentVariableTypes, EnvironmentVariableDestinations
-
+from cnc.utils import clean_name_string
 from cnc.logger import get_logger
 
 log = get_logger(__name__)
@@ -37,6 +39,19 @@ class EnvironmentVariable(
                 "value or secret_id or output_name or alias must be specified"
             )
         return data
+
+    @property
+    def instance_name(self):
+        base_name = self.collection.instance_name
+        if self.environment:
+            base_name = self.environment.instance_name
+
+        _hash = hashlib.sha256()
+        _hash.update(base_name.encode())
+        _hash.update(self.name.encode())
+        namespace = f"{_hash.hexdigest()[:11]}"
+
+        return clean_name_string(f"e{namespace}-{self.name}")
 
     @property
     def secret_id(self):

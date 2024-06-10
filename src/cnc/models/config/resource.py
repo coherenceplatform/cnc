@@ -348,10 +348,15 @@ class DatabaseResourceSettings(BaseResourceSettings):
 
             return db_url
         elif environment.application.provider_is_gcp:
+            try:
+                enc_db_pw = urllib.parse.quote(db_password)
+            except Exception as e:
+                log.warn(f"Unable to encode db pw for {self.service} | {e}")
+                enc_db_pw = db_password
 
             db_url = (
                 f"{self.connection_string_adapter}://{self.username}"
-                f":{db_password}@{db_endpoint}:{db_port}/{self.db_name}"
+                f":{enc_db_pw}@{db_endpoint}:{db_port}/{self.db_name}"
             )
 
             if db_url_params:
