@@ -344,7 +344,35 @@ class Service(BaseModel):
             }
         ]
 
-        # TODO: add workers and crons here
+        for worker in self.settings.workers:
+            _context = context.copy()
+            _context.update(
+                {
+                    "worker": worker,
+                }
+            )
+            _links.append(
+                {
+                    "url": Template(_templates.get("worker", "")).render(_context),
+                    "label": worker.name,
+                    "type": "worker",
+                }
+            )
+
+        for task in self.settings.scheduled_tasks:
+            _context = context.copy()
+            _context.update(
+                {
+                    "task": task,
+                }
+            )
+            _links.append(
+                {
+                    "url": Template(_templates.get("task", "")).render(_context),
+                    "label": task.name,
+                    "type": "task",
+                }
+            )
 
         return _links
 
