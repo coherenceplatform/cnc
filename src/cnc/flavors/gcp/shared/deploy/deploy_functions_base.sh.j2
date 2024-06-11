@@ -106,7 +106,7 @@ deploy_{{ service.name }}_workers () {
     gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
     {% for item in service.environment_items %}
     echo -en '{{ item.value }}' | base64 -w 0 > temp.txt
-    kubectl delete secret {{ item.instance_name }} --namespace={{ service.instance_name }}
+    kubectl delete secret {{ item.instance_name }} --namespace={{ service.instance_name }} --ignore-not-found
     cat <<EOF | kubectl apply -f -
     apiVersion: v1
     kind: Secret
@@ -132,7 +132,7 @@ deploy_{{ service.name }}_tasks () {
 
     {% for item in service.environment_items %}
     echo -en '{{ item.value }}' | base64 -w 0 > temp.txt
-    kubectl delete secret {{ item.instance_name }} --namespace={{ service.instance_name }}
+    kubectl delete secret {{ item.instance_name }} --namespace={{ service.instance_name }} --ignore-not-found
     cat <<EOF | kubectl apply -f -
     apiVersion: v1
     kind: Secret
