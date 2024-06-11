@@ -115,7 +115,7 @@ This will create the cloud resources for your environment. The `terraform` state
 
 You can now run `cnc info environments` to see information about the configured infrastructure, including the URL of the service.
 
-Now, set the DNS records as required by your `base_domain` setting. This does not apply to some flavors, e.g. can ignore for `run-lite`. See flavor docs [here](docs/flavors/README.md) for more. Run `cnc info app` and then:
+Now, set the DNS records as required by your `base_domain` setting. This does not apply to some flavors, e.g. can ignore for `run-lite`. See flavor docs [here](/flavors/overview/) for more. Run `cnc info app` and then:
 
 - For GCP, copy the `Load Balancer IP` and set a `CNAME` in your DNS provider for `*.yourbasedomain.com` to that IP
 - For AWS, copy the `NS` records and set on `*.yourbasedomain.com` in your DNS provider
@@ -124,7 +124,7 @@ Sometimes, you'll see errors that a service is not enabled or a quota was not av
 
 ## Deploy the container
 
-You can customize the scripts that run for build/deploy using a Jinja2 template, read more [here](./customization/README.md). 
+You can customize the scripts that run for build/deploy using a Jinja2 template, read more [here](/customization/overview/). 
 
 ### Build the docker image
 
