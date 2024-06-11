@@ -152,7 +152,7 @@ There is an `update` command to make the build/deploy cycle easier.
 
 ```
 # dev is the environment name in environment.yml
-cnc update perform dev --service-tag app=v1
+cnc update perform dev --service-tag app="$(date +%s)"
 ```
 
 For `build`, `update` and `deploy` you can pass `--service-tag SERVICE_NAME=TAG` and `--service SERVICE_NAME`. git SHA is a great `TAG`, the default is `latest`. If you do not specify any `--service`, will perform for all services in the config. The `-t` flag is a shortcut for `--service-tag`.

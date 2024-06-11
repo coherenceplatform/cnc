@@ -69,12 +69,7 @@ class BaseServiceSettings(BaseModel):
     internal: Optional[bool] = False
     data: Optional[dict] = {}
     url_path: Optional[str] = "/"
-    custom_headers: Optional[
-        Union[
-            AWSCustomHeaders,
-            GCPCustomHeaders,
-        ]
-    ] = Field(
+    custom_headers: Optional[Union[AWSCustomHeaders, GCPCustomHeaders,]] = Field(
         discriminator="provider",
         default=None,
     )

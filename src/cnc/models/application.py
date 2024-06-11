@@ -35,9 +35,9 @@ class Application(BaseModel):
     region: Optional[str] = None
     flavor: str
     version: Union[int, float]
-    collections: List[Union[AWSEnvironmentCollection, GCPEnvironmentCollection]] = (
-        Field(discriminator="provider")
-    )
+    collections: List[
+        Union[AWSEnvironmentCollection, GCPEnvironmentCollection]
+    ] = Field(discriminator="provider")
     template_config: Optional[TemplateConfig] = Field(default_factory=TemplateConfig)
 
     GCP_APP_PROVIDER: ClassVar[str] = "gcp"
