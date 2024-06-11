@@ -149,7 +149,7 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         secrets_client = boto3.client("secretsmanager")
 
         inner_json_key = None
-        secret_id_parts = secret_id.split(":")
+        secret_id_parts = secret_id.rstrip(":").split(":")
         if len(secret_id_parts) > 1:
             secret_id, inner_json_key = secret_id_parts
 

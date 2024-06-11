@@ -1,4 +1,5 @@
 import hashlib
+import traceback
 
 from typing import Optional
 from pydantic import model_validator, ValidationInfo, Field
@@ -93,8 +94,10 @@ class EnvironmentVariable(
                 for other_variable in self.environment.environment_variables:
                     if other_variable.name == self.alias:
                         return other_variable.value
-        except Exception as e:
-            log.warning(f"Cannot get value for variable {self.name}: {e}")
+        except Exception:
+            log.warning(
+                f"Cannot get value for variable {self.name}: {traceback.format_exc()}"
+            )
             return ""
 
     @property
