@@ -38,11 +38,23 @@ touch {{ toolbox.rendered_files_path }}/service_account.json
 docker pull {{ service.image_for_tag(toolbox.tag_for_service(service.name)) }}
 
 docker build -t {{ service.instance_name }}_toolbox \
---build-arg GOOGLE_APPLICATION_CREDENTIALS=$TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS \
 -f {{ toolbox.rendered_files_path }}/Dockerfile {{ toolbox.rendered_files_path }}
+
+docker_auth_var="AUTH_AUTO_DETECTED=false"
+if test -v TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS
+then
+    docker_auth_var="GOOGLE_APPLICATION_CREDENTIALS=$TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS"
+elif test -v GOOGLE_AUTH_TOKEN
+then
+    docker_auth_var="CLOUDSDK_AUTH_ACCESS_TOKEN=$GOOGLE_AUTH_TOKEN"
+elif test -v CLOUDSDK_AUTH_ACCESS_TOKEN
+then
+    docker_auth_var="CLOUDSDK_AUTH_ACCESS_TOKEN=$CLOUDSDK_AUTH_ACCESS_TOKEN"
+fi
 
 # Start & exec into docker container
 docker run --entrypoint sh \
+-e $docker_auth_var \
 {%- for variable in toolbox.environment_items -%}
 -e {{ variable.name }}="$(echo -en '{{ variable.value }}')" \
 {%- endfor -%}

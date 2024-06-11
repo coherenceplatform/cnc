@@ -1,5 +1,8 @@
 FROM {{ service.image_for_tag(toolbox.tag_for_service(service.name)) }}
 
+COPY .config/gcloud /_cnc_temp/gcloud
+RUN cp -r /_cnc_temp/gcloud ~/.config/gcloud
+
 # GOOGLE_APPLICATION_CREDENTIALS will be set to this filepath
 # when appropriate. see: main.sh.j2
 COPY service_account.json /_cnc_temp/service_account.json
