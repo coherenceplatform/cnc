@@ -1,3 +1,4 @@
+import os
 import hashlib
 import re
 import urllib
@@ -38,6 +39,10 @@ class BaseResourceSettings(BaseModel):
     # ------------------------------
     # Properties
     # ------------------------------
+    @property
+    def toolbox_resource_host(self):
+        return os.environ.get("CNC_TOOLBOX_RESOURCE_HOST", "localhost")
+
     @property
     def collection(self):
         return self.service.environment.collection
@@ -238,12 +243,12 @@ class DatabaseResourceSettings(BaseResourceSettings):
         _env = self.common_managed_environment_variables
 
         db_password = self.database_password
-        db_url = self.database_url(db_password=db_password, local=True)
+        db_url = self.database_url(db_password=db_password, toolbox=True)
         _env.update(
             {
-                f"{self.env_var_base}_ENDPOINT": "localhost",
-                f"{self.env_var_base}_HOST": "localhost",
-                f"{self.env_var_base}_IP": "localhost",
+                f"{self.env_var_base}_ENDPOINT": self.toolbox_resource_host,
+                f"{self.env_var_base}_HOST": self.toolbox_resource_host,
+                f"{self.env_var_base}_IP": self.toolbox_resource_host,
                 f"{self.env_var_base}_PORT": self.local_port,
                 "DB_NAME": self.db_name,
                 "DB_USER": self.username,
@@ -317,10 +322,10 @@ class DatabaseResourceSettings(BaseResourceSettings):
     # Instance methods
     # ------------------------------
 
-    def database_url(self, db_password="password", local=False):
-        if local:
+    def database_url(self, db_password="password", toolbox=False):
+        if toolbox:
             db_port = self.local_port
-            db_endpoint = "localhost"
+            db_endpoint = self.toolbox_resource_host
         else:
             db_port = STARTING_PORTS[self.engine.upper()]
             db_endpoint = self.database_endpoint
@@ -547,10 +552,14 @@ class CacheResourceSettings(BaseResourceSettings):
         _env.update(
             {
                 f"{self.env_var_base}_PORT": self.local_port,
-                f"{self.env_var_base}_HOST": "localhost",
-                f"{self.env_var_base}_IP": "localhost",
-                f"{self.env_var_base}_URL": f"redis://localhost:{self.local_port}",
-                "REDIS_URL": f"redis://localhost:{self.local_port}",
+                f"{self.env_var_base}_HOST": self.toolbox_resource_host,
+                f"{self.env_var_base}_IP": self.toolbox_resource_host,
+                f"{self.env_var_base}_URL": (
+                    f"redis://{self.toolbox_resource_host}:{self.local_port}"
+                ),
+                "REDIS_URL": (
+                    f"redis://{self.toolbox_resource_host}:{self.local_port}"
+                ),
             }
         )
         return _env
