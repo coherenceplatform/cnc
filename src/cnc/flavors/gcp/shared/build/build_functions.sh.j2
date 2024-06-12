@@ -80,8 +80,6 @@ build_{{ service.name }}_image () {
 
     echo -e "\\Building with nixpacks...\\n"
 
-    ls -al
-
     # Check if Nixpacks is installed
     if ! command -v nixpacks &> /dev/null
     then
