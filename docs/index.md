@@ -31,6 +31,10 @@ Getting Started with `cnc`:
 
 ## Hello World
 
+<picture>
+  <img src="/images/hello_world.gif" alt="gif of cnc hello world" width="auto" height="auto">
+</picture>
+
 ### Install CNC
 
 Intall `cnc` from the [PyPI Python Package Index](https://pypi.org/project/cocnc/). For example, using `pip`:
