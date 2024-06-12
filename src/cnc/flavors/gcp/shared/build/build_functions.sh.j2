@@ -96,7 +96,7 @@ build_{{ service.name }}_image () {
     nixpacks build {{ service.build.context }}/ --inline-cache --platform linux/amd64 \
     --cache-from {{ service.image_for_tag("latest") }} \
     --name {{ service.image_for_tag(builder.tag_for_service(service.name)) }} \
-    {% if service.command %} --start-cmd "{{ service.command }}" \{% endif %}
+    --start-cmd "{{ service.command or 'sleep 1' }}" \
     {% for variable in service.environment_items %}--env {{ variable.name }}="$(echo -en '{{ variable.value }}')"  {% endfor %}
     docker tag {{ service.image_for_tag(builder.tag_for_service(service.name)) }} {{ service.image_for_tag("latest") }}
 {% endif %}

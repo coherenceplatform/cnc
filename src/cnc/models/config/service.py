@@ -42,7 +42,11 @@ log = get_logger(__name__)
 
 class BuildSettings(BaseModel):
     raw_dockerfile: Optional[str] = Field(alias="dockerfile", default=None)
-    context: Optional[str] = "."
+    raw_context: Optional[str] = Field(alias="context", default=None)
+
+    @property
+    def context(self):
+        return self.raw_context or "."
 
     @property
     def dockerfile(self):
