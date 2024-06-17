@@ -54,6 +54,7 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         self,
         should_cleanup=True,
         should_regenerate_config=True,
+        args=[],
     ):
         config = self.provision_stage_manager
         is_ok = config.make_ready_for_use(
@@ -68,14 +69,14 @@ class AWSEnvironmentCollection(EnvironmentCollection):
             log.info(f"Cannot init TF for {self}")
             return {"ok": False, "results": results, "steps": steps}
 
-        total_plan_changes = config.plan(save=True, plan_filename="total")
+        total_plan_changes = config.plan(save=True, plan_filename="total", args=args)
 
         if not total_plan_changes:
             log.debug(
                 "Did not get any total plan changes! Calling apply and logging..."
             )
             try:
-                _ret = config.apply()
+                _ret = config.apply(args=args)
             except Exception as e:
                 log.debug(f"Error in calling apply... {e}")
                 _ret = {"@message": f"Error: {e}"}
@@ -119,6 +120,7 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         self,
         should_cleanup=True,
         should_regenerate_config=True,
+        args=[],
     ):
         config = self.provision_stage_manager
 
@@ -133,7 +135,7 @@ class AWSEnvironmentCollection(EnvironmentCollection):
             res = {"steps": [], "results": []}
             res["steps"].append(config.plan_json(plan_filename="total"))
 
-        _ret = config.apply(use_saved=True, plan_filename="total")
+        _ret = config.apply(use_saved=True, plan_filename="total", args=args)
         log.debug(f"TF apply output: {_ret}")
 
         _ok = True

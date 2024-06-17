@@ -156,8 +156,8 @@ class ProvisionStageManager(CollectionTemplatedBase):
         if self.saved_plan_exists(plan_filename=plan_filename):
             os.remove(filename)
 
-    def plan(self, save=False, plan_filename="tfplan", target=None):
-        args = ["-json"]
+    def plan(self, save=False, plan_filename="tfplan", target=None, args=[]):
+        args.append("-json")
 
         if save:
             self.clean_saved_plan(plan_filename)
@@ -231,8 +231,8 @@ class ProvisionStageManager(CollectionTemplatedBase):
 
         return state
 
-    def apply(self, use_saved=False, plan_filename="tfplan"):
-        args = ["-json"]
+    def apply(self, use_saved=False, plan_filename="tfplan", args=[]):
+        args.append("-json")
         if use_saved:
             args.extend([plan_filename])
         _ret = self._tf_command(
