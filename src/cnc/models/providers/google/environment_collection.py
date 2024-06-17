@@ -60,6 +60,7 @@ class GCPEnvironmentCollection(EnvironmentCollection):
         self,
         should_cleanup=True,
         should_regenerate_config=True,
+        args=[],
     ):
         config = self.provision_stage_manager
         config.make_ready_for_use(
@@ -70,7 +71,7 @@ class GCPEnvironmentCollection(EnvironmentCollection):
         results = []
         steps = []
 
-        total_plan_changes = config.plan(save=True, plan_filename="total_1")
+        total_plan_changes = config.plan(save=True, plan_filename="total_1", args=args)
         if not total_plan_changes:
             log.debug(
                 "Did not get any total plan changes! Calling apply and logging..."
@@ -115,6 +116,7 @@ class GCPEnvironmentCollection(EnvironmentCollection):
         self,
         should_cleanup=True,
         should_regenerate_config=True,
+        args=[],
     ):
         can_configure = True
         config = self.provision_stage_manager
@@ -138,7 +140,17 @@ class GCPEnvironmentCollection(EnvironmentCollection):
             return {"ok": False, "results": results, "steps": steps}
 
         _ok = False
-        ret = config.apply(use_saved=True, plan_filename="total_1")
+        ret = config.apply(use_saved=True, plan_filename="total_1", args=args)
+
+        if "-destroy" in args:
+            _ok = True
+            if ret.get("@message", "").startswith("Error: "):
+                _ok = False
+
+            results.append(ret)
+            config.cleanup()
+            return {"ok": _ok, "results": results, "steps": steps}
+
         if ret and ret.get("error"):
             results.append(ret)
             if ret["error"] == "enable_billing":
