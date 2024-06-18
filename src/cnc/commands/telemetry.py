@@ -5,7 +5,7 @@ import machineid
 
 rudder_analytics.write_key = "2eEyoetBjPLeYUOg8jRfOicBRiS"
 rudder_analytics.dataPlaneUrl = "https://withcoherepvm.dataplane.rudderstack.com"
-rudder_analytics.debug = True
+rudder_analytics.debug = False
 rudder_analytics.gzip = True
 
 # default to enabling telemetry for now
@@ -26,12 +26,12 @@ def send_event(command_name: str):
         try:
             _id = machineid.id()
         except Exception as e:
-            print(f"Cannot get machine ID: {e}")
+            # print(f"Cannot get machine ID: {e}")
             _id = None
 
         try:
             user_id = os.environ.get("CNC_USER_ID", _id or "UNKNOWN")
-            print(f"Sending {command_data} to RS for {user_id}")
+            # print(f"Sending {command_data} to RS for {user_id}")
             rudder_analytics.track(user_id, "command", command_data)
         except Exception as e:
             print(f"Cannot send telemetry event: {e}")

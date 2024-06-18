@@ -57,7 +57,7 @@ def add_common(
     ] = Path("environments.yml"),
 ):
     """Common Entry Point for whole app"""
-    if "--help" in sys.argv:
+    if "--help" in sys.argv or ("info" in sys.argv and "version" in sys.argv):
         return True
 
     if not config_file_path.is_file():
