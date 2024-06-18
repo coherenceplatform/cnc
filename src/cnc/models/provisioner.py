@@ -157,15 +157,17 @@ class ProvisionStageManager(CollectionTemplatedBase):
             os.remove(filename)
 
     def plan(self, save=False, plan_filename="tfplan", target=None, args=[]):
-        args.append("-json")
+        tf_args = args.copy()
+        if "-json" not in tf_args:
+            tf_args.append("-json")
 
         if save:
             self.clean_saved_plan(plan_filename)
-            args.extend(["-out", plan_filename])
+            tf_args.extend(["-out", plan_filename])
         if target:
-            args.extend(["-target", target])
+            tf_args.extend(["-target", target])
 
-        _ret = self._tf_command("plan", args=args, capture_output=True)
+        _ret = self._tf_command("plan", args=tf_args, capture_output=True)
 
         if not _ret:
             log.info(f"{self} got None in plan")
@@ -232,11 +234,14 @@ class ProvisionStageManager(CollectionTemplatedBase):
         return state
 
     def apply(self, use_saved=False, plan_filename="tfplan", args=[]):
-        args.append("-json")
+        tf_args = args.copy()
+        if "-json" not in tf_args:
+            tf_args.append("-json")
+
         if use_saved:
-            args.extend([plan_filename])
+            tf_args.extend([plan_filename])
         _ret = self._tf_command(
-            "apply", args=args, options_list=["-auto-approve"], capture_output=True
+            "apply", args=tf_args, options_list=["-auto-approve"], capture_output=True
         )
 
         if not _ret:
