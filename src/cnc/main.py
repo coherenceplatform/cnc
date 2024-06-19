@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 from dataclasses import dataclass
@@ -59,6 +60,9 @@ def add_common(
     """Common Entry Point for whole app"""
     if "--help" in sys.argv:
         return True
+
+    os.environ["CNC_CONFIG_PATH"] = str(config_file_path)
+    os.environ["CNC_ENVIRONMENTS_PATH"] = str(environments_file_path)
 
     if not config_file_path.is_file():
         log.error(f"Config file not found: {config_file_path}")
