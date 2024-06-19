@@ -102,7 +102,7 @@ ProviderCacheResourceSettings = Annotated[
 
 
 class Service(BaseModel):
-    name: str
+    name: str = Field(pattern=r"^\S+$")
     settings: Union[
         ProviderDatabaseResourceSettings,
         ProviderCacheResourceSettings,
