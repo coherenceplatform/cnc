@@ -182,7 +182,7 @@ class CORSSettings(BaseModel):
 
 
 class FrontendCDNConfig(BaseModel):
-    enabled: Optional[bool] = False
+    enabled: Optional[bool] = True
 
 
 class BackendCDNConfig(BaseModel):
