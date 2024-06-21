@@ -270,6 +270,14 @@ class EnvironmentTemplatedBase(_TemplatedBase):
 
         return _all
 
+    @property
+    def services(self):
+        service_names = self.service_tags.keys()
+        if service_names:
+            return [s for s in self.environment.services if s.name in service_names]
+
+        return self.environment.services
+
     def copy_templates(self):
         self.copy_template_dir()
 

@@ -1,4 +1,5 @@
-{% for service in environment.backend_services %}
+{% for service in deployer.services %}
+{% if service.is_backend %}
 update_{{ service.name }}_ecs_task_definitions () {
     {% with
         task_name=service.instance_name,
@@ -29,4 +30,5 @@ update_{{ service.name }}_ecs_task_definitions () {
     {% endfor %}
     {% endif %}
 }
+{% endif %}
 {% endfor %}
