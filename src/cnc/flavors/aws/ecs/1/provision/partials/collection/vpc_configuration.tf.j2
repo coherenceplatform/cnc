@@ -10,7 +10,7 @@ locals {
         {%- endfor %}
     ])
     {%- else %}
-    num_public_subnets = length(local.available_azs)
+    num_public_subnets = min(length(local.available_azs), 4)
     {%- endif %}
 
     {%- if env_collection.existing_vpc_config and env_collection.existing_vpc_config.private_subnet_cidrs %}
@@ -20,7 +20,7 @@ locals {
         {%- endfor %}
     ])
     {%- else %}
-    num_private_subnets = length(local.available_azs)
+    num_private_subnets = min(length(local.available_azs), 4)
     {%- endif %}
 
     {%- if env_collection.existing_vpc_config and env_collection.existing_vpc_config.public_subnet_ids %}
