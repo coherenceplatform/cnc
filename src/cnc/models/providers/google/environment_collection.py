@@ -63,13 +63,17 @@ class GCPEnvironmentCollection(EnvironmentCollection):
         args=[],
     ):
         config = self.provision_stage_manager
-        config.make_ready_for_use(
+        is_ok = config.make_ready_for_use(
             should_cleanup=should_cleanup,
             should_regenerate_config=should_regenerate_config,
         )
 
         results = []
         steps = []
+
+        if not is_ok:
+            log.info(f"Cannot init TF for {self}")
+            return {"ok": False, "results": results, "steps": steps}
 
         total_plan_changes = config.plan(save=True, plan_filename="total_1", args=args)
         if not total_plan_changes:
