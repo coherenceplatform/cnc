@@ -17,7 +17,7 @@ variable "cidr" {
 variable "azs" {
   description = "A list of availability zones names or ids in the region"
   type        = list(string)
-  default = ["us-east-2a", "us-east-2b", "us-east-2c"]
+  default = ["{{ env_collection.region | default('us-east-1') }}a", "{{ env_collection.region | default('us-east-1') }}b", "{{ env_collection.region | default('us-east-1') }}c"]
 }
 
 variable "enable_dns_hostnames" {

@@ -1,0 +1,26 @@
+name: dev-cnc
+provider: aws
+flavor: vpc-lambda-dynamodb
+version: 1
+
+# # see customization docs for more info
+# template_config:
+#   # from root, where do we look for custom templates?
+#   template_directory: ecs-customization-test
+#   # OPTIONAL, defaults to main.tf.j2
+#   provision_filename: "main.tf.j2"
+#   # OPTIONAL, defaults to main.sh.j2
+#   deploy_filename: "main.sh.j2"
+#   # OPTIONAL, defaults to main.sh.j2
+#   build_filename: "main.sh.j2"
+
+collections:
+- name: ezops-cnc
+  region: us-east-1
+  base_domain: cnc.dev.ezops.com.br
+  account_id: "975635808270"
+  environments:
+  - name: dev
+    environment_variables:
+    - name: FOO
+      value: bar

@@ -19,5 +19,5 @@ variable "account_id" {
 variable "region" {
   description = "AWS region"
   type        = string
-  default     = "{{ env_collection.region | default('us-east-2') }}"
+  default     = "{{ env_collection.region | default('us-east-1') }}"
 }

@@ -1,0 +1,7 @@
+services:
+  app:
+    command: "my command"
+    x-cnc:
+      type: backend
+    build:
+      context: .
