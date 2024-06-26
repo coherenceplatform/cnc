@@ -287,3 +287,17 @@ resource "aws_route" "private_nat_gateway" {
     create = "5m"
   }
 }
+
+resource "aws_vpc_endpoint" "dynamodb" {
+  vpc_id       = local.vpc_id
+  service_name = "com.amazonaws.${var.region}.dynamodb"
+
+  route_table_ids = concat(
+    [for rt in aws_route_table.private : rt.id],
+    [for rt in aws_route_table.public : rt.id]
+  )
+
+  tags = {
+    Name = "DynamoDB VPC Endpoint"
+  }
+}

@@ -1,25 +1,8 @@
-variable "name" {
-  description = "Name to be used on all the resources as identifier"
-  type        = string
-  default     = "{{ env_collection.name | default('cnc') }}"
-}
-
-variable "environment" {
-  description = "Environment to be used on all the resources as identifier"
-  type        = string
-  default = "dev"
-}
-
-variable "account_id" {
-  description = "Environment to be used on all the resources as identifier"
-  type        = string
-  default = "{{ env_collection.account_id | default('null') }}"
-}
 
 variable "aws_resources_permission_lambda" {
   description = "List of AWS resources that the Lambda function needs to access"
   type        = list(string)
-  default     = [ "logs", "cloudwatch", "s3" ]
+  default     = [ "logs", "cloudwatch", "ec2", "dynamodb", "s3"]
 }
 
 variable "lambda_function_name" {
@@ -50,7 +33,7 @@ variable "environment_variables" {
 }
 
 variable "type_package_lambda_function" {
-  description = "Method to package the Lambda function | Set [ 's3', 'filename', 'image' ]"
+  description = "Method to package the Lambda function | Set [ 's3', 'filename', 'image' ], If you just want to upload the lambda without passing the file, leave it null "
   type        = string
   default = "filename"
 }
@@ -89,21 +72,21 @@ variable "type_source_lambda_function" {
 variable "source_file" {
   description = "Path to the Lambda function package"
   type        = string
-  default = "/home/balmant/Desktop/app-lambda-coherence/dynamodb.py"
+  default = "/home/balmant/Desktop/cnc-lambda-function/input/dynamodb.py"
   # default = ""
 }
 
 variable "source_dir" {
   description = "Path Dir to the Lambda function package"
   type        = string
-  default = "/home/balmant/Desktop/app-lambda-coherence/"
+  default = "/home/balmant/Desktop/cnc-lambda-function/input/"
   # default = ""
 }
 
 variable "output_path" {
   description = "Output of the Lambda function"
   type        = string
-  default = "/home/balmant/Desktop/app-output-lambda/dynamodb.zip"
+  default = "/home/balmant/Desktop/cnc-lambda-function/output/dynamodb.zip"
   # default = ""
 }
 

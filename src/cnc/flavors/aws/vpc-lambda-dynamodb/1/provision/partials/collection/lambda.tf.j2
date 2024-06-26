@@ -1,6 +1,4 @@
 locals {
-  infrastructure_suffix = join ("-", [var.environment, var.name])
-
   default_bucket_name = join("-", [local.infrastructure_suffix, "lambda", var.account_id])
   s3_bucket_name = coalesce(var.s3_bucket_name, local.default_bucket_name)
 
@@ -108,6 +106,11 @@ resource "aws_lambda_function" "this" {
     content {
       variables = var.environment_variables
     }
+  }
+
+  vpc_config {
+      security_group_ids = [aws_security_group.lambda.id]
+      subnet_ids = aws_subnet.public[*].id
   }
 
   dynamic "logging_config" {

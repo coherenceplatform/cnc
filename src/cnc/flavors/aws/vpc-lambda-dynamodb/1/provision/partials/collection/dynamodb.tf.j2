@@ -1,6 +1,5 @@
 locals {
-  infrastructure_suffix = join("-", [var.environment, var.name])
-  
+
   default_table_name = join("-", [local.infrastructure_suffix, "dynamodb"])
   table_name = coalesce(var.table_name, local.default_table_name)
 
@@ -51,6 +50,6 @@ resource "aws_dynamodb_table" "this" {
     {
       Name = local.table_name
     },
-    var.dynamodb_tags
+    var.tags
   )
 }

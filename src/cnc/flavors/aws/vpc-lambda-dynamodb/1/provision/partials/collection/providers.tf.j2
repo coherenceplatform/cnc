@@ -5,7 +5,7 @@ provider "aws" {
     default_tags {
         tags = {
             Environment = var.environment
-            Flavor = "lambda-dynamodb"
+            Flavor = "vpc-lambda-dynamodb"
             ManagedBy = "cnc"
         }
     }
@@ -21,7 +21,7 @@ provider "aws" {
         tags = {
             Environment = var.environment
             ManagedBy = "cnc"
-            Flavor = "lambda-dynamodb"
+            Flavor = "vpc-lambda-dynamodb"
         }
     }
 }
