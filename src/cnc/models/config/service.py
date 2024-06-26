@@ -152,6 +152,34 @@ class Service(BaseModel):
         if not data.get("deploy"):
             data["deploy"] = {}
 
+        service_cpu = None
+        if data["deploy"].get("resources", {}).get("limits", {}).get("cpus"):
+            service_cpu = data["deploy"]["resources"]["limits"]["cpus"]
+
+        service_memory = None
+        if data["deploy"].get("resources", {}).get("limits", {}).get("memory"):
+            service_memory = data["deploy"]["resources"]["limits"]["memory"]
+
+        for worker in data.get("x-cnc", {}).get("workers", []):
+            if not worker.get("system"):
+                worker["system"] = {}
+
+            if service_cpu and not worker["system"].get("cpus"):
+                worker["system"]["cpus"] = service_cpu
+
+            if service_memory and not worker["system"].get("memory"):
+                worker["system"]["memory"] = service_memory
+
+        for task in data.get("x-cnc", {}).get("scheduled_tasks", []):
+            if not task.get("system"):
+                task["system"] = {}
+
+            if service_cpu and not task["system"].get("cpus"):
+                task["system"]["cpus"] = service_cpu
+
+            if service_memory and not task["system"].get("memory"):
+                task["system"]["memory"] = service_memory
+
         return data
 
     @model_validator(mode="after")
