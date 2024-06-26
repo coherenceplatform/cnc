@@ -316,7 +316,9 @@ class EnvironmentCollection(BaseModel):
                         self,
                         output_only=True,
                     )
-                    _config.make_ready_for_use()
+                    if not _config.make_ready_for_use():
+                        raise Exception("Make ready for use failed")
+
                     self._infra_outputs_cache = _config.output()
             except Exception as e:
                 log.debug(f"Cannot get TF outputs for {self}: {e}")
