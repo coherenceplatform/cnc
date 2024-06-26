@@ -133,8 +133,9 @@ class BaseServiceSettings(BaseModel):
     @property
     def unique_id(self):
         _hash = hashlib.sha256()
+        health_check_path = self.system.health_check or "/"
         _hash.update(
-            f"{self.service.environment.application.name}:{self.service.environment.collection.name}:{self.service.environment.name}:{self.service.name}:{self.url_path}:{self.system.health_check}".encode()
+            f"{self.service.environment.application.name}:{self.service.environment.collection.name}:{self.service.environment.name}:{self.service.name}:{self.url_path}:{health_check_path}".encode()
         )
         return _hash.hexdigest()
 
