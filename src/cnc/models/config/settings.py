@@ -50,10 +50,14 @@ class PlatformSettings(BaseModel):
 
 
 class SystemSettings(BaseModel):
-    health_check: Optional[str] = "/"
+    raw_health_check: Optional[str] = Field(alias="health_check", default="/")
     platform_settings: Optional[PlatformSettings] = Field(
         default_factory=PlatformSettings
     )
+
+    @property
+    def health_check(self):
+        return self.raw_health_check.strip() or "/"
 
 
 class CDNSettings(BaseModel):
@@ -133,9 +137,8 @@ class BaseServiceSettings(BaseModel):
     @property
     def unique_id(self):
         _hash = hashlib.sha256()
-        health_check_path = self.system.health_check or "/"
         _hash.update(
-            f"{self.service.environment.application.name}:{self.service.environment.collection.name}:{self.service.environment.name}:{self.service.name}:{self.url_path}:{health_check_path}".encode()
+            f"{self.service.environment.application.name}:{self.service.environment.collection.name}:{self.service.environment.name}:{self.service.name}:{self.url_path}:{self.system.health_check}".encode()
         )
         return _hash.hexdigest()
 
