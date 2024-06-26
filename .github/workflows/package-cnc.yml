@@ -61,6 +61,7 @@ jobs:
         password: ${{ secrets.GCR_JSON_KEY }}
 
     - name: Build base image
+      id: docker_build_base
       uses: docker/build-push-action@v2
       with:
         context: .
@@ -71,6 +72,7 @@ jobs:
         cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
 
     - name: Build and push prod image
+      id: docker_build_prod
       uses: docker/build-push-action@v2
       with:
         context: .
@@ -80,3 +82,49 @@ jobs:
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
         build-args: CNC_VERSION=${{ env.PACKAGE_VERSION }}
+
+    - name: Notify Slack on failure
+      if: failure() && (steps.docker_build_base.outcome == 'failure' || steps.docker_build_prod.outcome == 'failure')
+      uses: slackapi/slack-github-action@v1
+      with:
+        payload: |
+          {
+            "text": "Docker build failed for CNC version ${{ env.PACKAGE_VERSION }}",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Docker build failed for CNC*\nVersion: ${{ env.PACKAGE_VERSION }}\nBase image build: ${{ steps.docker_build_base.outcome }}\nProd image build: ${{ steps.docker_build_prod.outcome }}"
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Repo:*\n${{ github.repository }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Workflow:*\n${{ github.workflow }}"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Commit:*\n${{ github.sha }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Branch:*\n${{ github.ref }}"
+                  }
+                ]
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
