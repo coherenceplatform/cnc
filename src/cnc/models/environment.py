@@ -136,7 +136,7 @@ class Environment(BaseModel):
 
     @property
     def web_services(self):
-        return self.backend_services + self.frontend_services
+        return [s for s in self.services if s.is_web]
 
     @property
     def backend_services(self):
@@ -186,7 +186,8 @@ class Environment(BaseModel):
     def service_domains(self):
         domains = []
         for service in self.services:
-            domains.append({"service_name": service.name, "domain": service.domain})
+            if service.is_web:
+                domains.append({"service_name": service.name, "domain": service.domain})
         return domains
 
     @property

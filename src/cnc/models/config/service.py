@@ -254,6 +254,10 @@ class Service(BaseModel):
         return self.settings.type == "filesystem"
 
     @property
+    def is_web(self):
+        return self.settings.type in ["frontend", "backend"]
+
+    @property
     def included_build_globs(self):
         if self.build.context == ".":
             # match everything
@@ -328,12 +332,13 @@ class Service(BaseModel):
 
     @property
     def domain(self):
-        # TODO: figure out how to offer subdomain routing here
-        # TODO: do custom domains need to live here if so?
-        if self.environment.collection.has_service_domains:
-            return self.environment.collection.get_terraform_output(
-                f"{self.instance_name}_cloud_run_url"
-            )
+        if self.is_web:
+            # TODO: figure out how to offer subdomain routing here
+            # TODO: do custom domains need to live here if so?
+            if self.environment.collection.has_service_domains:
+                return self.environment.collection.get_terraform_output(
+                    f"{self.instance_name}_cloud_run_url"
+                )
 
     @property
     def provider_links(self):
