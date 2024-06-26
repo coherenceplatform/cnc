@@ -10,6 +10,8 @@ The following configuration outlines the variables used to set up a Lambda funct
 
 - `aws_resources_permission_lambda`: Names of AWS resources for Lambda permission, such as logs, CloudWatch, and S3.
 
+- `type_package_lambda_function`: Set [ 's3', 'filename', 'image' ] for Package Lambda Function deploy in Lambda via s3, filename(local) or image(ECR) - default is "filename"
+
 - `lambda_function_name`: Name of the Lambda function. If not set, defaults to `var.environment + var.name + "lambda"`.
 - `handler`: Handler function for the Lambda. Default is `""`.
 - `runtime`: Runtime environment for the Lambda. Default is `"python3.12"`.
