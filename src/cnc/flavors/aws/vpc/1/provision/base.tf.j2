@@ -1,0 +1,25 @@
+{% block state %}
+terraform {
+  backend "local" {
+    path = "{{ config_renderer.working_dir }}/.terraform/{{ config_renderer.tf_state_namespace }}.tfstate"
+  }
+}
+{% endblock %}
+
+{% if not output_only %}
+
+{% block providers %}
+{% include "partials/collection/providers.tf.j2" %}
+{% endblock providers%}
+
+{% block variables %}
+{% include "partials/collection/variables.tf.j2" %}
+{% endblock variables%}
+
+{% block main %}
+{% include "partials/collection/vpc.tf.j2" %}
+{% endblock main%}
+
+{% block collection %}{% endblock collection %}
+
+{% endif %}
