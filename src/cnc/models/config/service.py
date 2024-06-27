@@ -110,7 +110,7 @@ class Service(BaseModel):
         FrontendServiceSettings,
         BackendServiceSettings,
     ] = Field(alias="x-cnc", discriminator="type")
-    build: Optional[BuildSettings] = None
+    build: Optional[BuildSettings] = Field(default_factory=BuildSettings)
     deploy: DeploySettings
     image: Optional[str] = None
     compose_environment: Dict[str, str] = Field(
