@@ -1,0 +1,23 @@
+services:
+  app:
+    x-cnc:
+      type: backend
+      workers:
+        - name: worker-1
+          command: "python -m cnc.worker"
+          system:
+            cpus: 1
+
+      scheduled_tasks:
+        - name: task-1
+          command: "python -m cnc.task"
+          schedule: "0 0 * * *"
+          system:
+            memory: 1G
+    build:
+      context: .
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 4G
