@@ -52,6 +52,7 @@ class ProvisionStageManager(CollectionTemplatedBase):
         self,
         should_cleanup=True,
         should_regenerate_config=True,
+        init=True,
     ):
         if should_cleanup:
             log.debug(f"Cleaning up & setting up at start for {self}")
@@ -71,7 +72,10 @@ class ProvisionStageManager(CollectionTemplatedBase):
             ):
                 return False
 
-        return self.init()
+        if init:
+            return self.init()
+
+        return True
 
     def template_context(self):
         if self.application.provider_is_aws:
