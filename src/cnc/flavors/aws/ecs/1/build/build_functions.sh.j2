@@ -107,8 +107,8 @@ build_{{ service.name }}_image () {
     {% if builder.tag_for_service(service.name) %}
     docker tag {{ service.image_for_tag(builder.tag_for_service(service.name)) }} {{ service.image_for_tag("latest") }}
     {% endif %}
-}
 {% endif %}
+}
 
 push_{{ service.name }}_image_tags () {
     echo -e "\\nPushing docker images...\\n"
