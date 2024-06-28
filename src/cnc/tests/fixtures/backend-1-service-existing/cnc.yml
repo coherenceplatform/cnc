@@ -1,0 +1,5 @@
+services:
+  app:
+    x-cnc:
+      type: backend
+    image: cnc-app:latest

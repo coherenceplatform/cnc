@@ -51,7 +51,6 @@ send_{{ service.name }}_status_hook () {
 {% endblock %}
 
 {% block build_functions %}
-
 verify_{{ service.name }}_image_exists () {
     echo -e "\\nSkipping image build - using existing image."
     echo -e "\\nVerifying image exists...\\n"

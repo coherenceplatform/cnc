@@ -148,3 +148,45 @@ class AWSBuildStageSmokeTest(AWSBuildStageTestBase):
         self.assertNotIn("run_image", build_functions)
         self.assertNotIn("verify_app_image_exists", build_functions)
         self.assertIn("build_app_image ()", build_functions)
+
+
+class AWSExistingImageBuildStageTestCase(AWSBuildStageTestBase):
+    fixture_name = "backend-1-service-existing"
+
+    def test_build_functions(self):
+        self.assertTrue(self.environment.application.provider_is_aws)
+
+        build = self.parse("build-app.sh")
+        self.assertNotIn("run_image", build)
+        self.assertIn("verify_app_image_exists", build)
+        self.assertNotIn("build_app_image", build)
+
+        build_functions = self.parse("build-app-functions.sh")
+        self.assertNotIn("run_image", build_functions)
+        self.assertIn("verify_app_image_exists", build_functions)
+
+
+class GCPExistingImageBuildStageTestCase(CNCBaseTestCase):
+    fixture_name = "backend-1-service-existing"
+
+    def parse(self, script_name="build.sh"):
+        with open(f"{self.manager.rendered_files_path}/{script_name}", "r") as file:
+            return file.read()
+
+    def test_build_functions(self):
+        app = Application.from_environments_yml(self.env_data_filepath)
+        collection = app.collections[0]
+        self.environment = collection.environment_by_name("main")
+        self.assertTrue(self.environment.application.provider_is_gcp)
+        self.manager = BuildStageManager(self.environment)
+        self.manager.setup()
+        self.manager.render_build()
+
+        build = self.parse("build-app.sh")
+        self.assertNotIn("run_image", build)
+        self.assertIn("verify_app_image_exists", build)
+        self.assertNotIn("build_app_image", build)
+
+        build_functions = self.parse("build-app-functions.sh")
+        self.assertNotIn("run_image", build_functions)
+        self.assertIn("verify_app_image_exists", build_functions)
