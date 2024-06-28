@@ -166,7 +166,7 @@ class AWSExistingImageBuildStageTestCase(AWSBuildStageTestBase):
         self.assertIn("verify_app_image_exists", build_functions)
 
 
-class GCPExistingImageBuildStageTestCase(CNCBaseTestCase):
+class GCPExistingImageBuildStageTestCase(GCPBuildStageTestBase):
     fixture_name = "backend-1-service-existing"
 
     def parse(self, script_name="build.sh"):
@@ -174,13 +174,7 @@ class GCPExistingImageBuildStageTestCase(CNCBaseTestCase):
             return file.read()
 
     def test_build_functions(self):
-        app = Application.from_environments_yml(self.env_data_filepath)
-        collection = app.collections[0]
-        self.environment = collection.environment_by_name("main")
         self.assertTrue(self.environment.application.provider_is_gcp)
-        self.manager = BuildStageManager(self.environment)
-        self.manager.setup()
-        self.manager.render_build()
 
         build = self.parse("build-app.sh")
         self.assertNotIn("run_image", build)
