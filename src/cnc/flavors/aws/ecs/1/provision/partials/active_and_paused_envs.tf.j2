@@ -31,6 +31,7 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
     vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_db.id]
     skip_final_snapshot = true
     allow_major_version_upgrade = true
+    storage_encrypted = true
 
     {%- if resource.settings.db_name %}
     db_name = "{{ resource.settings.db_name }}"
