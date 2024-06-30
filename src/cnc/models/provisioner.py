@@ -96,6 +96,7 @@ class ProvisionStageManager(CollectionTemplatedBase):
             fe_hash = ""
 
         return {
+            "re": re,
             "output_only": self.output_only,
             "app": self.application,
             "env_collection": self.collection,
