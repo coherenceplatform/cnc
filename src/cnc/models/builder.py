@@ -136,13 +136,14 @@ class BuildStageManager(EnvironmentTemplatedBase):
                 )
 
             log_output = ""
+            exit_code = 0
             for future in concurrent.futures.as_completed(futures):
                 ret = future.result()
                 log_output += ret.stdout if ret.stdout else ""
                 log_output += ret.stderr if ret.stderr else ""
                 if ret.returncode != 0:
-                    return ret.returncode
+                    exit_code = ret.returncode
 
             print(log_output)
 
-        return 0
+        return exit_code
