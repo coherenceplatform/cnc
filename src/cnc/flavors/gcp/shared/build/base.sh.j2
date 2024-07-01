@@ -26,22 +26,24 @@ send_{{ service.name }}_status_hook 0 "working"
 
 {% block build_commands %}
 
-{% if service.image %}
+{%- if service.image %}
 verify_{{ service.name }}_image_exists
-{% else %}
+{%- else %}
 build_{{ service.name }}_image
-{% endif %}
 
-{% if service.build %}
+{%- if service.build %}
 push_{{ service.name }}_image_tags
-{% endif %}
+{%- endif %}
+
 
 {% if service.is_frontend %}
 build_{{ service.name }}_assets
 build_{{ service.name }}_run_image
 {% endif %}
 
-{% endblock %}
+{% endif %}
+
+{% endblock build_commands %}
 
 {% block post_build_commands %}
 {% endblock %}
