@@ -30,7 +30,7 @@ RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
     https://packages.cloud.google.com/apt cloud-sdk main" | \
     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 
-RUN apt-get update && apt-get dist-upgrade && \
+RUN apt-get update && apt-get -y dist-upgrade && \
     apt-get install -y less \
     jq \
     groff \
