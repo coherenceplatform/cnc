@@ -54,8 +54,7 @@ send_{{ service.name }}_status_hook () {
 verify_{{ service.name }}_image_exists () {
     echo -e "\\nSkipping image build - using existing image."
     echo -e "\\nVerifying image exists...\\n"
-    docker manifest inspect {{ service.image_for_tag(builder.tag_for_service(service.name)) }}; inspect_result=$?
-    if [ $inspect_result -ne 0 ]; then exit $inspect_result; fi
+    docker manifest inspect {{ service.image_for_tag(builder.tag_for_service(service.name)) }}
 }
 
 {% if not service.image %}
