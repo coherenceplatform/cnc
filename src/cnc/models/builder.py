@@ -1,6 +1,5 @@
 import subprocess
 import concurrent.futures
-from rich import print
 
 from .cycle_stage_base import EnvironmentTemplatedBase
 from .stage import Stage
