@@ -11,6 +11,30 @@ resource "kubernetes_cron_job" "{{ service.instance_name }}-{{ task.name }}" {
     namespace = "{{ service.instance_name }}"
   }
 
+  spec {
+    schedule = "0 0 1 1 *"
+    job_template {
+      metadata {
+        name = "hello-world-job"
+      }
+      spec {
+        template {
+          metadata {
+            name = "hello-world-pod"
+          }
+          spec {
+            container {
+              name    = "hello-world"
+              image   = "busybox"
+              command = ["/bin/sh", "-c", "echo Hello World"]
+            }
+            restart_policy = "OnFailure"
+          }
+        }
+      }
+    }
+  }
+
   lifecycle {
     ignore_changes = all
   }
@@ -22,6 +46,34 @@ resource "kubernetes_deployment" "{{ service.instance_name }}-{{ worker.name }}"
   metadata {
     name      = "{{ service.name }}-{{ worker.name }}"
     namespace = "{{ service.instance_name }}"
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "hello-world"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "hello-world"
+        }
+      }
+
+      spec {
+        container {
+          name  = "hello-world"
+          image = "nginx:latest"
+          port {
+            container_port = 80
+          }
+        }
+      }
+    }
   }
 
   lifecycle {
