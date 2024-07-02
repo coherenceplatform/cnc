@@ -21,15 +21,17 @@ login_to_registries
 
 {% block build_commands %}
 
-{% if service.image %}
+{%- if service.image %}
 verify_{{ service.name }}_image_exists
-{% else %}
+{%- else %}
 build_{{ service.name }}_image
-{% endif %}
 
-{% if service.build and not builder.file_exists(service.build.dockerfile) %}
+{%- if service.build and not builder.file_exists(service.build.dockerfile) %}
 push_{{ service.name }}_image_tags
-{% endif %}
+{%- endif %}
+
+{%- endif %}
+
 {% endblock %}
 
 {% block post_build_commands %}
