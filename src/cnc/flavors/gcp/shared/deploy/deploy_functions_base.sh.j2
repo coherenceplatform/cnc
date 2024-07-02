@@ -104,6 +104,12 @@ seed_{{ service.name }} () {
 {% if service.settings.workers %}
 deploy_{{ service.name }}_workers () {
     gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+        name: {{ service.instance_name }}
+EOF
     {% for item in service.environment_items %}
     echo -en '{{ item.value }}' | base64 -w 0 > temp.txt
     kubectl delete secret {{ item.instance_name }} --namespace={{ service.instance_name }} --ignore-not-found
