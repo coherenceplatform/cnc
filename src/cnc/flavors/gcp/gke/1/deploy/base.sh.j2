@@ -21,12 +21,8 @@ migrate_{{ service.name }}
 seed_{{ service.name }}
 {% endif %}
 
-{% if service.settings.workers %}
-deploy_{{ service.name }}_workers
-{% endif %}
-
-{% if service.settings.scheduled_tasks %}
-deploy_{{ service.name }}_tasks
+{% if service.settings.workers or service.settings.scheduled_tasks %}
+deploy_{{ service.name }}_workers_tasks
 {% endif %}
 
 {% endif %}

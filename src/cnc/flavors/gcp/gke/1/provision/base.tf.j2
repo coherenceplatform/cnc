@@ -61,6 +61,11 @@ resource "kubernetes_namespace" "{{ environment.instance_name }}" {
 
 {% include "partials/service/cache.tf.j2" %}
 {% include "partials/service_level_resources.tf.j2" %}
+
+{% if service.is_backend and env_collection.needs_k8s %}
+{% include "partials/service/kubernetes_workloads.tf.j2" %}
+{% endif %}
+
 {% endblock service_resources %}
 {% endfor %}
 
