@@ -1,0 +1,31 @@
+resource "kubernetes_namespace" "{{ service.instance_name }}" {
+  metadata {
+    name = "{{ service.instance_name }}"
+  }
+}
+
+{% for task in service.settings.scheduled_tasks %}
+resource "kubernetes_cron_job" "{{ service.name }}-{{ task.name }}" {
+  metadata {
+    name      = "{{ service.name }}-{{ task.name }}"
+    namespace = "{{ service.instance_name }}"
+  }
+
+  lifecycle {
+    ignore_changes = all
+  }
+}
+{% endfor %}
+
+{% for worker in service.settings.workers %}
+resource "kubernetes_deployment" "{{ service.name }}-{{ worker.name }}" {
+  metadata {
+    name      = "{{ service.name }}-{{ worker.name }}"
+    namespace = "{{ service.instance_name }}"
+  }
+
+  lifecycle {
+    ignore_changes = all
+  }
+}
+{% endfor %}
