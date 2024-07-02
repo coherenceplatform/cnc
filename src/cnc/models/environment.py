@@ -207,10 +207,6 @@ class Environment(BaseModel):
             return f"{self.name}.{self.collection.base_domain}"
 
     @property
-    def custom_ns_records(self):
-        return self.data.get("custom_ns_records", {})
-
-    @property
     def default_service(self):
         if self.frontend_services:
             return sorted(
@@ -263,7 +259,9 @@ class Environment(BaseModel):
     __str__ = __repr__
 
     def custom_ns_records_for(self, domain):
-        return self.custom_ns_records.get(domain)
+        return self.collection.get_terraform_output(
+            re.sub("\W", "", domain) + "_ns_records"
+        )
 
     def variable_by_name(self, name):
         for variable in self.environment_variables:

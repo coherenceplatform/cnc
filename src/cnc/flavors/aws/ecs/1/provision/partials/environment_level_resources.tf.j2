@@ -609,7 +609,7 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
     {% endfor %}
 
     {% if environment.default_service.is_frontend %}
-    default_root_object = "{{ environment.default_service.settings.url_path.lstrip('/') }}{{ environment.default_service.index_file_name }}"
+    default_root_object = "{{ environment.default_service.settings.url_path.lstrip('/') }}{{ environment.default_service.settings.index_file_name }}"
 
     default_cache_behavior {
         allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
