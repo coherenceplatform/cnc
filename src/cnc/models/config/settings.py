@@ -276,9 +276,9 @@ class Worker(BaseModel):
 # TODO: discriminator for provider
 class ScheduledTask(BaseModel):
     provider: str
-    name: str
-    command: List[str]
-    raw_schedule: str = Field(alias="schedule")
+    name: str = Field(min_length=1)
+    command: List[str] = Field(min_items=1)
+    raw_schedule: str = Field(alias="schedule", min_length=1)
     system: Optional[ProviderDeployResourceLimits] = Field(
         default_factory=ProviderDeployResourceLimits
     )
