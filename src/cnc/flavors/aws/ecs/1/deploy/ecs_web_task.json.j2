@@ -56,7 +56,7 @@
                 {% for item in service.insecure_environment_items %}
                 {
                     "name": "{{ item.name }}",
-                    "value": "{{ item.value }}"
+                    "value": {{ item.value | tojson }}
                 }{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]

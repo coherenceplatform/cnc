@@ -45,7 +45,7 @@ spec:
         {% for variable in service.insecure_environment_items %}
         {% if variable.name != "PORT" %}
         - name: {{ variable.name }}
-          value: "{{ variable.value }}"
+          value: {{ variable.value | tojson }}
         {% endif %}
         {% endfor %}
         {% for secret in service.environment_secrets %}

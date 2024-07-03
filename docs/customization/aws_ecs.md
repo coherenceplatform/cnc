@@ -63,7 +63,7 @@ You can customize the task definition (you can also do the same thing for any ot
                 {% for item in service.insecure_environment_items %}
                 {
                     "name": "{{ item.name }}",
-                    "value": "{{ item.value }}"
+                    "value": {{ item.value | tojson }}
                 }{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]
@@ -169,7 +169,7 @@ Add this in `provision/ecs_web_task.json.j2` in the `custom` directory. This wil
                 {% for item in service.insecure_environment_items %}
                 {
                     "name": "{{ item.name }}",
-                    "value": "{{ item.value }}"
+                    "value": {{ item.value | tojson }}
                 }{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]
