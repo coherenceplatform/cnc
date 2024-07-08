@@ -155,10 +155,13 @@ class GCPEnvironmentCollection(EnvironmentCollection):
             config.cleanup()
             return {"ok": _ok, "results": results, "steps": steps}
 
-        if ret and ret.get("error"):
+        if ret and (ret.get("error") or ret.get("@message", "").startswith("Error: ")):
             results.append(ret)
-            if ret["error"] == "enable_billing":
+            if ret.get("error", "") == "enable_billing":
                 log.info("Cannot proceed with infra config, need billing account!")
+                can_configure = False
+            elif "insufficient quota" in ret.get("@message", ""):
+                log.info("Cannot proceed with infra config, insufficient quota.")
                 can_configure = False
 
         seen_url_addresses = []
