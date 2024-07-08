@@ -4,7 +4,7 @@ spec:
     metadata:
       annotations:
 {% if service.is_backend %}
-        run.googleapis.com/vpc-access-connector: {{ service.environment.collection.instance_name[:19] }}
+        run.googleapis.com/vpc-access-connector: {{ service.environment.collection.instance_name[:19].strip("-") }}
         run.googleapis.com/vpc-access-egress: all
 {% endif %}
         autoscaling.knative.dev/minScale: "{{ service.deploy.replicas }}"
