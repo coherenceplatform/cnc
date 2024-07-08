@@ -77,7 +77,6 @@ deploy_{{ service.name }}_tasks () {
 }
 {% endif %}
 
-
 deploy_{{ service.name }}_workers_tasks () {
     create_secrets_{{ service.name }}
 
@@ -89,6 +88,8 @@ deploy_{{ service.name }}_workers_tasks () {
     deploy_{{ service.name }}_tasks
     {% endif %}
 }
+
+{% endif %} # service.is_backend
 
 deploy_{{ service.name }} () {
     gcloud container clusters get-credentials --zone {{ environment.collection.region }} {{ environment.collection.instance_name }}
