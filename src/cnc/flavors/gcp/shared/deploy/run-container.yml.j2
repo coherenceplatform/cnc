@@ -7,7 +7,9 @@ spec:
         run.googleapis.com/vpc-access-connector: {{ service.environment.collection.instance_name[:19].strip("-") }}
         run.googleapis.com/vpc-access-egress: all
 {% endif %}
+      {%- if not is_job %}
         autoscaling.knative.dev/minScale: "{{ service.deploy.replicas }}"
+      {% endif %}
         run.googleapis.com/execution-environment: "gen2"
     {%- if is_job %}
     spec:
