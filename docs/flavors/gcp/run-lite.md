@@ -2,15 +2,19 @@
 title: GCP Run Lite Overview
 description: What does cnc deploy to my GCP cloud projects with the GKE flavor?
 ---
-`run-lite` is designed to be as free-friendly as possible and still be a robust choice for hosting many applications. If you're building a bootstraped/side-proejct/hobby full-stack web app, this flavor is made for you! It will often be free, but usage of optionla services such as [Cloud SQL](https://cloud.google.com/sql/docs) or [Secret Manager](https://cloud.google.com/secret-manager/docs) might incur some usage costs. These are also often eligible for credits or free use tiers, depending on your GCP billing account.
+
+The `run-lite` flavor is designed to be as free-friendly as possible and still be a robust choice for hosting many applications. 
+
+If you're building a bootstraped side-project or hobby full-stack web app, this flavor is made for you! It will often be free, but usage of optionla services such as [Cloud SQL](https://cloud.google.com/sql/docs) or [Secret Manager](https://cloud.google.com/secret-manager/docs) might incur some usage costs. These are also often eligible for credits or free use tiers, depending on your GCP billing account.
 
 ## Resources Used
 
 [Cloud Run](https://cloud.google.com/cloud-run/docs) is the most important services in this flavor. For each service in each environment (only `backend` is supported), `cnc` will:
-    - create a cloud run service (get the URL from the GCP Cloud Console)
-    - create a [cloud run job](https://cloud.google.com/run/docs/create-jobs) version
-        - use a GCP SDK in your code to submit jobs with the `CNC_INSTANCE_NAME` as the job name, and you have an autoscaling async work queue
-    - if defined, resources like `Cloud SQL` and `Cloud Storage` are also supported and will be configured including environment vars for service discovery
+
+- create a cloud run service (get the URL from the GCP Cloud Console)
+- create a [cloud run job](https://cloud.google.com/run/docs/create-jobs) version
+- use a GCP SDK in your code to submit jobs with the `CNC_INSTANCE_NAME` as the job name, and you have an autoscaling async work queue
+- if defined, resources like `Cloud SQL` and `Cloud Storage` are also supported and will be configured including environment vars for service discovery
 
 ### Networking
 
