@@ -21,7 +21,7 @@ This is an example of a monorepo (cnc does not actually know or care if in a rep
 x-cnc:
   build_settings:
     platform_settings:
-      # see the cloud provider docs for valid types 
+      # see the cloud provider docs for valid types
       machine_type: "E2_HIGHCPU_8"
   resources:
   # resources can be defined here or as services, interchangably
@@ -50,7 +50,7 @@ services:
 
     build:
       # for this container, where is the Dockerfile
-      # if you don't have one defined, the default is 
+      # if you don't have one defined, the default is
       # "Dockerfile" in the current working directory
       # if the dockerfile does not exist, included flavors
       # will use nixpacks for the build step to produce a container
@@ -73,7 +73,7 @@ services:
       resources:
         limits:
           memory: 2g
-          cpu: 2
+          cpus: 2
 
     build:
       # see comments in frontend above
@@ -105,12 +105,8 @@ services:
         command: ["node", "worker.js", "default"]
         # define resources (will default to service if not defined)
         system:
-          cpu: 2
+          cpus: 2
           memory: 4g
-          x-cnc:
-            preview:
-              memory: 4g
-              cpu: 2
 
       scheduled_tasks:
       # CRON jobs go here
@@ -119,12 +115,15 @@ services:
         # use k8s syntax for all providers/flavors
         # this is every 2 mins (can be expensive)
         schedule: "*/2 * * * *"
+        # define resources (will default to service if not defined)
+        system:
+          memory: 2g
 
   redis:
     x-cnc:
       # will be merged into resources for the whole app in each environment
       type: cache
-    
+
     # cnc will ignore this and use cloud service e.g. Elasticache
     image: redis
     restart: always
