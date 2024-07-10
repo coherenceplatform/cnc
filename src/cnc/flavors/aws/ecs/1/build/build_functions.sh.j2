@@ -80,8 +80,10 @@ build_{{ service.name }}_image () {
     echo -e "\\nBuilding from dockerfile...\\n"
     docker buildx inspect {{ service.name }}builder || docker buildx create --name {{ service.name }}builder --use
     docker buildx build {% for variable in service.environment_items %}--build-arg {{ variable.name }}="$(echo -en '{{ variable.value }}')"  {% endfor %}\
-    --cache-to=type=inline \
-    --cache-from=type=registry,ref={{ service.image_for_tag("latest") }} \
+    --load \
+    --platform linux/amd64 \
+    --cache-to=type=registry,ref={{ service.image_for_tag('cache') }},mode=max,oci.mediatypes=true,image-manifest=true \
+    --cache-from=type=registry,ref={{ service.image_for_tag('cache') }} \
     --push \
     -t {{ service.image_for_tag("latest") }} \
     {% if builder.tag_for_service(service.name) %}-t {{ service.image_for_tag(builder.tag_for_service(service.name)) }}{% endif %} \
