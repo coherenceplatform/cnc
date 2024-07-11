@@ -35,6 +35,7 @@ terraform {
 {# Per active environment #}
 {% for environment in env_collection.valid_environments %}
 {% block environment_resources scoped %}
+{# {% include "partials/environment_level_resources.tf.j2" %} #}
 {% endblock environment_resources %}
 {% endfor %}
 
@@ -44,9 +45,6 @@ terraform {
 {% set vpc_enabled = true %}
 
 {% block service_resources scoped %}
-{% if service.is_backend and env_collection.needs_k8s %}
-{% include "partials/service/kubernetes_workloads.tf.j2" %}
-{% endif %}
 {% endblock service_resources %}
 
 {% block cloud_run_service scoped %}

@@ -83,7 +83,7 @@ def plan(
 
     if not is_setup:
         log.info(f"Cannot setup {tf_config}")
-        raise typer.Exit(code=1)
+        return
 
     try:
         plan = tf_config._tf_command("plan")
@@ -115,7 +115,7 @@ def apply(
 
     if not is_setup:
         log.info(f"Cannot setup {tf_config}")
-        raise typer.Exit(code=1)
+        return
 
     try:
         _ret = tf_config._tf_command("apply")
@@ -165,7 +165,7 @@ def debug(
 
     if not is_setup:
         log.info(f"Cannot setup {tf_config}")
-        raise typer.Exit(code=1)
+        return
 
     try:
         tf_config.debug_template_output_directory()
@@ -185,11 +185,7 @@ def cmd(ctx: typer.Context, tf_cmd: List[str]):
     """Run an infrastructure command in the CLI"""
     send_event("provision.cmd")
     tf_config = ProvisionStageManager(ctx.obj.collection)
-    is_setup = tf_config.make_ready_for_use()
-
-    if not is_setup:
-        log.info(f"Cannot setup {tf_config}")
-        raise typer.Exit(code=1)
+    tf_config.make_ready_for_use()
 
     try:
         _ret = tf_config._tf_command(tf_cmd[0], args=tf_cmd[1:])

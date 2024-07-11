@@ -56,6 +56,16 @@ class _TemplatedBase:
         src_dir = Path(__file__).parent.parent
         cwd = self.working_dir
 
+        # Directory where assets will be copied
+        assets_dest_dir = Path(self.rendered_files_path) / "assets"
+
+        try:
+            # Copy all contents from src_dir/assets to assets_dest_dir
+            shutil.copytree(src_dir / "assets", assets_dest_dir, dirs_exist_ok=True)
+
+        except Exception as e:
+            return False
+
         # Path to the directory where templates are finally consolidated
         final_template_dir = self.config_files_path
 
@@ -64,6 +74,7 @@ class _TemplatedBase:
             f"{src_dir}/flavors/{self.application.provider}"
             f"/shared/{self.template_type}"
         )
+   
         if os.path.isdir(shared_template_dir):
             shutil.copytree(
                 shared_template_dir,

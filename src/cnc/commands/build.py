@@ -44,12 +44,6 @@ def perform(
         "--webhook-token",
         help="Webhook token for authentication",
     ),
-    parallel: bool = typer.Option(
-        False,
-        "--parallel",
-        "-p",
-        help="Enable parallel build",
-    ),
 ):
     """Build containers for config-defined services"""
     start_time = time.time()
@@ -70,7 +64,6 @@ def perform(
         default_tag=default_tag,
         webhook_url=webhook_url,
         webhook_token=webhook_token,
-        parallel_exec_enabled=parallel,
     )
     cmd_exit_code = builder.perform(
         should_cleanup=cleanup,

@@ -16,13 +16,9 @@ run_pre_build_commands () {
 }
 
 login_to_registries () {
-    {%- if service.image %}
-    echo -e \\nSkipping login to Amazon ECR - using existing image.\\n
-    {%- else %}
     echo -e \\nLogging into Amazon ECR...\\n
     aws ecr get-login-password --region {{ environment.collection.region }} | \
     docker login -u AWS --password-stdin {{ service.image_registry_url().split('/')[0] }}
-    {%- endif %}
 }
 
 run_install_commands () {
@@ -74,16 +70,14 @@ send_{{ service.name }}_status_hook () {
 {% endblock %}
 
 {% block build_functions %}
-{% if not service.image %}
+{% if service.build %}
 build_{{ service.name }}_image () {
 {% if builder.file_exists(service.build.dockerfile) or (not service.build.dockerfile_is_default) %}
     echo -e "\\nBuilding from dockerfile...\\n"
     docker buildx inspect {{ service.name }}builder || docker buildx create --name {{ service.name }}builder --use
     docker buildx build {% for variable in service.environment_items %}--build-arg {{ variable.name }}="$(echo -en '{{ variable.value }}')"  {% endfor %}\
-    --load \
-    --platform linux/amd64 \
-    --cache-to=type=registry,ref={{ service.image_for_tag('cache') }},mode=max,oci.mediatypes=true,image-manifest=true \
-    --cache-from=type=registry,ref={{ service.image_for_tag('cache') }} \
+    --cache-to=type=inline \
+    --cache-from=type=registry,ref={{ service.image_for_tag("latest") }} \
     --push \
     -t {{ service.image_for_tag("latest") }} \
     {% if builder.tag_for_service(service.name) %}-t {{ service.image_for_tag(builder.tag_for_service(service.name)) }}{% endif %} \
@@ -131,7 +125,8 @@ push_{{ service.name }}_image_tags () {
 verify_{{ service.name }}_image_exists () {
     echo -e "\\nSkipping image build - using existing image."
     echo -e "\\nVerifying image exists...\\n"
-    docker manifest inspect {{ service.image_for_tag(builder.tag_for_service(service.name)) }}
+    docker manifest inspect {{ service.image_for_tag(builder.tag_for_service(service.name)) }}; inspect_result=$?
+    if [ $inspect_result -ne 0 ]; then exit $inspect_result; fi
 }
 {% endif %}
 

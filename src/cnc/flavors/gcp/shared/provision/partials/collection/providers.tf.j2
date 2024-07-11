@@ -37,15 +37,3 @@ provider "google-beta" {
 data "google_project" "project" {
   project_id = "{{ env_collection.account_id }}"
 }
-
-{% if env_collection.needs_k8s %}
-data "google_client_config" "{{ env_collection.instance_name }}" {}
-
-provider "kubernetes" {
-    host = "https://${google_container_cluster.{{ env_collection.instance_name }}.endpoint}"
-    token = data.google_client_config.{{ env_collection.instance_name }}.access_token
-    cluster_ca_certificate = base64decode(
-        google_container_cluster.{{ env_collection.instance_name }}.master_auth[0].cluster_ca_certificate
-    )
-}
-{% endif %}

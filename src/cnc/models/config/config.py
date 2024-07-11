@@ -9,6 +9,7 @@ from cnc.constants import EnvironmentVariableTypes
 # from cnc.constants import EnvironmentVariableDestinations
 from ..environment_variable import EnvironmentVariable
 from .resource import (
+    DynamoDBResourceSettings,
     CacheResourceSettings,
     QueueResourceSettings,
     BucketResourceSettings,
@@ -31,6 +32,7 @@ class BuildSettings(BaseModel):
 class ResourceService(Service):
     settings: Union[
         ProviderDatabaseResourceSettings,
+        DynamoDBResourceSettings,
         CacheResourceSettings,
         BucketResourceSettings,
         QueueResourceSettings,
@@ -108,7 +110,7 @@ class AppConfig(BaseModel):
         all_resources = []
 
         for service in self.services:
-            if service.settings.type in ["database", "cache"]:
+            if service.settings.type in ["database", "cache", "dynamodb"]:
                 all_resources.append(service)
 
         all_resources.extend(self.settings.explicit_resources)
@@ -249,6 +251,16 @@ class AppConfig(BaseModel):
 
         for resource in self.resources:
             if resource.is_database:
+                instances.append(resource)
+
+        return instances
+
+    @property
+    def dynamodb_resources(self):
+        instances = []
+
+        for resource in self.resources:
+            if resource.is_dynamodb:
                 instances.append(resource)
 
         return instances

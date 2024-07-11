@@ -1,8 +1,8 @@
-# Customizing deploy for your app
+# Customizing provision in your repo
 
-Let's say that you want to run some additional commands before or after the included deploy functions for each service. This enables you to do things like configure integrations or other systems to be ready to work with your new service. You could also replace the deployment logic entirely.
+Let's say that in addition to the default ECS resources added to each environment, you also want to add a DynamoDB instance:
 
-## environment.yml custom templates config
+## environment.yml custom templates config 
 
 Add this to `environments.yml`:
 

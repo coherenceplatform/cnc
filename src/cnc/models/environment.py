@@ -136,7 +136,14 @@ class Environment(BaseModel):
 
     @property
     def web_services(self):
-        return [s for s in self.services if s.is_web]
+        return self.backend_services + self.frontend_services + self.serverless_services
+
+    @property
+    def serverless_services(self):
+        if not self.services:
+            return []
+
+        return [s for s in self.services if s.is_serverless]
 
     @property
     def backend_services(self):
@@ -159,6 +166,10 @@ class Environment(BaseModel):
     @property
     def database_resources(self):
         return [s for s in self.services if s.is_database]
+    
+    @property
+    def dynamodb_resources(self):
+        return [s for s in self.services if s.is_dynamodb]
 
     @property
     def cache_resources(self):
@@ -186,8 +197,7 @@ class Environment(BaseModel):
     def service_domains(self):
         domains = []
         for service in self.services:
-            if service.is_web:
-                domains.append({"service_name": service.name, "domain": service.domain})
+            domains.append({"service_name": service.name, "domain": service.domain})
         return domains
 
     @property
@@ -207,6 +217,10 @@ class Environment(BaseModel):
             return f"{self.name}.{self.collection.base_domain}"
 
     @property
+    def custom_ns_records(self):
+        return self.data.get("custom_ns_records", {})
+
+    @property
     def default_service(self):
         if self.frontend_services:
             return sorted(
@@ -215,6 +229,8 @@ class Environment(BaseModel):
             )[0]
         elif self.backend_services:
             return self.backend_services[0]
+        elif self.serverless_services:
+            return self.serverless_services[0]        
 
         return None
 
@@ -259,9 +275,7 @@ class Environment(BaseModel):
     __str__ = __repr__
 
     def custom_ns_records_for(self, domain):
-        return self.collection.get_terraform_output(
-            re.sub("\W", "", domain) + "_ns_records"
-        )
+        return self.custom_ns_records.get(domain)
 
     def variable_by_name(self, name):
         for variable in self.environment_variables:

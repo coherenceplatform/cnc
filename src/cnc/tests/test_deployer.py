@@ -1,4 +1,3 @@
-import yaml
 from .base_test_class import CNCBaseTestCase
 from cnc.models import Application, DeployStageManager
 
@@ -54,15 +53,6 @@ class DeployStageCustomTestBase(DeployStageTestBase):
     def test_custom_template(self):
         build = self.parse("deploy-app.sh")
         self.assertIn("custom_template", build)
-
-
-class GCPDeployWithJsonVarsTest(DeployStageTestBase):
-    fixture_name = "backend-1-service"
-    env_data_filepath = "environments_json_var.yml"
-
-    def test_render_json_in_run_template(self):
-        run_yml = self.parse("run-app.yml")
-        self.assertTrue(isinstance(yaml.safe_load(run_yml), dict))
 
 
 class AWSDeployStageSmokeTest(AWSDeployStageTestBase):

@@ -19,10 +19,14 @@ from jinja2 import Template
 from cnc.constants import EnvironmentVariableTypes
 from cnc.utils import clean_name_string
 from ..base_model import BaseModel, IgnoredType
-from .resource import BucketResourceSettings
+from .resource import ( 
+    BucketResourceSettings,
+    DynamoDBResourceSettings,
+    )
 from .settings import (
     FrontendServiceSettings,
     BackendServiceSettings,
+    ServerlessServiceSettings,
     ProviderDeployResourceLimits,
 )
 from cnc.models.providers.amazon import (
@@ -107,10 +111,12 @@ class Service(BaseModel):
         ProviderDatabaseResourceSettings,
         ProviderCacheResourceSettings,
         BucketResourceSettings,
+        DynamoDBResourceSettings,
         FrontendServiceSettings,
         BackendServiceSettings,
+        ServerlessServiceSettings, 
     ] = Field(alias="x-cnc", discriminator="type")
-    build: Optional[BuildSettings] = Field(default_factory=BuildSettings)
+    build: Optional[BuildSettings] = None
     deploy: DeploySettings
     image: Optional[str] = None
     compose_environment: Dict[str, str] = Field(
@@ -151,34 +157,6 @@ class Service(BaseModel):
         # context is passed to child models
         if not data.get("deploy"):
             data["deploy"] = {}
-
-        service_cpu = None
-        if data["deploy"].get("resources", {}).get("limits", {}).get("cpus"):
-            service_cpu = data["deploy"]["resources"]["limits"]["cpus"]
-
-        service_memory = None
-        if data["deploy"].get("resources", {}).get("limits", {}).get("memory"):
-            service_memory = data["deploy"]["resources"]["limits"]["memory"]
-
-        for worker in data.get("x-cnc", {}).get("workers", []):
-            if not worker.get("system"):
-                worker["system"] = {}
-
-            if service_cpu and not worker["system"].get("cpus"):
-                worker["system"]["cpus"] = service_cpu
-
-            if service_memory and not worker["system"].get("memory"):
-                worker["system"]["memory"] = service_memory
-
-        for task in data.get("x-cnc", {}).get("scheduled_tasks", []):
-            if not task.get("system"):
-                task["system"] = {}
-
-            if service_cpu and not task["system"].get("cpus"):
-                task["system"]["cpus"] = service_cpu
-
-            if service_memory and not task["system"].get("memory"):
-                task["system"]["memory"] = service_memory
 
         return data
 
@@ -253,6 +231,15 @@ class Service(BaseModel):
     def is_internal(self):
         return self.settings.internal is True
 
+   
+    @property
+    def is_web(self):
+        return self.settings.type == "web"    
+
+    @property
+    def is_serverless(self):
+        return self.settings.type == "serverless"    
+    
     @property
     def is_backend(self):
         return self.settings.type == "backend"
@@ -264,6 +251,10 @@ class Service(BaseModel):
     @property
     def is_database(self):
         return self.settings.type == "database"
+    
+    @property
+    def is_dynamodb(self):
+        return self.settings.type == "dynamodb"
 
     @property
     def is_cache(self):
@@ -280,10 +271,6 @@ class Service(BaseModel):
     @property
     def is_filesystem(self):
         return self.settings.type == "filesystem"
-
-    @property
-    def is_web(self):
-        return self.settings.type in ["frontend", "backend"]
 
     @property
     def included_build_globs(self):
@@ -360,13 +347,12 @@ class Service(BaseModel):
 
     @property
     def domain(self):
-        if self.is_web:
-            # TODO: figure out how to offer subdomain routing here
-            # TODO: do custom domains need to live here if so?
-            if self.environment.collection.has_service_domains:
-                return self.environment.collection.get_terraform_output(
-                    f"{self.instance_name}_cloud_run_url"
-                )
+        # TODO: figure out how to offer subdomain routing here
+        # TODO: do custom domains need to live here if so?
+        if self.environment.collection.has_service_domains:
+            return self.environment.collection.get_terraform_output(
+                f"{self.instance_name}_cloud_run_url"
+            )
 
     @property
     def provider_links(self):
@@ -481,7 +467,7 @@ class Service(BaseModel):
             "type": self.settings.type,
         }
 
-        if self.is_frontend or self.is_backend:
+        if self.is_frontend or self.is_backend or self.is_web:
             _data["url_path"] = self.settings.url_path
 
         return _data

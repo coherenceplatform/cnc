@@ -51,13 +51,14 @@ send_{{ service.name }}_status_hook () {
 {% endblock %}
 
 {% block build_functions %}
+
 verify_{{ service.name }}_image_exists () {
     echo -e "\\nSkipping image build - using existing image."
     echo -e "\\nVerifying image exists...\\n"
-    docker manifest inspect {{ service.image_for_tag(builder.tag_for_service(service.name)) }}
+    docker manifest inspect {{ service.image_for_tag(builder.tag_for_service(service.name)) }}; inspect_result=$?
+    if [ $inspect_result -ne 0 ]; then exit $inspect_result; fi
 }
 
-{% if not service.image %}
 build_{{ service.name }}_image () {
 {% if builder.file_exists(service.build.dockerfile) or (not service.build.dockerfile_is_default) %}
     echo -e "\\nBuilding from dockerfile: ({{ service.image_for_tag(builder.tag_for_service(service.name)) }})...\\n"
@@ -100,7 +101,6 @@ build_{{ service.name }}_image () {
     docker tag {{ service.image_for_tag(builder.tag_for_service(service.name)) }} {{ service.image_for_tag("latest") }}
 {% endif %}
 }
-{% endif %}
 
 push_{{ service.name }}_image_tags () {
     echo -e "\\nPushing docker images...\\n"

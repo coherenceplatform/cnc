@@ -38,32 +38,8 @@ jobs:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
-        python3 -m twine upload dist/*
-
-    - name: Wait for new CNC package to be available on PyPI
-      run: |
-        sudo apt-get update && sudo apt-get install -y jq
-        PACKAGE_NAME=cocnc
-        PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
-        MAX_ATTEMPTS=10
-        ATTEMPT=1
-
-        while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-          echo "Checking PyPI for $PACKAGE_NAME version $PACKAGE_VERSION (Attempt $ATTEMPT of $MAX_ATTEMPTS)"
-          if curl -s "https://pypi.org/pypi/$PACKAGE_NAME/json" | jq -e ".releases[\"$PACKAGE_VERSION\"]" > /dev/null; then
-            echo "Package $PACKAGE_NAME version $PACKAGE_VERSION found on PyPI"
-            break
-          fi
-
-          if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-            echo "Package not found after $MAX_ATTEMPTS attempts. Failing the workflow."
-            exit 1
-          fi
-
-          ATTEMPT=$((ATTEMPT + 1))
-          echo "Package not found. Waiting for 30 seconds before next attempt..."
-          sleep 30
-        done
+        python3 -m twine upload dist/* && \
+        sleep 20
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
@@ -85,7 +61,6 @@ jobs:
         password: ${{ secrets.GCR_JSON_KEY }}
 
     - name: Build base image
-      id: docker_build_base
       uses: docker/build-push-action@v2
       with:
         context: .
@@ -96,7 +71,6 @@ jobs:
         cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
 
     - name: Build and push prod image
-      id: docker_build_prod
       uses: docker/build-push-action@v2
       with:
         context: .
@@ -106,49 +80,3 @@ jobs:
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
         build-args: CNC_VERSION=${{ env.PACKAGE_VERSION }}
-
-    - name: Notify Slack on failure
-      if: failure() && (steps.docker_build_base.outcome == 'failure' || steps.docker_build_prod.outcome == 'failure')
-      uses: slackapi/slack-github-action@v1
-      with:
-        payload: |
-          {
-            "text": "Docker build failed for CNC version ${{ env.PACKAGE_VERSION }}",
-            "blocks": [
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Docker build failed for CNC*\nVersion: ${{ env.PACKAGE_VERSION }}\nBase image build: ${{ steps.docker_build_base.outcome }}\nProd image build: ${{ steps.docker_build_prod.outcome }}"
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Repo:*\n${{ github.repository }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Workflow:*\n${{ github.workflow }}"
-                  }
-                ]
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Commit:*\n${{ github.sha }}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Branch:*\n${{ github.ref }}"
-                  }
-                ]
-              }
-            ]
-          }
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

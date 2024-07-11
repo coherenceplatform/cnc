@@ -1,5 +1,4 @@
 import subprocess
-import concurrent.futures
 
 from .cycle_stage_base import EnvironmentTemplatedBase
 from .stage import Stage
@@ -12,18 +11,10 @@ log = get_logger(__name__)
 class BuildStageManager(EnvironmentTemplatedBase):
     template_type = "build"
 
-    def __init__(
-        self,
-        *args,
-        webhook_url=None,
-        webhook_token=None,
-        parallel_exec_enabled=False,
-        **kwargs,
-    ):
+    def __init__(self, *args, webhook_url=None, webhook_token=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.webhook_url = webhook_url
         self.webhook_token = webhook_token
-        self.parallel_exec_enabled = parallel_exec_enabled
 
     def template_context(self, service):
         return {
@@ -87,63 +78,26 @@ class BuildStageManager(EnvironmentTemplatedBase):
             self.debug()
             return
 
-        exit_code = 0
-        try:
-            if self.parallel_exec_enabled:
-                exit_code = self._perform_parallel()
-            else:
-                exit_code = self._perform_synchronous()
-
-            log.info(f"All done with perform for {self}")
-        except subprocess.CalledProcessError as e:
-            # Handle any errors that occurred during script execution
-            log.error(f"Error running the script: {e}")
-            log.error("Error output:")
-            log.error(e.stderr)
-            return 1
-
-        return exit_code
-
-    def _perform_synchronous(self):
         for script in self.scripts_to_run:
-            log.debug(f"Going to run {script}...")
-            ret = subprocess.run(
-                ["bash", "-c", f"source {self.rendered_files_path}/{script}"],
-                executable="/bin/bash",
-            )
-            log.debug(f"Output from {script}: \n{ret.stdout}\n{ret.stderr}")
-            if ret.returncode != 0:
-                return ret.returncode
+            # self.debug_template_output(script)
+            # self.debug_template_output(f"build-app-functions.sh")
+
+            try:
+                # log.debug(f"Going to run {script}...")
+                ret = subprocess.run(
+                    ["bash", "-c", f"source {self.rendered_files_path}/{script}"],
+                    executable="/bin/bash",
+                )
+                # log.debug(f"Output from {script}: \n{ret.stdout}\n{ret.stderr}")
+                if ret.returncode != 0:
+                    return ret.returncode
+
+                log.info(f"All done with perform for {self}")
+            except subprocess.CalledProcessError as e:
+                # Handle any errors that occurred during script execution
+                print(f"Error running the script: {e}")
+                print("Error output:")
+                print(e.stderr)
+                return 1
 
         return 0
-
-    def _perform_parallel(self):
-        log.info(
-            "Running scripts in parallel...\nLog output will be printed after completion."
-        )
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = []
-            for script in self.scripts_to_run:
-                log.debug(f"Going to run {script}...")
-                futures.append(
-                    executor.submit(
-                        subprocess.run,
-                        ["bash", "-c", f"source {self.rendered_files_path}/{script}"],
-                        executable="/bin/bash",
-                        capture_output=True,  # Capture stdout and stderr
-                        text=True,  # Return output as text
-                    )
-                )
-
-            log_output = ""
-            exit_code = 0
-            for future in concurrent.futures.as_completed(futures):
-                ret = future.result()
-                log_output += ret.stdout if ret.stdout else ""
-                log_output += ret.stderr if ret.stderr else ""
-                if ret.returncode != 0:
-                    exit_code = ret.returncode
-
-            print(log_output)
-
-        return exit_code

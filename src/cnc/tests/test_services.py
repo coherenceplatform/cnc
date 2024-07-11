@@ -27,33 +27,6 @@ class ServiceProviderLinksTestCase(CNCBaseTestCase):
         )
 
 
-class ServiceWorkerTaskCpuMemoryTestCase(CNCBaseTestCase):
-    fixture_name = "backend-1-service-1-worker-1-task"
-
-    def setUp(self):
-        super().setUp()
-        app = Application.from_environments_yml("environments.yml")
-        self.collection = app.collections[0]
-        self.environment = self.collection.environments[0]
-        self.assertEqual(self.environment.name, "main")
-        self.service = self.environment.services[0]
-
-    def test_worker_task_resources(self):
-        worker = self.service.settings.workers[0]
-        task = self.service.settings.scheduled_tasks[0]
-
-        svc_cpu = self.service.deploy.resources.limits.cpu
-        svc_mem = self.service.deploy.resources.limits.memory
-
-        self.assertEqual(svc_cpu, 2)
-        self.assertEqual(svc_mem, "4G")
-
-        self.assertEqual(worker.system.cpu, 1)
-        self.assertEqual(worker.system.memory, svc_mem)
-        self.assertEqual(task.system.cpu, svc_cpu)
-        self.assertEqual(task.system.memory, "1G")
-
-
 class ServiceDomainsTestCase(CNCBaseTestCase):
     fixture_name = "backend-1-service"
 

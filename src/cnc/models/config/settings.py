@@ -48,16 +48,11 @@ class PlatformSettings(BaseModel):
     min_scale: Optional[int] = 1
     max_scale: Optional[int] = 4
 
-
 class SystemSettings(BaseModel):
-    raw_health_check: Optional[str] = Field(alias="health_check", default="/")
+    health_check: Optional[str] = "/"
     platform_settings: Optional[PlatformSettings] = Field(
         default_factory=PlatformSettings
     )
-
-    @property
-    def health_check(self):
-        return self.raw_health_check.strip() or "/"
 
 
 class CDNSettings(BaseModel):
@@ -73,6 +68,7 @@ class BaseServiceSettings(BaseModel):
     internal: Optional[bool] = False
     data: Optional[dict] = {}
     url_path: Optional[str] = "/"
+
     custom_headers: Optional[
         Union[
             AWSCustomHeaders,
@@ -120,6 +116,10 @@ class BaseServiceSettings(BaseModel):
     # ------------------------------
     @property
     def is_web(self):
+        return False
+    
+    @property
+    def is_dynamodb(self):
         return False
 
     @property
@@ -184,6 +184,8 @@ class BaseServiceSettings(BaseModel):
 class CORSSettings(BaseModel):
     allowed_origins: List[str]
 
+class ServerlessCDNConfig(BaseModel):
+    enabled: Optional[bool] = True
 
 class FrontendCDNConfig(BaseModel):
     enabled: Optional[bool] = True
@@ -198,6 +200,14 @@ ProviderDeployResourceLimits = Annotated[
     Field(discriminator="provider"),
 ]
 
+class ServerlessServiceSettings(BaseServiceSettings):
+    type: Literal["serverless"]
+    handler: Optional[str] = "function.lambda_handler"
+    runtime: Optional[str] = "python3.12"
+
+    @property
+    def is_web(self):
+        return True
 
 class FrontendServiceSettings(BaseServiceSettings):
     type: Literal["frontend"]
@@ -276,9 +286,9 @@ class Worker(BaseModel):
 # TODO: discriminator for provider
 class ScheduledTask(BaseModel):
     provider: str
-    name: str = Field(min_length=1)
-    command: List[str] = Field(min_items=1)
-    raw_schedule: str = Field(alias="schedule", min_length=1)
+    name: str
+    command: List[str]
+    raw_schedule: str = Field(alias="schedule")
     system: Optional[ProviderDeployResourceLimits] = Field(
         default_factory=ProviderDeployResourceLimits
     )

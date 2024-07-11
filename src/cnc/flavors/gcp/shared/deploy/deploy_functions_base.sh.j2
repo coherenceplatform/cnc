@@ -101,8 +101,34 @@ seed_{{ service.name }} () {
 {% endif %}
 {% endblock %}
 
-create_secrets_{{ service.name }}() {
+{% if service.settings.workers %}
+deploy_{{ service.name }}_workers () {
     gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
+    {% for item in service.environment_items %}
+    echo -en '{{ item.value }}' | base64 -w 0 > temp.txt
+    kubectl delete secret {{ item.instance_name }} --namespace={{ service.instance_name }} --ignore-not-found
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: {{ item.instance_name }}
+      namespace: {{ service.instance_name }}
+    type: Opaque
+    data:
+      value: $(cat temp.txt)
+EOF
+    rm temp.txt
+    {% endfor %}
+    kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-workers.yml
+}
+{% endif %}
+
+{% if service.settings.scheduled_tasks %}
+deploy_{{ service.name }}_tasks () {
+    gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
+
+    # solve a race condition in creating some common resources with workers
+    sleep 5
 
     {% for item in service.environment_items %}
     echo -en '{{ item.value }}' | base64 -w 0 > temp.txt
@@ -119,38 +145,10 @@ create_secrets_{{ service.name }}() {
 EOF
     rm temp.txt
     {% endfor %}
-}
-
-{% if service.settings.workers %}
-deploy_{{ service.name }}_workers () {
-    gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
-    kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-workers.yml
-}
-{% endif %}
-
-{% if service.settings.scheduled_tasks %}
-deploy_{{ service.name }}_tasks () {
-    gcloud container clusters get-credentials --region {{ environment.collection.region }} {{ environment.collection.instance_name }}
-
-    # solve a race condition in creating some common resources with workers
-    sleep 5
 
     kubectl apply -f {{ deployer.rendered_files_path }}/{{ service.name }}-tasks.yml
 }
 {% endif %}
-
-# Main deployment function
-deploy_{{ service.name }}_workers_tasks () {
-    create_secrets_{{ service.name }}
-
-    {% if service.settings.workers %}
-    deploy_{{ service.name }}_workers
-    {% endif %}
-
-    {% if service.settings.scheduled_tasks %}
-    deploy_{{ service.name }}_tasks
-    {% endif %}
-}
 
 deploy_{{ service.name }} () {
     gcloud run services replace {{ deployer.rendered_files_path }}/run-{{ service.name }}.yml

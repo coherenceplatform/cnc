@@ -70,6 +70,10 @@ class BaseResourceSettings(BaseModel):
     @property
     def is_web(self):
         return False
+    
+    @property
+    def is_dynamodb(self):
+        return self.type == "dynamodb"
 
     @property
     def is_cache(self):
@@ -130,7 +134,7 @@ class BaseResourceSettings(BaseModel):
 
 class DatabaseResourceSettings(BaseResourceSettings):
     type: Literal["database"]
-    engine: Optional[Literal["postgres", "mysql"]] = "postgres"
+    engine: Optional[str] = "postgres"
     snapshot_file_path: Optional[str] = ""
     snapshot_type: Optional[str] = "data"
     raw_adapter: Optional[str] = Field(
@@ -505,10 +509,26 @@ class QueueResourceSettings(BaseResourceSettings):
 
         return queue_name
 
+class DynamoDBResourceSettings(BaseResourceSettings):
+    type: Literal["dynamodb"]
+    billing_mode: Optional[Literal["PROVISIONED", "PAY_PER_REQUEST"]] = "PAY_PER_REQUEST"
+    hash_key : Optional[str] = None
+    read_capacity : Optional[int] = 5
+    write_capacity : Optional[int] = 5
+    table_class : Optional[Literal["STANDARD", "STANDARD_INFREQUENT_ACCESS"]] = "STANDARD"
+    deletion_protection_enabled : Optional[str] = None
+
+    @property
+    def is_dynamodb(self):
+        return True
+    
+    @property
+    def managed_environment_variables(self):
+        return {}
 
 class CacheResourceSettings(BaseResourceSettings):
     type: Literal["cache"]
-    engine: Optional[Literal["redis"]] = "redis"
+    engine: Optional[str] = "redis"
     version: Union[str, int, float] = "6"
 
     @property

@@ -134,7 +134,7 @@ resource "google_compute_route" "internet-gateway-route" {
 resource "google_vpc_access_connector" "app-connector" {
   provider      = google-beta
 
-  name          = "{{ env_collection.instance_name[:19].strip("-") }}"
+  name          = "{{ env_collection.instance_name[:19] }}"
   project       = "{{ env_collection.account_id }}"
   region        = "{{ env_collection.region }}"
   ip_cidr_range = "10.8.0.0/28"

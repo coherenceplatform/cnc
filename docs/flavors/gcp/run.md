@@ -4,7 +4,6 @@ description: What does Coherence deploy to my GCP cloud projects?
 ---
 
 What does Coherence do in my GCP cloud account?
-
 - Depending on the `coherence.yml` provided, various resources will be deployed into your GCP account.
 - You always have the option to delete the entire infrastructure with one click in your Coherence app's settings page.
 - The estimated cost for resources is described [here](/docs/overview/pricing).
@@ -64,9 +63,7 @@ For convenience and auditability, Coherence adds default labels to all cloud res
         application = "your-application-name"
     }
 ```
-
 ### Google Kubernetes Engine (GKE) (beta)
-
 - [GKE](https://cloud.google.com/kubernetes-engine?hl=en) Your application can be deployed using Google Kubernetes Engine instead of Google Cloud Run.  This is an application level setting that applies to all services.
     - A service in coherence.yml will correspond to a [Service](https://cloud.google.com/kubernetes-engine/docs/concepts/service) in GKE.
     - Each Coherence environment will have it's own Kubernetes Namespace
@@ -75,5 +72,4 @@ For convenience and auditability, Coherence adds default labels to all cloud res
     - Coherence will deploy your GKE application in the `{your-app-name}-jobs` cluster that is also used for running scheduled tasks and workers.  For each Coherence environment Coherence will create a new namespace `{your-environment-name}-deploy`
 
 #### Cloud Run vs GKE
-
 - Google has a [comparison between Cloud Run and GKE](https://cloud.google.com/blog/products/containers-kubernetes/when-to-use-google-kubernetes-engine-vs-cloud-run-for-containers).  One important difference is Cloud Run autoscaling, which can scale to zero and use no resources if there are no requests.  [Scaling in GKE](https://cloud.google.com/kubernetes-engine/docs/how-to/scaling-apps) is controlled via replicas, which you can control with the `min_scale` attribute in the service definition of your coherence.yml

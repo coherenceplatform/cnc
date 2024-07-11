@@ -7,32 +7,14 @@ terraform {
 {% endblock %}
 
 {% if not output_only %}
-
-{% block providers %}
-{% include "partials/collection/providers.tf.j2" %}
-{% endblock providers %}
-
-{% block common_setup_resources %}
-{% include "partials/collection/common_setup_resources.tf.j2" %}
-{% endblock common_setup_resources %}
-
-{% block default_service %}
-{% include "partials/collection/default_service.tf.j2" %}
-{% endblock default_service %}
-
-{% block vpc_networking %}
-{% include "partials/collection/vpc_networking.tf.j2" %}
-{% endblock vpc_networking %}
-
-{% block gke_cluster %}
-{% include "partials/collection/gke_cluster.tf.j2" %}
-{% endblock gke_cluster %}
-
-{% block bastion_instance %}
-{% include "partials/collection/bastion_instance.tf.j2" %}
-{% endblock bastion_instance %}
-
 {% block application %}
+{% include "partials/collection/providers.tf.j2" %}
+{% include "partials/collection/common_setup_resources.tf.j2" %}
+{% include "partials/collection/default_service.tf.j2" %}
+{% include "partials/collection/vpc_networking.tf.j2" %}
+{% include "partials/collection/gke_cluster.tf.j2" %}
+{% include "partials/collection/bastion_instance.tf.j2" %}
+
 {% include "partials/collection_level_resources.tf.j2" %}
 {% endblock application %}
 
@@ -61,11 +43,6 @@ resource "kubernetes_namespace" "{{ environment.instance_name }}" {
 
 {% include "partials/service/cache.tf.j2" %}
 {% include "partials/service_level_resources.tf.j2" %}
-
-{% if service.is_backend and env_collection.needs_k8s %}
-{% include "partials/service/kubernetes_workloads.tf.j2" %}
-{% endif %}
-
 {% endblock service_resources %}
 {% endfor %}
 
@@ -82,5 +59,4 @@ resource "kubernetes_namespace" "{{ environment.instance_name }}" {
 
 {% block custom scoped %}
 {% endblock custom %}
-
 {% endif %}

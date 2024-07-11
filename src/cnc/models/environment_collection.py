@@ -170,6 +170,11 @@ class EnvironmentCollection(BaseModel):
         return environments
 
     @property
+    def serverless_services(self):
+        "non-unique, used in infra to provision several envs"
+        return self.all_services_for_type("serverless")
+
+    @property
     def backend_services(self):
         "non-unique, used in infra to provision several envs"
         return self.all_services_for_type("backend")
@@ -190,6 +195,10 @@ class EnvironmentCollection(BaseModel):
     @property
     def database_resources(self):
         return self.all_services_for_type("database")
+
+    @property
+    def dynamodb_resources(self):
+        return self.all_services_for_type("dynamodb")
 
     @property
     def cache_resources(self):
@@ -217,8 +226,8 @@ class EnvironmentCollection(BaseModel):
 
     @property
     def default_service(self):
-        for service in self.frontend_services + self.backend_services:
-            if service.environment.active_deployment:
+        for service in self.frontend_services + self.backend_services + self.serverless_services:
+            if service.environment.active:
                 return service
 
     @property
@@ -316,9 +325,7 @@ class EnvironmentCollection(BaseModel):
                         self,
                         output_only=True,
                     )
-                    if not _config.make_ready_for_use():
-                        raise Exception("Make ready for use failed")
-
+                    _config.make_ready_for_use()
                     self._infra_outputs_cache = _config.output()
             except Exception as e:
                 log.debug(f"Cannot get TF outputs for {self}: {e}")

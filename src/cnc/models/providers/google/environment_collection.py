@@ -38,10 +38,7 @@ class GCPEnvironmentCollection(EnvironmentCollection):
 
     @property
     def bastion_instance_type(self):
-        if self.region in [
-            "europe-west2",
-            "southamerica-west1",
-        ]:
+        if self.region == "southamerica-west1":
             return "e2-micro"
         else:
             return "f1-micro"
@@ -66,17 +63,13 @@ class GCPEnvironmentCollection(EnvironmentCollection):
         args=[],
     ):
         config = self.provision_stage_manager
-        is_ok = config.make_ready_for_use(
+        config.make_ready_for_use(
             should_cleanup=should_cleanup,
             should_regenerate_config=should_regenerate_config,
         )
 
         results = []
         steps = []
-
-        if not is_ok:
-            log.info(f"Cannot init TF for {self}")
-            return {"ok": False, "results": results, "steps": steps}
 
         total_plan_changes = config.plan(save=True, plan_filename="total_1", args=args)
         if not total_plan_changes:
@@ -158,13 +151,10 @@ class GCPEnvironmentCollection(EnvironmentCollection):
             config.cleanup()
             return {"ok": _ok, "results": results, "steps": steps}
 
-        if ret and (ret.get("error") or ret.get("@message", "").startswith("Error: ")):
+        if ret and ret.get("error"):
             results.append(ret)
-            if ret.get("error", "") == "enable_billing":
+            if ret["error"] == "enable_billing":
                 log.info("Cannot proceed with infra config, need billing account!")
-                can_configure = False
-            elif "insufficient quota" in ret.get("@message", ""):
-                log.info("Cannot proceed with infra config, insufficient quota.")
                 can_configure = False
 
         seen_url_addresses = []
