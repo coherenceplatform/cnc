@@ -139,6 +139,13 @@ class Environment(BaseModel):
         return [s for s in self.services if s.is_web]
 
     @property
+    def serverless_services(self):
+        if not self.services:
+            return []
+
+        return [s for s in self.services if s.is_serverless]
+    
+    @property
     def backend_services(self):
         if not self.services:
             return []
@@ -159,6 +166,10 @@ class Environment(BaseModel):
     @property
     def database_resources(self):
         return [s for s in self.services if s.is_database]
+
+    @property
+    def dynamodb_resources(self):
+        return [s for s in self.services if s.is_dynamodb]
 
     @property
     def cache_resources(self):
@@ -215,6 +226,8 @@ class Environment(BaseModel):
             )[0]
         elif self.backend_services:
             return self.backend_services[0]
+        elif self.serverless_services:
+            return self.serverless_services[0] 
 
         return None
 

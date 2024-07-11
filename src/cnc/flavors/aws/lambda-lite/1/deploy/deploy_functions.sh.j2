@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Assigning variables
+name_lambda="{{ service.instance_name }}"
+output_dir="{{ service.environment.collection.config_files_path }}/build/{{ service.instance_name }}_lambda_function.zip"
+region="{{ service.environment.collection.region }}"
+
+
+# Validation echos
+echo "Validating variables for service {{ service.instance_name }}..."
+echo "name_lambda: $name_lambda"
+echo "output_dir: $output_dir"
+echo "region: $region"
+
+# Check if variables are set
+if [ -z "$name_lambda" ] || [ -z "$output_dir" ] || [ -z "$region" ]; then
+  echo "Error: One or more required variables are not set for service {{ service.instance_name }}."
+  exit 1
+fi
+
+# Deploying lambda function using AWS CLI
+echo "Deploying lambda function $name_lambda with ZIP file at $output_dir in region $region"
+
+# Lambda deployment command using AWS CLI
+aws lambda update-function-code --function-name "$name_lambda" --zip-file "fileb://$output_dir" --region "$region" --no-cli-pager
+
+# Checking the exit status of the aws command
+if [ $? -eq 0 ]; then
+  echo "Lambda function $name_lambda updated successfully"
+else
+  echo "Error updating lambda function $name_lambda."
+  exit 1
+fi
+
+# Example usage
+echo "Lambda deployment script completed for service {{ service.instance_name }}."
