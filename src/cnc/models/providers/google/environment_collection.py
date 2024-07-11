@@ -38,7 +38,10 @@ class GCPEnvironmentCollection(EnvironmentCollection):
 
     @property
     def bastion_instance_type(self):
-        if self.region == "southamerica-west1":
+        if self.region in [
+            "europe-west2",
+            "southamerica-west1",
+        ]:
             return "e2-micro"
         else:
             return "f1-micro"

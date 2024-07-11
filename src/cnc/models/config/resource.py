@@ -130,7 +130,7 @@ class BaseResourceSettings(BaseModel):
 
 class DatabaseResourceSettings(BaseResourceSettings):
     type: Literal["database"]
-    engine: Optional[str] = "postgres"
+    engine: Optional[Literal["postgres", "mysql"]] = "postgres"
     snapshot_file_path: Optional[str] = ""
     snapshot_type: Optional[str] = "data"
     raw_adapter: Optional[str] = Field(
@@ -508,7 +508,7 @@ class QueueResourceSettings(BaseResourceSettings):
 
 class CacheResourceSettings(BaseResourceSettings):
     type: Literal["cache"]
-    engine: Optional[str] = "redis"
+    engine: Optional[Literal["redis"]] = "redis"
     version: Union[str, int, float] = "6"
 
     @property
