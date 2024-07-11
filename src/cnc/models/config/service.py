@@ -19,10 +19,14 @@ from jinja2 import Template
 from cnc.constants import EnvironmentVariableTypes
 from cnc.utils import clean_name_string
 from ..base_model import BaseModel, IgnoredType
-from .resource import BucketResourceSettings
+from .resource import ( 
+    BucketResourceSettings,
+    DynamoDBResourceSettings,
+    )
 from .settings import (
     FrontendServiceSettings,
     BackendServiceSettings,
+    ServerlessServiceSettings,
     ProviderDeployResourceLimits,
 )
 from cnc.models.providers.amazon import (
@@ -107,8 +111,10 @@ class Service(BaseModel):
         ProviderDatabaseResourceSettings,
         ProviderCacheResourceSettings,
         BucketResourceSettings,
+        DynamoDBResourceSettings,
         FrontendServiceSettings,
         BackendServiceSettings,
+        ServerlessServiceSettings,
     ] = Field(alias="x-cnc", discriminator="type")
     build: Optional[BuildSettings] = Field(default_factory=BuildSettings)
     deploy: DeploySettings
@@ -252,6 +258,14 @@ class Service(BaseModel):
     @property
     def is_internal(self):
         return self.settings.internal is True
+    
+    @property
+    def is_web(self):
+        return self.settings.type == "web"    
+
+    @property
+    def is_serverless(self):
+        return self.settings.type == "serverless"    
 
     @property
     def is_backend(self):
@@ -264,6 +278,10 @@ class Service(BaseModel):
     @property
     def is_database(self):
         return self.settings.type == "database"
+    
+    @property
+    def is_dynamodb(self):
+        return self.settings.type == "dynamodb"
 
     @property
     def is_cache(self):
@@ -481,7 +499,7 @@ class Service(BaseModel):
             "type": self.settings.type,
         }
 
-        if self.is_frontend or self.is_backend:
+        if self.is_frontend or self.is_backend or self.is_web:
             _data["url_path"] = self.settings.url_path
 
         return _data
