@@ -11,6 +11,7 @@ echo -e "\nYou are currently authenticated as: $(aws sts get-caller-identity)"
 
 {%- if environment.database_resources or environment.cache_resources %}
 cleanup_toolbox () {
+    echo -e "\nCleaning up port-forwarding sessions..."
     rm $TOOLBOX_ACTIVE_TEMP_FILEPATH
 
     group_id=$(ps -p $port_forwarding_parent_process_id -o pgid= | tr -d "[:space:]")
@@ -67,61 +68,8 @@ start_ssm_sessions
 port_forwarding_parent_process_id=$!
 {%- endif %}
 
-echo -e "\nLogging into Amazon ECR..."
-aws ecr get-login-password --region {{ environment.collection.region }} | \
-docker login -u AWS --password-stdin {{ service.image_registry_url().split('/')[0] }}
-
-{{ render_template("Dockerfile.j2", "Dockerfile") }}
-# copy config from default location
-AWS_DEFAULT_CONFIG_DIR=~/.aws
-if test -d "$AWS_DEFAULT_CONFIG_DIR"
-then
-    cp -r ~/.aws {{ toolbox.rendered_files_path }}/.aws
-else
-    mkdir {{ toolbox.rendered_files_path }}/.aws
-fi
-
-# copy config file if exists
-CONFIG_FILE_PATH=${AWS_CONFIG_FILE:-~/.aws/config}
-if test -e "$CONFIG_FILE_PATH"
-then
-    cp $CONFIG_FILE_PATH {{ toolbox.rendered_files_path }}/.aws/config
-fi
-
-# copy creds file if exists
-CREDS_FILE_PATH=${AWS_SHARED_CREDENTIALS_FILE:-~/.aws/credentials}
-if test -e "$CREDS_FILE_PATH"
-then
-    cp $CREDS_FILE_PATH {{ toolbox.rendered_files_path }}/.aws/credentials
-fi
-
-docker pull {{ service.image_for_tag(toolbox.tag_for_service(service.name)) }}
-
-docker build -t {{ service.instance_name }}_toolbox \
---build-arg AWS_REGION=$AWS_REGION \
---build-arg AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
---build-arg AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
---build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
---build-arg AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
--f {{ toolbox.rendered_files_path }}/Dockerfile {{ toolbox.rendered_files_path }}
-
-{%- if command %}
-{# Allow time for port forwarding processes to start #}
-sleep ${CNC_TOOLBOX_CMD_DELAY_SECONDS:-15}
-{%- endif %}
-
-# Start & exec into docker container
-docker run --entrypoint sh \
-{%- for variable in toolbox.environment_items -%}
--e {{ variable.name }}="$(echo -en '{{ variable.value }}')" \
-{%- endfor -%}
---network ${CNC_TOOLBOX_NETWORK:-host} \
-{%- if command %}
---rm --name app {{ service.instance_name }}_toolbox -c '{{ command }}'; command_result=$?
+{%- if proxy_only %}
+{% include "partials/proxy_only.sh.j2" %}
 {%- else %}
--it --rm --name app {{ service.instance_name }}_toolbox
-{%- endif %}
-
-{%- if command %}
-exit $command_result
+{% include "partials/service_container.sh.j2" %}
 {%- endif %}

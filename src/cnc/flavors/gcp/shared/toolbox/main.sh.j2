@@ -10,11 +10,14 @@ trap cleanup_toolbox EXIT
 echo -e "\nYour currently authenticated accounts:\n$(gcloud auth list)"
 echo -e "\nCurrent configuration:\n$(gcloud config list)"
 
+{% if not proxy_only %}
 # Ensure docker configured
 gcloud auth configure-docker {{ environment.collection.region }}-docker.pkg.dev
+{% endif %}
 
 {%- if environment.database_resources or environment.cache_resources %}
 cleanup_toolbox () {
+    echo -e "\nCleaning up port-forwarding sessions..."
     rm $TOOLBOX_ACTIVE_TEMP_FILEPATH
 
     group_id=$(ps -p $port_forwarding_parent_process_id -o pgid= | tr -d "[:space:]")
@@ -72,69 +75,8 @@ start_resource_port_forwarding
 port_forwarding_parent_process_id=$!
 {%- endif %}{# {%- if environment.database_resources or environment.cache_resources %} #}
 
-{{ render_template("Dockerfile.j2", "Dockerfile") }}
-# copy config from default location
-if ! test -d "{{ toolbox.rendered_files_path }}"/.config
-then
-    mkdir {{ toolbox.rendered_files_path }}/.config
-fi
-
-GCP_DEFAULT_CONFIG_DIR=${CLOUDSDK_CONFIG:-~/.config/gcloud}
-if test -d "$GCP_DEFAULT_CONFIG_DIR"
-then
-    cp -r $GCP_DEFAULT_CONFIG_DIR {{ toolbox.rendered_files_path }}/.config/gcloud
-else
-    mkdir -p {{ toolbox.rendered_files_path }}/.config/gcloud
-fi
-
-# If google credentials file is set then we copy
-# to known location and set correct GOOGLE_APPLICATION_CREDENTIALS path
-# for the toolbox Dockerfile
-if test -v GOOGLE_APPLICATION_CREDENTIALS
-then
-    if test -e "$GOOGLE_APPLICATION_CREDENTIALS"
-    then
-        cp $GOOGLE_APPLICATION_CREDENTIALS {{ toolbox.rendered_files_path }}/service_account.json
-        TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS="/_cnc_temp/service_account.json"
-    fi
-fi
-touch {{ toolbox.rendered_files_path }}/service_account.json
-
-docker pull {{ service.image_for_tag(toolbox.tag_for_service(service.name)) }}
-
-docker build -t {{ service.instance_name }}_toolbox \
--f {{ toolbox.rendered_files_path }}/Dockerfile {{ toolbox.rendered_files_path }}
-
-{%- if command %}
-{# Allow time for port forwarding processes to start #}
-sleep ${CNC_TOOLBOX_CMD_DELAY_SECONDS:-15}
-{%- endif %}
-
-docker_auth_var="AUTH_AUTO_DETECTED=false"
-if test -v TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS
-then
-    docker_auth_var="GOOGLE_APPLICATION_CREDENTIALS=$TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS"
-elif test -v GOOGLE_AUTH_TOKEN
-then
-    docker_auth_var="CLOUDSDK_AUTH_ACCESS_TOKEN=$GOOGLE_AUTH_TOKEN"
-elif test -v CLOUDSDK_AUTH_ACCESS_TOKEN
-then
-    docker_auth_var="CLOUDSDK_AUTH_ACCESS_TOKEN=$CLOUDSDK_AUTH_ACCESS_TOKEN"
-fi
-
-# Start & exec into docker container
-docker run --entrypoint sh \
--e $docker_auth_var \
-{%- for variable in toolbox.environment_items -%}
--e {{ variable.name }}="$(echo -en '{{ variable.value }}')" \
-{%- endfor -%}
---network ${CNC_TOOLBOX_NETWORK:-host} \
-{%- if command %}
---rm {{ service.instance_name }}_toolbox -c '{{ command }}'; command_result=$?
+{%- if proxy_only %}
+{% include "partials/proxy_only.sh.j2" %}
 {%- else %}
--it --rm {{ service.instance_name }}_toolbox
-{%- endif %}
-
-{%- if command %}
-exit $command_result
+{% include "partials/service_container.sh.j2" %}
 {%- endif %}

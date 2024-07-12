@@ -1,3 +1,5 @@
+import os
+import signal
 import subprocess
 from typing import List
 
@@ -10,9 +12,10 @@ log = get_logger(__name__)
 class ToolboxManager(EnvironmentTemplatedBase):
     template_type = "toolbox"
 
-    def __init__(self, service, service_tags=None):
+    def __init__(self, service, service_tags=None, proxy_only=False):
         super().__init__(service.environment, service_tags)
         self.service = service
+        self.proxy_only = proxy_only
 
     @property
     def environment_items(self):
@@ -55,6 +58,7 @@ class ToolboxManager(EnvironmentTemplatedBase):
                 "bastion_instance_id"
             ),
             "command": command,
+            "proxy_only": self.proxy_only,
         }
 
     def render_toolbox(self, command=None):
@@ -72,17 +76,26 @@ class ToolboxManager(EnvironmentTemplatedBase):
         log.debug(f"Done rendering toolbox script for {self}, starting toolbox...")
 
         try:
-            ret = subprocess.run(
-                [
-                    "bash",
-                    "-c",
-                    (
-                        f"chmod +x {self.rendered_files_path}/main.sh "
-                        f"&& setsid {self.rendered_files_path}/main.sh"
-                    ),
-                ],
-                executable="/bin/bash",
-            )
+            if self.proxy_only:
+                try:
+                    ret = subprocess.Popen(
+                        f"{self.rendered_files_path}/main.sh", preexec_fn=os.setsid
+                    )
+                    ret.wait()
+                except KeyboardInterrupt:
+                    os.killpg(os.getpgid(ret.pid), signal.SIGINT)
+            else:
+                ret = subprocess.run(
+                    [
+                        "bash",
+                        "-c",
+                        (
+                            f"chmod +x {self.rendered_files_path}/main.sh "
+                            f"&& setsid {self.rendered_files_path}/main.sh"
+                        ),
+                    ],
+                    executable="/bin/bash",
+                )
             if ret.stdout or ret.stderr:
                 log.debug(f"Output from main.sh: \n{ret.stdout}\n{ret.stderr}")
         except subprocess.CalledProcessError as e:
