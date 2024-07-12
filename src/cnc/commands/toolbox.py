@@ -37,6 +37,14 @@ def start(
     environment_name: str,
     service_name: str = "",
     tag: str = "latest",
+    proxy_only: bool = typer.Option(
+        False,
+        "--proxy-only",
+        help=(
+            "Flag to indicate the toolbox should only start cloud"
+            " resource proxies (no service containers)"
+        ),
+    ),
 ):
     send_event("toolbox.start")
     collection = ctx.obj.collection
@@ -59,7 +67,7 @@ def start(
 
         service = environment.backend_services[0]
 
-    toolbox = service.toolbox_manager(environment_tag=tag)
+    toolbox = service.toolbox_manager(environment_tag=tag, proxy_only=proxy_only)
     toolbox.start()
 
     log.debug(f"Toolbox stopped for {toolbox.config_files_path}")

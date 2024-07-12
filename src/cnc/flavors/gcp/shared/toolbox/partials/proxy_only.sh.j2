@@ -1,0 +1,15 @@
+sleep 5
+echo -e "\nToolbox started in proxy only mode.\n"
+
+echo -e "\nThe following environment variables are \
+normally injected into your service container. They can be used to establish \
+connections to your GCP resources from your local machine.\n"
+
+{%- for variable in toolbox.environment_items %}
+echo -e "{{ variable.name }}={{ variable.value }}"
+{%- endfor %}
+
+echo -e "\n Press Ctrl+C to exit. (all port-forwarding sessions will be closed)"
+
+# Wait indefinitely
+while true; do sleep 1; done

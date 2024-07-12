@@ -14,6 +14,7 @@ class BaseToolboxTest(CNCBaseTestCase):
     fixture_name = "backend-1-service-1-db"
     environment_tag = "latest"
     env_data_filepath = "environments.yml"
+    proxy_only = False
 
     def setUp(self):
         super().setUp()
@@ -29,6 +30,7 @@ class BaseToolboxTest(CNCBaseTestCase):
         self.toolbox = ToolboxManager(
             service=self.service,
             service_tags={self.service.name: self.environment_tag},
+            proxy_only=self.proxy_only,
         )
 
         self.toolbox.setup()
@@ -66,6 +68,16 @@ class AWSToolboxSmokeTest(BaseToolboxTest):
         )
 
 
+class AWSToolboxProxyOnlySmokeTest(BaseToolboxTest):
+    env_data_filepath = "environments_aws_ecs.yml"
+    proxy_only = True
+
+    def test_toolbox_render(self):
+        toolbox_script = self.parse()
+        self.assertIn("aws ssm start-session", toolbox_script)
+        self.assertNotIn("docker", toolbox_script)
+
+
 class GCPToolboxSmokeTest(BaseToolboxTest):
     env_data_filepath = "environments.yml"
 
@@ -78,3 +90,13 @@ class GCPToolboxSmokeTest(BaseToolboxTest):
             f"{self.service.image_for_tag(self.environment_tag)}",
             dockerfile,
         )
+
+
+class GCPToolboxProxyOnlySmokeTest(BaseToolboxTest):
+    env_data_filepath = "environments.yml"
+    proxy_only = True
+
+    def test_toolbox_render(self):
+        toolbox_script = self.parse()
+        self.assertIn("compute ssh toolbox@", toolbox_script)
+        self.assertNotIn("docker", toolbox_script)

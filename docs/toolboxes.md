@@ -9,6 +9,13 @@ A `toolbox` is a way to run a command against a `cnc`-managed environment.
 cnc toolbox start dev
 ```
 
+If you only need cloud resource port-forwarding:
+
+```
+# dev is the environment name in environment.yml
+cnc toolbox start dev --service backend --proxy-only
+```
+
 You can also run a command and exit:
 
 ```

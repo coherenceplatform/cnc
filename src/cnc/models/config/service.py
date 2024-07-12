@@ -472,8 +472,12 @@ class Service(BaseModel):
     def log_stream_prefix(self, task_name="web"):
         return f"{self.instance_name}-{task_name}"
 
-    def toolbox_manager(self, environment_tag="latest"):
-        return ToolboxManager(self, service_tags={self.name: environment_tag})
+    def toolbox_manager(self, environment_tag="latest", proxy_only=False):
+        return ToolboxManager(
+            self,
+            service_tags={self.name: environment_tag},
+            proxy_only=proxy_only,
+        )
 
     def cli_info(self):
         _data = {
