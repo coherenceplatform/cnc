@@ -5,7 +5,7 @@ description: What does cnc deploy to my GCP cloud projects with the GKE flavor?
 
 The `run-lite` flavor is designed to be as free-friendly as possible and still be a robust choice for hosting many applications. 
 
-If you're building a bootstraped side-project or hobby full-stack web app, this flavor is made for you! It will often be free, but usage of optionla services such as [Cloud SQL](https://cloud.google.com/sql/docs) or [Secret Manager](https://cloud.google.com/secret-manager/docs) might incur some usage costs. These are also often eligible for credits or free use tiers, depending on your GCP billing account.
+If you're building a bootstraped side-project or hobby full-stack web app, this flavor is made for you! It will often be free, but usage of optional services such as [Cloud SQL](https://cloud.google.com/sql/docs) or [Secret Manager](https://cloud.google.com/secret-manager/docs) might incur some usage costs. These are also often eligible for credits or free use tiers, depending on your GCP billing account.
 
 ## Resources Used
 
