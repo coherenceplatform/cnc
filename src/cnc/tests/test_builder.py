@@ -61,6 +61,29 @@ class BuildTagsPerServiceTestCase(CNCBaseTestCase):
         builder.cleanup()
 
 
+class BuildEnvironmentItemsTestCase(CNCBaseTestCase):
+    fixture_name = "backend-2-service-1-db"
+
+    def test_tag_variable(self):
+        app = Application.from_environments_yml("environments.yml")
+        environment = app.collections[0].environments[0]
+        svc1 = environment.web_services[0]
+        svc2 = environment.web_services[1]
+
+        builder = BuildStageManager(environment, {svc1.name: "tag1", svc2.name: "tag2"})
+
+        self.assertEqual(
+            builder.environment_items["CNC_APPLICATION_NAME"], "my-backend-test-app"
+        )
+        self.assertEqual(builder.environment_items["CNC_ENVIRONMENT_NAME"], "main")
+        self.assertEqual(
+            builder.environment_items[f"CNC_SERVICE_TAG_{svc1.name.upper()}"], "tag1"
+        )
+        self.assertEqual(
+            builder.environment_items[f"CNC_SERVICE_TAG_{svc2.name.upper()}"], "tag2"
+        )
+
+
 class GCPBuildStageTestBase(CNCBaseTestCase):
     fixture_name = "backend-1-service-1-db"
     environment_name = "main"

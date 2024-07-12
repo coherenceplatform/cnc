@@ -268,6 +268,9 @@ class EnvironmentTemplatedBase(_TemplatedBase):
         for item in self.environment.environment_items:
             _all.update({item.name: item.value})
 
+        for service_name, tag in self.service_tags.items():
+            _all.update({f"CNC_SERVICE_TAG_{service_name.upper()}": tag})
+
         return _all
 
     @property
