@@ -73,9 +73,9 @@ class BuildEnvironmentItemsTestCase(CNCBaseTestCase):
         builder = BuildStageManager(environment, {svc1.name: "tag1", svc2.name: "tag2"})
 
         self.assertEqual(
-            builder.environment_items[f"CNC_APPLICATION_NAME"], "my-backend-test-app"
+            builder.environment_items["CNC_APPLICATION_NAME"], "my-backend-test-app"
         )
-        self.assertEqual(builder.environment_items[f"CNC_ENVIRONMENT_NAME"], "main")
+        self.assertEqual(builder.environment_items["CNC_ENVIRONMENT_NAME"], "main")
         self.assertEqual(
             builder.environment_items[f"CNC_SERVICE_TAG_{svc1.name.upper()}"], "tag1"
         )
