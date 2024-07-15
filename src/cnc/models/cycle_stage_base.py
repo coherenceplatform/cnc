@@ -273,6 +273,22 @@ class EnvironmentTemplatedBase(_TemplatedBase):
 
         return _all
 
+    def service_environment_items(self, service):
+        _all = {}
+
+        for item in service.environment_items:
+            _all.update({item.name: item.value})
+
+        _all.update(
+            {
+                f"CNC_SERVICE_TAG_{service.name.upper()}": (
+                    self.service_tags.get(service.name, self.default_tag)
+                )
+            }
+        )
+
+        return _all
+
     @property
     def services(self):
         service_names = self.service_tags.keys()
