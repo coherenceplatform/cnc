@@ -83,6 +83,19 @@ class BuildEnvironmentItemsTestCase(CNCBaseTestCase):
             builder.environment_items[f"CNC_SERVICE_TAG_{svc2.name.upper()}"], "tag2"
         )
 
+        self.assertEqual(
+            builder.service_environment_items(svc1)[
+                f"CNC_SERVICE_TAG_{svc1.name.upper()}"
+            ],
+            "tag1",
+        )
+        self.assertEqual(
+            builder.service_environment_items(svc2)[
+                f"CNC_SERVICE_TAG_{svc2.name.upper()}"
+            ],
+            "tag2",
+        )
+
 
 class GCPBuildStageTestBase(CNCBaseTestCase):
     fixture_name = "backend-1-service-1-db"
