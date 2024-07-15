@@ -208,6 +208,7 @@ class ServerlessServiceSettings(BaseServiceSettings):
     type: Literal["serverless"]
     handler: Optional[str] = "function.lambda_handler"
     runtime: Optional[str] = "python3.12"
+    cdn: Optional[ServerlessCDNConfig] = Field(default_factory=ServerlessCDNConfig)
 
     @property
     def is_web(self):
