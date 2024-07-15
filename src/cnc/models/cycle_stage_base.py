@@ -69,7 +69,7 @@ class _TemplatedBase:
             # Copy all contents from src_dir/assets to assets_dest_dir
             shutil.copytree(src_dir / "assets", assets_dest_dir, dirs_exist_ok=True)
 
-        except Exception as e:
+        except Exception:
             return False
 
         # Path to the directory where templates are finally consolidated

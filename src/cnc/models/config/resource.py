@@ -509,15 +509,19 @@ class QueueResourceSettings(BaseResourceSettings):
 
         return queue_name
 
+
 class DynamoDBResourceSettings(BaseResourceSettings):
     type: Literal["dynamodb"]
-    billing_mode: Optional[Literal["PROVISIONED", "PAY_PER_REQUEST"]] = "PAY_PER_REQUEST"
-    hash_key : Optional[str] = None
-    read_capacity : Optional[int] = 5
-    write_capacity : Optional[int] = 5
-    table_class : Optional[Literal["STANDARD", "STANDARD_INFREQUENT_ACCESS"]] = "STANDARD"
-    deletion_protection_enabled : Optional[str] = None
-
+    billing_mode: Optional[Literal["PROVISIONED", "PAY_PER_REQUEST"]] = (
+        "PAY_PER_REQUEST"
+    )
+    hash_key: Optional[str] = "UserID"
+    read_capacity: Optional[int] = 5
+    write_capacity: Optional[int] = 5
+    table_class: Optional[Literal["STANDARD", "STANDARD_INFREQUENT_ACCESS"]] = (
+        "STANDARD"
+    )
+    deletion_protection_enabled: Optional[str] = "false"
 
     @property
     def is_dynamodb(self):
@@ -530,10 +534,11 @@ class DynamoDBResourceSettings(BaseResourceSettings):
     @property
     def dynamodb_table_output_arn(self):
         return f"{self.service.instance_name}_dynamodb_table_arn"
-    
+
     @property
     def dynamodb_table_output_id(self):
         return f"{self.service.instance_name}_dynamodb_table_id"
+
 
 class CacheResourceSettings(BaseResourceSettings):
     type: Literal["cache"]

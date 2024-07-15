@@ -124,7 +124,7 @@ class BaseServiceSettings(BaseModel):
     @property
     def is_web(self):
         return False
-    
+
     @property
     def is_dynamodb(self):
         return False
@@ -191,8 +191,10 @@ class BaseServiceSettings(BaseModel):
 class CORSSettings(BaseModel):
     allowed_origins: List[str]
 
+
 class ServerlessCDNConfig(BaseModel):
     enabled: Optional[bool] = True
+
 
 class FrontendCDNConfig(BaseModel):
     enabled: Optional[bool] = True
@@ -207,6 +209,7 @@ ProviderDeployResourceLimits = Annotated[
     Field(discriminator="provider"),
 ]
 
+
 class ServerlessServiceSettings(BaseServiceSettings):
     type: Literal["serverless"]
     handler: Optional[str] = "function.lambda_handler"
@@ -216,6 +219,7 @@ class ServerlessServiceSettings(BaseServiceSettings):
     @property
     def is_web(self):
         return True
+
 
 class FrontendServiceSettings(BaseServiceSettings):
     type: Literal["frontend"]

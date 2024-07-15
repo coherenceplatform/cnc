@@ -1,0 +1,16 @@
+services:
+  app:
+    x-cnc:
+      type: serverless
+    build:
+      context: .
+
+
+  dynamodb1:
+    x-cnc:
+      type: dynamodb
+
+
+  dynamodb2:
+    x-cnc:
+      type: dynamodb
