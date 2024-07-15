@@ -226,7 +226,9 @@ class EnvironmentCollection(BaseModel):
 
     @property
     def default_service(self):
-        for service in self.frontend_services + self.backend_services + self.serverless_services:
+        for service in (
+            self.frontend_services + self.backend_services + self.serverless_services
+        ):
             if service.environment.active_deployment:
                 return service
 

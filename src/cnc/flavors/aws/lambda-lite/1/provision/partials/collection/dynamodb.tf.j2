@@ -18,7 +18,7 @@ resource "aws_dynamodb_table" "{{ resource.instance_name }}" {
   read_capacity = var.{{ resource.instance_name }}_billing_mode == "PROVISIONED" ? var.{{ resource.instance_name }}_read_capacity : null
   write_capacity = var.{{ resource.instance_name }}_billing_mode == "PROVISIONED" ? var.{{ resource.instance_name }}_write_capacity : null
 
-  deletion_protection_enabled = var.{{ resource.instance_name }}_deletion_protection_enabled
+  deletion_protection_enabled = var.{{ resource.instance_name }}_deletion_protection_enabled == true ? true : false
   table_class = var.{{ resource.instance_name }}_table_class
 
   point_in_time_recovery {

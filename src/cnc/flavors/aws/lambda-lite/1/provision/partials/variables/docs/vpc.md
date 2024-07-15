@@ -136,7 +136,7 @@
 - **Default**: `{ Tier = "private" }`
   - Provides additional tags to apply to the private subnets.
 
-#### `private_subnet_tags_per_az`
+#### `var.{{ environment.name }}_{{environment.collection.instance_name}}_private_subnet_tags_per_az`
 
 - **Description**: Additional tags for the private subnets where the primary key is the AZ.
 - **Type**: `map(map(string))`
