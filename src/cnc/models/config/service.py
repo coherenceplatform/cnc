@@ -19,10 +19,10 @@ from jinja2 import Template
 from cnc.constants import EnvironmentVariableTypes
 from cnc.utils import clean_name_string
 from ..base_model import BaseModel, IgnoredType
-from .resource import ( 
+from .resource import (
     BucketResourceSettings,
     DynamoDBResourceSettings,
-    )
+)
 from .settings import (
     FrontendServiceSettings,
     BackendServiceSettings,
@@ -258,14 +258,14 @@ class Service(BaseModel):
     @property
     def is_internal(self):
         return self.settings.internal is True
-    
+
     @property
     def is_web(self):
         return self.settings.is_web
 
     @property
     def is_serverless(self):
-        return self.settings.type == "serverless"    
+        return self.settings.type == "serverless"
 
     @property
     def is_backend(self):
@@ -278,7 +278,7 @@ class Service(BaseModel):
     @property
     def is_database(self):
         return self.settings.type == "database"
-    
+
     @property
     def is_dynamodb(self):
         return self.settings.type == "dynamodb"
@@ -381,7 +381,10 @@ class Service(BaseModel):
         if self.is_web:
             # TODO: figure out how to offer subdomain routing here
             # TODO: do custom domains need to live here if so?
-            if self.environment.collection.has_service_domains and self.application.flavor == "lambda-lite" :
+            if (
+                self.environment.collection.has_service_domains
+                and self.application.flavor == "lambda-lite"
+            ):
                 return self.environment.collection.get_terraform_output(
                     f"{self.instance_name}_lambda_function_url"
                 )

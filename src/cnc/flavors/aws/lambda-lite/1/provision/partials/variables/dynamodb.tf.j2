@@ -53,7 +53,7 @@ variable "{{ resource.instance_name }}_global_secondary_indexes" {
 
 variable "{{ resource.instance_name }}_deletion_protection_enabled" {
   description = "Whether to enable deletion protection for the DynamoDB table"
-  type        = bool
+  type        = string
   default     = "{{ resource.settings.deletion_protection_enabled | default('false')}}"
 }
 

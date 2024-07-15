@@ -144,7 +144,7 @@ class Environment(BaseModel):
             return []
 
         return [s for s in self.services if s.is_serverless]
-    
+
     @property
     def backend_services(self):
         if not self.services:
@@ -227,7 +227,7 @@ class Environment(BaseModel):
         elif self.backend_services:
             return self.backend_services[0]
         elif self.serverless_services:
-            return self.serverless_services[0] 
+            return self.serverless_services[0]
 
         return None
 

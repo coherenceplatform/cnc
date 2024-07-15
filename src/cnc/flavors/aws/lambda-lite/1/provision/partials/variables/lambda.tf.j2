@@ -6,7 +6,6 @@ variable "{{ service.instance_name }}_lambda_variables" {
   description = "Environment variables to pass to the Lambda function"
   type        = map(string)
   default     = {
-    "REGION_NAME" = "us-east-2"
     {% if service.is_serverless %}
     {% for item in service.insecure_environment_items %}
     "{{ item.name }}" = "{{ item.value }}"
