@@ -11,6 +11,23 @@ echo "name_lambda: $name_lambda"
 echo "output_dir: $output_dir"
 echo "region: $region"
 
+
+env_vars_file="env_vars.json"
+echo "Creating environment variables file $env_vars_file..."
+
+# Start JSON file
+echo '{ "Variables": {' > $env_vars_file
+
+{% for item in service.insecure_environment_items %}
+echo "  \"{{item.name}}\": \"{{item.value}}\"," >> $env_vars_file
+{% endfor %}
+sed -i '$ s/,$//' $env_vars_file
+
+# Close JSON file
+echo '}}' >> $env_vars_file
+
+cat $env_vars_file
+
 # Check if variables are set
 if [ -z "$name_lambda" ] || [ -z "$output_dir" ] || [ -z "$region" ]; then
   echo "Error: One or more required variables are not set for service {{ service.instance_name }}."
@@ -31,7 +48,25 @@ if [ $exit_code -eq 0 ]; then
   echo "Lambda function $name_lambda updated successfully"
 else
   echo "Error updating lambda function $name_lambda."
+  exit $exit_code
 fi
+
+# Updating the lambda function configuration to add environment variables
+echo "Updating environment variables for lambda function $name_lambda"
+aws lambda update-function-configuration --function-name "$name_lambda" --environment "file://$env_vars_file" --region "$region" --no-cli-pager
+
+# Capturing the exit status of the aws command
+exit_code=$?
+
+# Checking the exit status of the aws command
+if [ $exit_code -eq 0 ]; then
+  echo "Environment variables for lambda function $name_lambda updated successfully"
+else
+  echo "Error updating environment variables for lambda function $name_lambda."
+fi
+
+# Cleanup
+rm $env_vars_file
 
 # Exit with the captured exit code
 exit $exit_code
