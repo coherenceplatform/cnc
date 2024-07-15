@@ -88,6 +88,13 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
   ]
 }
 
+resource "aws_lambda_function_url" "{{ service.instance_name }}" {
+  depends_on = [aws_lambda_function.{{ service.instance_name }}]
+
+  function_name = local.{{ service.instance_name }}_lambda_infrastructure_suffix
+  authorization_type = "NONE"
+}
+
 {% endif %}
 {% endfor %}
 {% endfor %}

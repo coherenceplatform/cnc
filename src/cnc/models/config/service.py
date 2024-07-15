@@ -261,7 +261,7 @@ class Service(BaseModel):
     
     @property
     def is_web(self):
-        return self.settings.type == "web"    
+        return self.settings.is_web
 
     @property
     def is_serverless(self):
@@ -381,7 +381,11 @@ class Service(BaseModel):
         if self.is_web:
             # TODO: figure out how to offer subdomain routing here
             # TODO: do custom domains need to live here if so?
-            if self.environment.collection.has_service_domains:
+            if self.environment.collection.has_service_domains and self.application.flavor == "lambda-lite" :
+                return self.environment.collection.get_terraform_output(
+                    f"{self.instance_name}_lambda_function_url"
+                )
+            elif self.environment.collection.has_service_domains:
                 return self.environment.collection.get_terraform_output(
                     f"{self.instance_name}_cloud_run_url"
                 )
@@ -503,7 +507,7 @@ class Service(BaseModel):
             "type": self.settings.type,
         }
 
-        if self.is_frontend or self.is_backend or self.is_web:
+        if self.is_web:
             _data["url_path"] = self.settings.url_path
 
         return _data
