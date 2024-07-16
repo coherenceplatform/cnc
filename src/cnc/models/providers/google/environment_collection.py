@@ -41,6 +41,7 @@ class GCPEnvironmentCollection(EnvironmentCollection):
         if self.region in [
             "europe-west2",
             "southamerica-west1",
+            "us-central1",
         ]:
             return "e2-micro"
         else:
