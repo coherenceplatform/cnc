@@ -6,10 +6,10 @@ You've got many options for `flavors` to deploy with `cnc`. For many apps on GCP
 Before starting, follow the steps at [Getting Started](../README.md). In particular:
 - `cnc` installed with `pip install cocnc`. `cnc` uses python3 so in some environments you'd run `pip3 install cocnc`.
 - `terraform` installed (see [here](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)).
-- `gcloud` installed ([docs](https://cloud.google.com/sdk/docs/install)) and have run `gcloud auth application-default login` (unless you have an alternative auth setup for `gcloud`). 
+- `gcloud` installed ([docs](https://cloud.google.com/sdk/docs/install)) and have run `gcloud auth application-default login` (unless you have an alternative auth setup for `gcloud`).
 - `kubectl` installed, possible with `gcloud components` or using an alternative method. Read more [here](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl).
 
-## repo setup 
+## repo setup
 
 Following the instructions at the [django tutorial](https://docs.djangoproject.com/en/5.0/intro/tutorial01/) we have set up our app. We're setting up a complex full-stack API that:
 - uses a `Cloud SQL` postgres instance
@@ -54,7 +54,7 @@ services:
         # REDIS_URL will be populated by the redis service below by CNC
         command: "rq worker --with-scheduler --url $REDIS_URL"
         system:
-          cpu: 1
+          cpus: 1
           memory: 1G
         replicas: 1
     build:
@@ -70,7 +70,7 @@ services:
     image: redis
 ```
 
-As you can see, for each worker you can set minimum replicas, `cpu` and `memory` which is useful if you've got different task resource requirements. 
+As you can see, for each worker you can set minimum replicas, `cpus` and `memory` which is useful if you've got different task resource requirements.
 
 If needed, you can also customize the `k8s` deployments for the worker and the api server. as much as you'd like, following the `AWS` example [here](../customization/aws_ecs.md) but using the `gke` flavor and appropriate filenames instead. You can add more yml objects into those templates as needed, if required.
 
@@ -130,7 +130,7 @@ requests
 ## visit the URL and test the worker
 
 - run `cnc info environments` again, and visit the URL for your `staging` environment. you will see the index content.
-- you can test the task worker with a command similar to: 
+- you can test the task worker with a command similar to:
 ```
 curl -X POST http://your_domain/count/ -H "Content-Type: application/json" -d '{"url": "http://example.com"}'
 ```
