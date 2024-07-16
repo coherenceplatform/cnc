@@ -66,7 +66,11 @@ build_{{ service.name }}_image () {
         docker buildx version
     fi
     docker buildx inspect {{ service.name }}builder || docker buildx create --name {{ service.name }}builder --use
+<<<<<<< HEAD
     docker buildx build {% for name, value in builder.service_environment_items(service).items() %}--build-arg {{ name }}="$(echo -en '{{ value }}')" {% endfor %}\
+=======
+    docker buildx build {% for variable in service.environment_items %}--build-arg {{ variable.name }}="$(echo -en '{{ variable.value | replace("\\", "\\\\") | replace("'", "'\"'\"'") | replace('"', '\\"') | replace("$", "\\$") | replace("`", "\\`") }}')" {% endfor %}\
+>>>>>>> 0a8e3a8 (handle more variable escaping)
     --load \
     --platform linux/amd64 \
     --cache-to=type=registry,ref={{ service.image_for_tag('cache') }},mode=max \
@@ -96,7 +100,11 @@ build_{{ service.name }}_image () {
     --cache-from {{ service.image_for_tag("latest") }} \
     --name {{ service.image_for_tag(builder.tag_for_service(service.name)) }} \
     --start-cmd "{{ service.command or 'sleep 1' }}" \
+<<<<<<< HEAD
     {% for name, value in builder.service_environment_items(service).items() %}--env {{ name }}="$(echo -en '{{ value }}')"  {% endfor %}
+=======
+    {% for variable in service.environment_items %}--env {{ variable.name }}="$(echo -en '{{ variable.value | replace("\\", "\\\\") | replace("'", "'\"'\"'") | replace('"', '\\"') | replace("$", "\\$") | replace("`", "\\`") }}')"  {% endfor %}
+>>>>>>> 0a8e3a8 (handle more variable escaping)
     docker tag {{ service.image_for_tag(builder.tag_for_service(service.name)) }} {{ service.image_for_tag("latest") }}
 {% endif %}
 }
