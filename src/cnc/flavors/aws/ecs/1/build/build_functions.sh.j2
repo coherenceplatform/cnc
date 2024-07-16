@@ -80,10 +80,14 @@ build_{{ service.name }}_image () {
     echo -e "\\nBuilding from dockerfile...\\n"
     docker buildx inspect {{ service.name }}builder || docker buildx create --name {{ service.name }}builder --use
 <<<<<<< HEAD
+<<<<<<< HEAD
     docker buildx build {% for name, value in builder.service_environment_items(service).items() %}--build-arg {{ name }}="$(echo -en '{{ value }}')"  {% endfor %}\
 =======
     docker buildx build {% for variable in service.environment_items %}--build-arg {{ variable.name }}="$(echo -en '{{ variable.value | replace("\\", "\\\\") | replace("'", "'\"'\"'") | replace('"', '\\"') | replace("$", "\\$") | replace("`", "\\`") }}')"  {% endfor %}\
 >>>>>>> 0a8e3a8 (handle more variable escaping)
+=======
+    docker buildx build {% for variable in service.environment_items %}--build-arg {{ variable.name }}="$(echo -en '{{ variable.value | replace("\\", "\\\\") | replace("'", "'\"'\"'") | replace('"', '\\"') | replace("$", "\\$") | replace("`", "\\`") }}')"  {% endfor %}\
+>>>>>>> 0a8e3a8dbaa252cca999440591d183e08b345e47
     --load \
     --platform linux/amd64 \
     --cache-to=type=registry,ref={{ service.image_for_tag('cache') }},mode=max,oci.mediatypes=true,image-manifest=true \
@@ -114,10 +118,14 @@ build_{{ service.name }}_image () {
     --name {{ service.image_for_tag(builder.tag_for_service(service.name) or "latest") }} \
     --start-cmd "{{ service.command or 'sleep 1' }}" \
 <<<<<<< HEAD
+<<<<<<< HEAD
     {% for name, value in builder.service_environment_items(service).items() %}--env {{ name }}="$(echo -en '{{ value }}')"  {% endfor %}
 =======
     {% for variable in service.environment_items %}--env {{ variable.name }}="$(echo -en '{{ variable.value | replace("\\", "\\\\") | replace("'", "'\"'\"'") | replace('"', '\\"') | replace("$", "\\$") | replace("`", "\\`") }}')"  {% endfor %}
 >>>>>>> 0a8e3a8 (handle more variable escaping)
+=======
+    {% for variable in service.environment_items %}--env {{ variable.name }}="$(echo -en '{{ variable.value | replace("\\", "\\\\") | replace("'", "'\"'\"'") | replace('"', '\\"') | replace("$", "\\$") | replace("`", "\\`") }}')"  {% endfor %}
+>>>>>>> 0a8e3a8dbaa252cca999440591d183e08b345e47
     {% if builder.tag_for_service(service.name) %}
     docker tag {{ service.image_for_tag(builder.tag_for_service(service.name)) }} {{ service.image_for_tag("latest") }}
     {% endif %}
