@@ -78,6 +78,14 @@ class ToolboxManager(EnvironmentTemplatedBase):
         try:
             if self.proxy_only:
                 try:
+                    subprocess.run(
+                        [
+                            "bash",
+                            "-c",
+                            f"chmod +x {self.rendered_files_path}/main.sh",
+                        ],
+                        executable="/bin/bash",
+                    )
                     ret = subprocess.Popen(
                         f"{self.rendered_files_path}/main.sh", preexec_fn=os.setsid
                     )
