@@ -17,7 +17,7 @@ provider "google" {
   region      = "{{ env_collection.region }}"
 
   default_labels = {
-    environment = "{{ env_collection.name }}"
+    environment = "{{ env_collection.name.replace("-", "") }}"
     managed_by = "cnc"
     application = "{{ app.name }}"
   }
@@ -28,7 +28,7 @@ provider "google-beta" {
   region = "{{ env_collection.region }}"
 
   default_labels = {
-    environment = "{{ env_collection.name }}"
+    environment = "{{ env_collection.name.replace("-", "") }}"
     managed_by = "cnc"
     application = "{{ app.name }}"
   }
