@@ -66,7 +66,7 @@ build_{{ service.name }}_image () {
         docker buildx version
     fi
     docker buildx inspect {{ service.name }}builder || docker buildx create --name {{ service.name }}builder --use
-    docker buildx build {% for name, value in builder.service_environment_items(service).items() %}--build-arg {{ name }}="$(printf '%s' '{{ value | replace("'", "'\"'\"'") }}' | sed 's/["\\]/\\&/g')" {% endfor %}\
+    docker buildx build {% for name, value in builder.service_environment_items(service).items() %}--build-arg {{ name }}="$(printf '%s' '{{ value | replace("'", "'\"'\"'") }}')" {% endfor %}\
     --load \
     --platform linux/amd64 \
     --cache-to=type=registry,ref={{ service.image_for_tag('cache') }},mode=max \
@@ -96,7 +96,7 @@ build_{{ service.name }}_image () {
     --cache-from {{ service.image_for_tag("latest") }} \
     --name {{ service.image_for_tag(builder.tag_for_service(service.name)) }} \
     --start-cmd "{{ service.command or 'sleep 1' }}" \
-    {% for name, value in builder.service_environment_items(service).items() %}--env {{ name }}="$(printf '%s' '{{ value | replace("'", "'\"'\"'") }}' | sed 's/["\\]/\\&/g')"  {% endfor %}
+    {% for name, value in builder.service_environment_items(service).items() %}--env {{ name }}="$(printf '%s' '{{ value | replace("'", "'\"'\"'") }}')"  {% endfor %}
     docker tag {{ service.image_for_tag(builder.tag_for_service(service.name)) }} {{ service.image_for_tag("latest") }}
 {% endif %}
 }

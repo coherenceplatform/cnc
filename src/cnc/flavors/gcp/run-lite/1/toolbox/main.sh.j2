@@ -56,7 +56,7 @@ fi
 docker run --entrypoint sh \
 -e $docker_auth_var \
 {%- for variable in toolbox.environment_items -%}
--e {{ variable.name }}="$(printf '%s' '{{ variable.value | replace("'", "'\"'\"'") }}' | sed 's/["\\]/\\&/g')" \
+-e {{ variable.name }}="$(printf '%s' '{{ variable.value | replace("'", "'\"'\"'") }}')" \
 {%- endfor -%}
 --network ${CNC_TOOLBOX_NETWORK:-host} \
 {%- if command %}
