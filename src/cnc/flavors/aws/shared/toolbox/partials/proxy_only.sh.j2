@@ -6,7 +6,7 @@ normally injected into your service container. They can be used to establish \
 connections to your AWS resources from your local machine.\n"
 
 {%- for variable in toolbox.environment_items %}
-echo -e "{{ variable.name }}=$(printf '%s' '{{ variable.value | replace("'", "'\"'\"'") }}' | sed 's/["\\]/\\&/g')"
+echo -e "{{ variable.name }}=$(printf '%s' '{{ variable.value | replace("'", "'\"'\"'") }}')"
 {%- endfor %}
 
 echo -e "\n Press Ctrl+C to exit. (all port-forwarding sessions will be closed)"
