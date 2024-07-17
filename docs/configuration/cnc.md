@@ -68,7 +68,7 @@ services:
 
     deploy:
       # control the resources deployed
-      # can also specify different environment type specs e.g. preview or production
+      # can also specify different specs for scheduled tasks/workers
       # see worker below for an example
       resources:
         limits:
