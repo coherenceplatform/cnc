@@ -100,3 +100,45 @@ class GCPToolboxProxyOnlySmokeTest(BaseToolboxTest):
         toolbox_script = self.parse()
         self.assertIn("compute ssh toolbox@", toolbox_script)
         self.assertNotIn("docker", toolbox_script)
+
+
+class SpecialCharactersInVarsTest(BaseToolboxTest):
+    env_data_filepath = "environments_weird_character_vars.yml"
+
+    def test_toolbox_render(self):
+        toolbox_script = self.parse()
+
+        # Check for the docker run command
+        self.assertIn("docker run", toolbox_script)
+
+        # Check for each environment variable in the docker run command
+        self.assertIn("-e FOO=\"$(printf '%s' '\\\"bar\\\"')\"", toolbox_script)
+        self.assertIn(
+            '-e FOO_JSON="$(printf \'%s\' \'\\"{\\\\"foo\\\\": \\\\"bar\\\\"}\\"\')"',
+            toolbox_script,
+        )
+        self.assertIn(
+            '-e FOO_SPECIALS="$(printf \'%s\' \'\\"foo!\\\\"\\u0027`@#$%^\\u0026*()_+bar\\\\\\n\\"\')"',
+            toolbox_script,
+        )
+        self.assertIn(
+            '-e COMPLEX_JSON="$(printf \'%s\' \'\\"{\\\\"key1\\\\": [\\\\"value1\\\\", \\\\"value2\\\\"], \\\\"key2\\\\": {\\\\"nested\\\\": true}}\\"\')"',
+            toolbox_script,
+        )
+        self.assertIn(
+            "-e MULTILINE=\"$(printf '%s' '\\\"line1 line2\\tindented\\n\\\"')\"",
+            toolbox_script,
+        )
+        self.assertIn(
+            "-e COMPLEX_PASSWORD=\"$(printf '%s' '\\\"P@ssw0rd!#$%^\\u0026*()_+{}[]|\\\\/?,.\\u003c\\u003e~`\\\"')\"",
+            toolbox_script,
+        )
+
+        # Check for some other important parts of the script
+        self.assertIn("#!/bin/bash", toolbox_script)
+        self.assertIn(
+            "TOOLBOX_ACTIVE_TEMP_FILEPATH=/tmp/cnc_toolbox_active", toolbox_script
+        )
+        self.assertIn("trap cleanup_toolbox EXIT", toolbox_script)
+        self.assertIn("gcloud auth configure-docker", toolbox_script)
+        self.assertIn("start_resource_port_forwarding", toolbox_script)
