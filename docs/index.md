@@ -10,6 +10,8 @@
 
 `cnc` is an open-source framework that equips developers with the right tools to deploy applications with precision. Rooted in the principles of Infrastructure as Code (IaC) using terraform, `cnc` translates high level service definitions into reference architecture based infrastructure across various environments — whether it’s for development, staging, production, or ephemeral environments. For those who have used AWS's Amplify CLI, think of `cnc` as a broader, adaptable framework that supports your unique deployment needs.
 
+`cnc` sits on top of IaC tools (terraform/opentofu), and makes them easier to use. It adds missing concepts like environments onto those tools as well as providing a much simpler, higher level configuration with `cnc.yml`, while still enabling you to edit the templates directly so you're not limited in the infra you can deploy for your app. In this way, `cnc` is like a "PaaS (Platform-as-a-Service) in your own cloud" but exposes the plumbing as a CLI.
+
 Core Lifecycle Events Managed by `cnc`:
 
 <picture>
@@ -104,10 +106,6 @@ cnc deploy perform dev --debug --no-cleanup
 
 Add a 2nd environment (e.g. `dev2`) to the `environments.yml` and run the commands again, see the power of the framework!
 
-# Documentation
-
-Access full documentation and in-depth tutorials at [the CNC Documentation](https://cncframework.com).
-
 # Community & Support
 
 - Issues: Report bugs or suggest features via GitHub Issues.
@@ -116,3 +114,15 @@ Access full documentation and in-depth tutorials at [the CNC Documentation](http
 # Contributing
 
 Interested in contributing to CNC? Check out our Developers Getting Started guide for guidelines and project setup instructions.
+
+# Coherence
+
+[Coherence](https://withcoherence.com) provides a hosted service that builds on `cnc`, providing:
+
+- A UI/CLI and user management with RBAC for developers to interact with, instead of managing `cnc.yml` and `environments.yml` manually
+- GitHub integration for features such as preview environments and check runs
+- Managed CI/CD in your own cloud account (AWS/GCP)
+- Managed execution of IaC with audit history
+- Ability to add cloud secrets and other environment variables with a friendly UI
+
+Try the platform [here](beta.withcoherence.com). `cnc` provides you with the ability to leave the platform whenever you choose to, without being locked into a black box at Coherence.
