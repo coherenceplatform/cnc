@@ -4,6 +4,7 @@ import subprocess
 import shutil
 from pathlib import Path
 from functools import partial, cached_property
+import shlex
 
 from jinja2 import (
     Environment,
@@ -129,6 +130,7 @@ class _TemplatedBase:
             autoescape=select_autoescape(),
             undefined=StrictUndefined,
         )
+        env.globals["shlex"] = shlex
 
         try:
             return env.get_template(name)
