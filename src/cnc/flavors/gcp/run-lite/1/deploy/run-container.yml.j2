@@ -34,7 +34,7 @@ spec:
       {% endif %}
         env:
         - name: CNC_DEPLOY_TIMESTAMP
-          value: {{ deployer.current_timestamp }}
+          value: "{{ deployer.current_timestamp }}"
         - name: CNC_PROVISIONED
           value: "1"
         {% for variable in service.insecure_environment_items %}
