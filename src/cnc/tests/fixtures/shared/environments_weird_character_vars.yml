@@ -1,0 +1,28 @@
+name: my-backend-test-app
+provider: gcp
+region: us-east1
+flavor: run
+version: 1
+
+collections:
+- name: preview
+  base_domain: my-backend-test-app.testnewsite.coherencesites.com
+  account_id: "foo-bar-123"
+  environments:
+  - name: main
+    environment_variables:
+    - name: FOO
+      value: bar
+    - name: FOO_JSON
+      value: '{"foo": "bar"}'
+    - name: FOO_SPECIALS
+      value: >
+        foo!"'`@#$%^&*()_+bar\
+    - name: COMPLEX_JSON
+      value: '{"key1": ["value1", "value2"], "key2": {"nested": true}}'
+    - name: MULTILINE
+      value: >
+        line1
+        line2	indented
+    - name: COMPLEX_PASSWORD
+      value: 'P@ssw0rd!#$%^&*()_+{}[]|\/?,.<>~`'

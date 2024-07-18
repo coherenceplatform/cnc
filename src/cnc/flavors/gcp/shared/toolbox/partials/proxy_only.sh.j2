@@ -6,7 +6,7 @@ normally injected into your service container. They can be used to establish \
 connections to your GCP resources from your local machine.\n"
 
 {%- for variable in toolbox.environment_items %}
-echo -e "{{ variable.name }}=$(printf '%s' '{{ variable.value | replace("'", "'\"'\"'") }}')"
+echo -e {{ variable.name }}={{ shlex.quote(variable.value) }}
 {%- endfor %}
 
 echo -e "\n Press Ctrl+C to exit. (all port-forwarding sessions will be closed)"
