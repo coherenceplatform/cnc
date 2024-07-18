@@ -272,7 +272,11 @@ resource "aws_alb_target_group" "{{ service.instance_name }}" {
 
     health_check {
         path = "{{ service.settings.system.health_check }}"
+        {% if service.settings.system.health_check_enabled %}
         matcher = "200-399"
+        {% else %}
+        matcher = "200-499"
+        {% endif %}
         interval = 10
         healthy_threshold = 2
         unhealthy_threshold = 9

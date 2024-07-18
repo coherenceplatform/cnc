@@ -50,7 +50,7 @@ class PlatformSettings(BaseModel):
 
 
 class SystemSettings(BaseModel):
-    raw_health_check: Optional[str] = Field(alias="health_check", default="/")
+    raw_health_check: Optional[str] = Field(alias="health_check", default="")
     platform_settings: Optional[PlatformSettings] = Field(
         default_factory=PlatformSettings
     )
@@ -58,6 +58,10 @@ class SystemSettings(BaseModel):
     @property
     def health_check(self):
         return self.raw_health_check.strip() or "/"
+
+    @property
+    def health_check_enabled(self):
+        return bool(self.raw_health_check)
 
 
 class CDNSettings(BaseModel):
