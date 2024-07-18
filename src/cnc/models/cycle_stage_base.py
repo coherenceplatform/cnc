@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 from functools import partial, cached_property
 import shlex
+from datetime import datetime
 
 from jinja2 import (
     Environment,
@@ -38,6 +39,10 @@ class _TemplatedBase:
     @property
     def custom_template_dir(self):
         return f"{self.config_files_path}/custom"
+
+    @property
+    def current_timestamp(self):
+        return datetime.now().isoformat()
 
     def setup(self):
         if not os.path.isdir(self.config_files_path):
