@@ -125,4 +125,4 @@ Interested in contributing to CNC? Check out our Developers Getting Started guid
 - Managed execution of IaC with audit history
 - Ability to add cloud secrets and other environment variables with a friendly UI
 
-Try the platform [here](beta.withcoherence.com). `cnc` provides you with the ability to leave the platform whenever you choose to, without being locked into a black box at Coherence.
+Try the platform [here](https://beta.withcoherence.com). `cnc` provides you with the ability to leave the platform whenever you choose to, without being locked into a black box at Coherence.
