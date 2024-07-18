@@ -114,16 +114,16 @@ cnc deploy perform dev --debug --no-cleanup
 
 Add a 2nd environment (e.g. `dev2`) to the `environments.yml` and run the commands again, see the power of the framework!
 
-# Community & Support
+## Community & Support
 
 - Issues: Report bugs or suggest features via GitHub Issues.
 - Support: For direct support, contact our team at cnc@withcoherence.com.
 
-# Contributing
+## Contributing
 
 Interested in contributing to CNC? Check out our Developers Getting Started guide for guidelines and project setup instructions.
 
-# Coherence
+## Coherence Hosted CNC
 
 [Coherence](https://withcoherence.com) provides a hosted service that builds on `cnc`, providing:
 
