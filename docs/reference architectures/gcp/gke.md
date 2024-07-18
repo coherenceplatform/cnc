@@ -7,7 +7,7 @@ description: What does cnc deploy to my GCP cloud projects with the GKE flavor?
 
 The `gke` flavor is designed to be the most robust and flexible deployment possible. It has best practices baked in throughout for security and reliablity. The lower bound for expect cost per collection for this deployment is approx $150 a month in GCP costs.
 
-The `gke` flavor supports internal microservices.
+The `gke` flavor supports internal microservices that are not attached to a load balancer, using `is_internal` in the `x-cnc` yml for that service.
 
 ## Resources Used
 
@@ -34,7 +34,7 @@ Each environment in Coherence gets a distinct Cloud SQL instance. You also have 
 
 ### Container Orchestration
 
-- [Google Kubernetes Engine](https://cloud.google.com/run/docs) for both `frontend` and `backend`. 
+- [Google Kubernetes Engine](https://cloud.google.com/run/docs) for both `frontend` and `backend`.
     - A k8s namespace is created for each environment
     - A k8s service is created in each environment for each `frontend` or `backend` service
     - A [managed zonal network endpoint group](https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg) is created in gcp for each `cnc` service in each environment, with the corresponding load balancer configuration. Internal services skip this configuration.
@@ -62,3 +62,8 @@ For convenience and auditability, Coherence adds default labels to all cloud res
         application = "your-application-name"
     }
 ```
+
+
+## Cloud Run vs GKE
+
+- Google has a [comparison between Cloud Run and GKE](https://cloud.google.com/blog/products/containers-kubernetes/when-to-use-google-kubernetes-engine-vs-cloud-run-for-containers).  One important difference is Cloud Run autoscaling, which can scale to zero and use no resources if there are no requests.  [Scaling in GKE](https://cloud.google.com/kubernetes-engine/docs/how-to/scaling-apps) is controlled via replicas, which you can control with the `min_scale` attribute in the service definition of your coherence.yml

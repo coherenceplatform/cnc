@@ -1,9 +1,15 @@
-FROM python:3.12
+FROM python:3.11 AS mkdocs-builder
 
-RUN pip install mkdocs-material
+RUN mkdir /app
+WORKDIR /app
 
-COPY mkdocs.yml .
-COPY overrides/ overrides/
-COPY docs/ docs/
+COPY requirements-docs-site.txt requirements.txt
+RUN pip install -r requirements.txt
+COPY . .
 
-CMD mkdocs serve -a 0.0.0.0:{$PORT:-8000}
+RUN mkdir /build
+RUN mkdocs build --site-dir /build
+
+FROM nginx
+COPY --from=mkdocs-builder /build /usr/share/nginx/html/
+COPY ./nginx.conf /etc/nginx/nginx.conf

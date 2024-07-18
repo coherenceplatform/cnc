@@ -1,6 +1,6 @@
 ---
 title: ECS Deep Dive
-description: What does Coherence deploy to my AWS cloud account?
+description: What does CNC deploy to my AWS cloud account?
 ---
 
 ## Resources Used
@@ -9,7 +9,7 @@ description: What does Coherence deploy to my AWS cloud account?
 - A unique [VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html) is configured for each application. Multiple services in one application share a VPC.
     - Each VPC has both a public and private subnet. ECS nodes are provisioned on the private subnet and use a [NAT Gateway](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html) to route traffic to the rest of the network or to the internet.
 - [Route53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/Welcome.html) is used for DNS.
-    - By default, a subdomain of `coherencesites.com` is allocated to each application, and we point the NS records for that subdomain in our DNS provider at the NS records for the Route53 Zone in your account.
+    - By default, a subdomain of `cncsites.com` is allocated to each application, and we point the NS records for that subdomain in our DNS provider at the NS records for the Route53 Zone in your account.
     - Custom domains (per-environment) are also supported, in which case you will designate NS records to Route53 directly from your own DNS provider.
 - [ACM Certificates](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html) are used for secure HTTPS connections.
 - [ALB and ALB Listener](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html) are used for routing traffic to the backend services deployed on ECS. ALB Target Group is used to map to ECS services and manage health checks.
@@ -17,7 +17,7 @@ description: What does Coherence deploy to my AWS cloud account?
     - If you have at least one backend service as well as a frontend service in your app, a [Lambda@Edge](https://docs.aws.amazon.com/lambda/latest/dg/lambda-edge.html) is added to each environment's CloudFront distribution. This is because any non-200 response in CloudFront returns the distributions default error response, which means backend errors will be swallowed! Read more about this issue in Adam's blog post about the issue [here](https://www.withcoherence.com/post/aws-spa-routing-the-bad-the-ugly-and-the-uglier).
 
 {% callout type="note" title="NAT Gateway Costs" %}
-NAT gateway charges for all transit to the internet. Usage of the NAT gateway means that pulling docker impages into ECS tasks will incur transit costs (see AWS [here](https://aws.amazon.com/vpc/pricing/)). These can get expensive if frequent crons are used and especially if docker images are large. 
+NAT gateway charges for all transit to the internet. Usage of the NAT gateway means that pulling docker impages into ECS tasks will incur transit costs (see AWS [here](https://aws.amazon.com/vpc/pricing/)). These can get expensive if frequent crons are used and especially if docker images are large.
 
 Get in touch to talk about alternatives (we have some!) if this describes your use case
 {% /callout %}
@@ -28,14 +28,13 @@ Get in touch to talk about alternatives (we have some!) if this describes your u
 
 ### Data Storage
 
-Each AWS environment in Coherence gets a unique RDS instance. It also gets its own memorystore instance. For production, you also have the option to provide the name of an existing RDS instance and we will configure your app to use that instance. Generally we recommend this as a best practice. See the [coherence.yml docs](docs/configuration/coherenceyml#use-existing-databases) for more details.
+Each AWS environment in Coherence gets a unique RDS instance. It also gets its own memorystore instance.
 
 - [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) is used in 2 ways.
     - Storing the enriched source code that coherence uploads to AWS each time you push to an environment (A shallow clone of your repo plus our generated configuration files).
     - When you configure an object storage resource type in `coherence.yml` for a service. In this case, we also add appropriate IAM permissions to the service's IAM role and inject the bucket name via environment variables.
     - Coherence configures AWS-managed KMS key for encryption by default. You can read more about S3 bucket encryption [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html).
 - [RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html) DB Instance is used for the database of the application. RDS Proxy is used for supported Postgres versions in order to pool connections. Backups & high availability are not configured by default and the instance type is a `micro` - changing these in the UI or with the CLI will not be treated as drift.
-    - You can use a clustered RDS setup for your production database with the `use_existing` [configuration](/docs/configuration/services#resources) in your `coherence.yml`. This includes using an Aurora cluster. Aurora and HA clusters are not supported for preview environments at this time.
     - Coherence configures AWS-managed KMS key for encryption by default. You can view the encryption settings for your RDS instance following the AWS docs [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html#Overview.Encryption.Determining).
 - [ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html) is used to provide managed redis instances to the application.
 
@@ -60,7 +59,7 @@ Please note that Coherence enforces best practices around the usage of the root 
 For convenience and auditability, Coherence adds default tags to all cloud resources where applicable:
 ```terraform
     tags = {
-        Environment = "production|review"
+        Environment = "your-collection-name"
         ManagedBy = "coherence"
         Application = "your-application-name"
     }
@@ -68,4 +67,4 @@ For convenience and auditability, Coherence adds default tags to all cloud resou
 
 ## Diagram
 
-![AWS Infra Diagram](./docs/images/aws-infra.png)
+![AWS Infra Diagram](/images/aws-infra.png)

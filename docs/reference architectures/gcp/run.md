@@ -25,8 +25,7 @@ Coherence deploys your production environment into a separate GCP account, so yo
     - GCP support for custom domains with wildcard subdomains requires you to provide your own SSL certificate at this time, and upload it to the [SSL Certificates](https://cloud.google.com/load-balancing/docs/ssl-certificates) interface in the GCP console
 
 ### Build & Deploy
-- Coherence spins up a [Google Cloud Storage](https://cloud.google.com/storage/docs) bucket for is created public assets fronted by CDN for each app, as a place to put non-repo resources (e.g. fonts, PDFs, images). Eventually you may want to augment this with a CMS like Contentful.
-- [Cloud Build](https://cloud.google.com/build/docs) is used to build and deploy all the configured services. Build steps are parallelized as much as possible. Up to 10 concurrent test commands can be provided to `coherence.yml` and will be executed in parallel.
+- [Cloud Build](https://cloud.google.com/build/docs) is used to build and deploy all the configured services. Build steps are parallelized as much as possible.
 
 ### Data Storage
 
@@ -59,21 +58,8 @@ GCP's Cloud Run is unique when compared to `ECS` in AWS because it offers scale-
 For convenience and auditability, Coherence adds default labels to all cloud resources where applicable:
 ```terraform
     default_labels = {
-        environment = "production|review"
+        environment = "your-collection-name"
         managed_by = "coherence"
         application = "your-application-name"
     }
 ```
-
-### Google Kubernetes Engine (GKE) (beta)
-
-- [GKE](https://cloud.google.com/kubernetes-engine?hl=en) Your application can be deployed using Google Kubernetes Engine instead of Google Cloud Run.  This is an application level setting that applies to all services.
-    - A service in coherence.yml will correspond to a [Service](https://cloud.google.com/kubernetes-engine/docs/concepts/service) in GKE.
-    - Each Coherence environment will have it's own Kubernetes Namespace
-    - You can include custom Helm Charts to create Kubernetes Deployments by setting the `helm_path` as a top level key in your service definition yaml. The value for `helm_path` should be a file path in your repo to a Kubernetes Deployment file that can be rendered with Helm.  If no `helm_path` is specified, Coherence will create one to run your service.
-    - Your Coherence environment variables will be added to your Kubernetes cluster as secrets and can be accessed in your Helm Chart.
-    - Coherence will deploy your GKE application in the `{your-app-name}-jobs` cluster that is also used for running scheduled tasks and workers.  For each Coherence environment Coherence will create a new namespace `{your-environment-name}-deploy`
-
-#### Cloud Run vs GKE
-
-- Google has a [comparison between Cloud Run and GKE](https://cloud.google.com/blog/products/containers-kubernetes/when-to-use-google-kubernetes-engine-vs-cloud-run-for-containers).  One important difference is Cloud Run autoscaling, which can scale to zero and use no resources if there are no requests.  [Scaling in GKE](https://cloud.google.com/kubernetes-engine/docs/how-to/scaling-apps) is controlled via replicas, which you can control with the `min_scale` attribute in the service definition of your coherence.yml
