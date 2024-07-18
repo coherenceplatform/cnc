@@ -8,7 +8,17 @@
 
 ## Introduction
 
-`cnc` is an open-source framework that equips developers with the right tools to deploy applications with precision. Rooted in the principles of Infrastructure as Code (IaC) using terraform, `cnc` translates high level service definitions into reference architecture based infrastructure across various environments — whether it’s for development, staging, production, or ephemeral environments. For those who have used AWS's Amplify CLI, think of `cnc` as a broader, adaptable framework that supports your unique deployment needs.
+`cnc` is an open-source framework that sits on top of Infastructure-as-Code tools like `terraform` or `OpenTofu`. It transforms high-level service definitions into infrastructure deployments across various environments, including development, staging, production, and ephemeral deployments for preview environments or testing.
+
+Key features of `cnc`:
+
+1. Built on top of IaC tools - `cnc` uses Terraform/OpenTofu
+2. Simplifies infrastructure management with a high-level `cnc.yml` configuration that is based on `docker-compose`
+3. Adds environment management capabilities to underlying IaC tools
+4. Allows direct editing of infrastructure templates for maximum flexibility and configurability
+5. Functions as a "Platform-as-a-Service in your own cloud" powered by a local CLI, increasing your ownership and control compared to hosted services
+
+While similar in concept to AWS Amplify CLI, `cnc` offers broader applicability and adaptability to diverse deployment needs.
 
 Core Lifecycle Events Managed by `cnc`:
 
@@ -104,10 +114,6 @@ cnc deploy perform dev --debug --no-cleanup
 
 Add a 2nd environment (e.g. `dev2`) to the `environments.yml` and run the commands again, see the power of the framework!
 
-# Documentation
-
-Access full documentation and in-depth tutorials at [the CNC Documentation](https://cncframework.com).
-
 # Community & Support
 
 - Issues: Report bugs or suggest features via GitHub Issues.
@@ -116,3 +122,15 @@ Access full documentation and in-depth tutorials at [the CNC Documentation](http
 # Contributing
 
 Interested in contributing to CNC? Check out our Developers Getting Started guide for guidelines and project setup instructions.
+
+# Coherence
+
+[Coherence](https://withcoherence.com) provides a hosted service that builds on `cnc`, providing:
+
+- A UI/CLI and user management with RBAC for developers to interact with, instead of managing `cnc.yml` and `environments.yml` manually
+- GitHub integration for features such as preview environments and check runs
+- Managed CI/CD in your own cloud account (AWS/GCP)
+- Managed execution of IaC with audit history
+- Ability to add cloud secrets and other environment variables with a friendly UI
+
+Try the platform [here](https://beta.withcoherence.com). `cnc` provides you with the ability to leave the platform whenever you choose to, without being locked into a black box at Coherence.
