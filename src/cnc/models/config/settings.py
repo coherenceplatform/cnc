@@ -50,7 +50,7 @@ class PlatformSettings(BaseModel):
 
 
 class SystemSettings(BaseModel):
-    raw_health_check: Optional[str] = Field(alias="health_check", default="/")
+    raw_health_check: Optional[str] = Field(alias="health_check", default="")
     platform_settings: Optional[PlatformSettings] = Field(
         default_factory=PlatformSettings
     )
@@ -58,6 +58,10 @@ class SystemSettings(BaseModel):
     @property
     def health_check(self):
         return self.raw_health_check.strip() or "/"
+
+    @property
+    def health_check_enabled(self):
+        return bool(self.raw_health_check)
 
 
 class CDNSettings(BaseModel):
@@ -72,7 +76,7 @@ class BaseServiceSettings(BaseModel):
     type: str
     internal: Optional[bool] = False
     data: Optional[dict] = {}
-    url_path: Optional[str] = "/"
+    raw_url_path: Optional[str] = Field(alias="url_path", default="/")
     custom_headers: Optional[
         Union[
             AWSCustomHeaders,
@@ -110,14 +114,13 @@ class BaseServiceSettings(BaseModel):
             }
         return data
 
-    @field_validator("url_path", mode="before")
-    def validate_command(cls, value: str) -> str:
-        # if empty, default to "/"
-        return value.strip().rstrip("/") or "/"
-
     # ------------------------------
     # Properties
     # ------------------------------
+    @property
+    def url_path(self):
+        return self.raw_url_path or "/"
+
     @property
     def is_web(self):
         return False
