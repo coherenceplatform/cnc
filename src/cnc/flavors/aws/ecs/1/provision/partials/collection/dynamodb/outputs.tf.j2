@@ -12,6 +12,10 @@ output "{{ resource.instance_name }}_dynamodb_table_id" {
   value       = aws_dynamodb_table.{{ resource.instance_name }}.id
 }
 
+output "{{ resource.instance_name }}_dynamodb_table_billing_mode" {
+  description = "Billing mode of the DynamoDB table"
+  value       = aws_dynamodb_table.{{ resource.instance_name }}.billing_mode
+} 
 {% endif %}
 {% endfor %}
 {% endfor %}

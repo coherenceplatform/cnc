@@ -1,0 +1,21 @@
+{% for environment in env_collection.active_environments %}
+{% for resource in environment.dynamodb_resources %}
+{% if resource.is_dynamodb %}
+
+output "{{ resource.instance_name }}_dynamodb_table_arn" {
+  description = "ARN of the DynamoDB table"
+  value       = aws_dynamodb_table.{{ resource.instance_name }}.arn
+}
+
+output "{{ resource.instance_name }}_dynamodb_table_id" {
+  description = "ID of the DynamoDB table"
+  value       = aws_dynamodb_table.{{ resource.instance_name }}.id
+}
+
+output "{{ resource.instance_name }}_dynamodb_table_billing_mode" {
+  description = "Billing mode of the DynamoDB table"
+  value       = aws_dynamodb_table.{{ resource.instance_name }}.billing_mode
+} 
+{% endif %}
+{% endfor %}
+{% endfor %}

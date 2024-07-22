@@ -58,6 +58,21 @@ resource "aws_dynamodb_table" "{{ resource.instance_name }}" {
   )
 }
 
+resource "aws_vpc_endpoint" "{{ resource.instance_name }}_dynamodb" {
+  vpc_id       = aws_vpc.{{ env_collection.instance_name }}.id
+  service_name = "com.amazonaws.{{ env_collection.region }}.dynamodb"
+
+  route_table_ids = [
+    aws_route_table.{{ env_collection.instance_name }}_private.id , 
+    aws_route_table.{{ env_collection.instance_name }}_public.id
+    ]
+
+  tags = {
+    Name = "DynamoDB VPC Endpoint"
+  }
+}
+
 {% endif %}
 {% endfor %}
 {% endfor %}
+

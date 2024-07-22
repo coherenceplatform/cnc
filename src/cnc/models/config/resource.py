@@ -527,9 +527,21 @@ class DynamoDBResourceSettings(BaseResourceSettings):
     def is_dynamodb(self):
         return True
 
+    # @property
+    # def managed_environment_variables(self):
+    #     return {}
+    
     @property
     def managed_environment_variables(self):
-        return {}
+        _env = self.common_managed_environment_variables
+        _env.update(
+            {
+                f"{self.env_var_base}_DYNAMODB_ID" : self.dynamodb_table_output_id,
+                f"{self.env_var_base}_DYNAMODB_ARN" : self.dynamodb_table_output_arn,
+                f"{self.env_var_base}_DYNAMODB_BILLING_MODE" : self.dynamodb_table_output_billing_mode,
+            }
+        )
+        return _env
 
     @property
     def dynamodb_table_output_arn(self):
@@ -538,6 +550,10 @@ class DynamoDBResourceSettings(BaseResourceSettings):
     @property
     def dynamodb_table_output_id(self):
         return f"{self.service.instance_name}_dynamodb_table_id"
+    
+    @property
+    def dynamodb_table_output_billing_mode(self):
+        return f"{self.service.instance_name}_dynamodb_table_billing_mode"
 
 
 class CacheResourceSettings(BaseResourceSettings):

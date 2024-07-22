@@ -1,0 +1,37 @@
+{% for environment in env_collection.active_environments %}
+{% for service in environment.services %}
+{% if service.is_serverless %}
+
+output "{{ service.instance_name }}_lambda_function_name" {
+  description = "The name of the Lambda Function"
+  value       = "${aws_lambda_function.{{ service.instance_name }}.function_name}"
+}
+
+output "{{ service.instance_name }}_lambda_function_url" {
+  description = "The URL of the Lambda Function URL"
+  value       = "${aws_lambda_function_url.{{ service.instance_name }}.function_url}"
+}
+
+output "{{ service.instance_name }}_lambda_function_url_id" {
+  description = "The Lambda Function URL generated id"
+  value       = "${aws_lambda_function_url.{{ service.instance_name }}.url_id}"
+}
+
+output "{{ service.instance_name }}_lambda_function_version" {
+  description = "Latest published version of Lambda Function"
+  value       = "${aws_lambda_function.{{ service.instance_name }}.version}"
+}
+
+output "{{ service.instance_name }}_lambda_role_arn" {
+  description = "The ARN of the IAM role created for the Lambda Function"
+  value       = "${aws_iam_role.{{ service.instance_name }}.arn}"
+}
+
+output "{{ service.instance_name }}_lambda_role_name" {
+  description = "The name of the IAM role created for the Lambda Function"
+  value       = "${aws_iam_role.{{ service.instance_name }}.name}"
+}
+
+{% endif%}
+{% endfor %}
+{% endfor %}
