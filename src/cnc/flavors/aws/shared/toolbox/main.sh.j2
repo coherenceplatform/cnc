@@ -49,7 +49,7 @@ start_ssm_sessions () {
             aws ssm start-session --target {{ bastion_instance_id }} \
             --document-name AWS-StartPortForwardingSessionToRemoteHost \
             --parameters '{{ resource.settings.toolbox_ssh_port_mapping }}' > /tmp/cnc_ssh_output_{{ loop.index }} 2>&1 &
-            SSH_PID_{{ loop.index }}=$!
+            SSM_PID_{{ loop.index }}=$!
 
             if [ $SSM_RETRY_COUNT_{{ loop.index }} -gt 3 ]
             then
