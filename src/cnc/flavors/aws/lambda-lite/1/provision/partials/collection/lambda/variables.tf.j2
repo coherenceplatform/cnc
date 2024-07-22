@@ -1,0 +1,38 @@
+{% for environment in env_collection.active_environments %}
+{% for service in environment.services %}
+{% if service.is_serverless %}
+
+variable "{{ service.instance_name }}_lambda_variables" {
+  description = "Environment variables to pass to the Lambda function"
+  type        = map(string)
+  default     = {
+    {% if service.is_serverless %}
+    {% for item in service.insecure_environment_items %}
+    "{{ item.name }}" = "{{ item.value }}"
+    {% if not loop.last %}{% endif %}
+    {% endfor %}
+    {% endif %}
+  }
+}
+
+variable "{{ service.instance_name }}_aws_resources_permission_lambda" {
+  description = "List of AWS resources that the Lambda function needs to access"
+  type        = list(string)
+  default     = [ "logs", "cloudwatch", "ec2", "dynamodb", "s3"]
+}
+
+variable "{{ service.instance_name }}_handler" {
+    description = "Lambda function handler | e.g Format: filename.lambda_handler"
+    type        = string
+    default = "{{ service.settings.handler | default('lambda_function.lambda_handler') }}"
+}
+
+variable "{{ service.instance_name }}_runtime" {
+    description = "Lambda function runtime"
+    type        = string
+    default     = "{{ service.settings.runtime | default('python3.12') }}"
+}
+
+{% endif %}
+{% endfor %}
+{% endfor %}

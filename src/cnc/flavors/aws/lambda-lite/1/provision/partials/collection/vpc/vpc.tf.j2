@@ -277,18 +277,4 @@ resource "aws_route" "{{ environment.name }}_{{environment.collection.instance_n
   }
 }
 
-resource "aws_vpc_endpoint" "{{ environment.name }}_{{environment.collection.instance_name}}_dynamodb" {
-  vpc_id       = local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_id
-  service_name = "com.amazonaws.${var.region}.dynamodb"
-
-  route_table_ids = concat(
-    [for rt in aws_route_table.{{ environment.name }}_{{environment.collection.instance_name}}_private : rt.id],
-    [for rt in aws_route_table.{{ environment.name }}_{{environment.collection.instance_name}}_public : rt.id]
-  )
-
-  tags = {
-    Name = "DynamoDB VPC Endpoint"
-  }
-}
-
 {% endfor %}
