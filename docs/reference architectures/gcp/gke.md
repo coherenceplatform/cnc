@@ -5,7 +5,7 @@ description: What does cnc deploy to my GCP cloud projects with the GKE flavor?
 
 ## Who is this flavor for
 
-The `gke` flavor is designed to be the most robust and flexible deployment possible. It has best practices baked in throughout for security and reliablity. The lower bound for expect cost per collection for this deployment is approx $150 a month in GCP costs.
+The `gke` flavor is designed to be the most robust and flexible deployment possible. It has best practices baked in throughout for security and reliablity. The lower bound for expected cost per collection for this deployment is approx $150 a month in GCP costs.
 
 The `gke` flavor supports internal microservices that are not attached to a load balancer, using `is_internal` in the `x-cnc` yml for that service.
 

@@ -8,8 +8,8 @@ This guide covers the installation of the CNC framework and the necessary cloud 
 - Access to a terminal
 - Python 3.9-3.11 installed on your machine
 - Cloud provider account (AWS `aws` or Google Cloud `gcloud`) and authenticated CLI
-- `docker` 
-- `terraform` 
+- `docker`
+- `terraform`
 - `jq`
 
 ## Installation Steps
@@ -25,7 +25,7 @@ We also offer a `docker` image with all of this installed, `us-docker.pkg.dev/co
 
 ### Install and authenticate cloud CLI:
 
-This would be either the `aws` or `gcloud` CLI. Read more at [aws](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) or [gcp](https://cloud.google.com/sdk/docs/install). 
+This would be either the `aws` or `gcloud` CLI. Read more at [aws](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) or [gcp](https://cloud.google.com/sdk/docs/install).
 
 For google:
 
@@ -65,7 +65,7 @@ services:
 
 The `environments.yml` file defines your environments and their configuration, including environment variables and URLs. You can define many `collections`, each of which can live in its own cloud account (making it easy to segregate different environment types). Read more about the different options and see a full example [here](./configuration/environments.md).
 
-This example produces one environment at `dev.mydevsite.com` running in the GCP project `foo-bar-123` using the built-in infra as code and build/deploy scripts in the `run-light` flavor. Read more about CNC flavors [here](./flavors/README.md). 
+This example produces one environment at `dev.mydevsite.com` running in the GCP project `foo-bar-123` using the built-in infra as code and build/deploy scripts in the `run-light` flavor. Read more about CNC flavors [here](./flavors/README.md).
 
 ```
 name: my-first-app
@@ -124,7 +124,7 @@ Sometimes, you'll see errors that a service is not enabled or a quota was not av
 
 ## Deploy the container
 
-You can customize the scripts that run for build/deploy using a Jinja2 template, read more [here](/customization/overview/). 
+You can customize the scripts that run for build/deploy using a Jinja2 template, read more [here](/customization/overview/).
 
 ### Build the docker image
 
@@ -148,7 +148,7 @@ cnc deploy perform dev --service-tag app=v1
 
 ### Build & Deploy
 
-There is an `update` command to make the build/deploy cycle easier. 
+There is an `update` command to make the build/deploy cycle easier.
 
 ```
 # dev is the environment name in environment.yml
@@ -167,3 +167,12 @@ cnc toolbox start dev
 ```
 
 You now can run your REPL or anything else you need to do! Read more at [toolboxes](./toolboxes.md)
+
+### Cleaning Up an Environment
+
+To delete the infrastrucuture managed by `cnc`, use the `provision` subcommand `cmd` to call `terraform destroy` on the collection.
+
+- Destroy infrastructure:
+      ```
+      cnc provision cmd destroy --collection-name MYCOLLECTION
+      ```
