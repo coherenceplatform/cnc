@@ -82,6 +82,22 @@ locals {
     newbits = 8
 }
 
+{% if env_collection.has_dynamodb_resources %}
+resource "aws_vpc_endpoint" "{{ env_collection.instance_name }}_dynamodb" {
+  vpc_id       = local.{{ env_collection.instance_name }}_vpc_id
+  service_name = "com.amazonaws.${var.region}.dynamodb"
+
+  route_table_ids = concat(
+    [for rt in aws_route_table.{{ env_collection.instance_name }}_private : rt.id],
+    [for rt in aws_route_table.{{ env_collection.instance_name }}_public : rt.id]
+  )
+
+  tags = {
+    Name = "{{ env_collection.instance_name }} - DynamoDB VPC Endpoint"
+  }
+}
+{% endif %}
+
 resource "aws_vpc" "{{ env_collection.instance_name }}" {
     cidr_block = local.vpc_cidr_block
 

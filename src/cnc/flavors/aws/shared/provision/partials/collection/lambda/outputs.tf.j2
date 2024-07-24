@@ -1,3 +1,5 @@
+{% block shared_functions %}
+
 {% for environment in env_collection.active_environments %}
 {% for service in environment.services %}
 {% if service.is_serverless %}
@@ -35,3 +37,5 @@ output "{{ service.instance_name }}_lambda_role_name" {
 {% endif%}
 {% endfor %}
 {% endfor %}
+
+{% endblock %}
