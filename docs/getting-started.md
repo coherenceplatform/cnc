@@ -166,7 +166,7 @@ This will start a new container on the local machine, with the right environment
 cnc toolbox start dev
 ```
 
-You now can run your REPL or anything else you need to do! Read more at [toolboxes](./toolboxes.md)
+You can now run your REPL or anything else you need to do! Read more at [toolboxes](./toolboxes.md)
 
 ### Cleaning Up an Environment
 

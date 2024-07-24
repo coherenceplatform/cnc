@@ -1,4 +1,4 @@
-Contributions via PR to this repo are welcome. Please for the repo, work on your feature or change using the guide below, and then make a PR against this repo. The team will review the PR and work with you to get it merged. Thanks!
+Contributions via PR to this repo are welcome. Please fork the repo, work on your feature or change using the guide below, and then make a PR against this repo. The team will review the PR and work with you to get it merged. Thanks!
 
 # install pipx
 [pipx installation instructions](https://pipx.pypa.io/stable/installation)
