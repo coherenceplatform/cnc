@@ -526,10 +526,6 @@ class DynamoDBResourceSettings(BaseResourceSettings):
     @property
     def is_dynamodb(self):
         return True
-
-    # @property
-    # def managed_environment_variables(self):
-    #     return {}
     
     @property
     def managed_environment_variables(self):

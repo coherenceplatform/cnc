@@ -1,3 +1,4 @@
+{% block shared_functions %}
 provider "aws" {
     region = "{{ env_collection.region }}"
     allowed_account_ids = ["{{ env_collection.account_id }}"]
@@ -32,9 +33,7 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.25"
     }
-    archive = {
-      source  = "hashicorp/archive"
-      version = ">= 2.3.0"
-    }
   }
 }
+
+{% endblock %}

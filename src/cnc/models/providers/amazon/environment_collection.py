@@ -172,6 +172,9 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         return secret_string
 
     def generate_tf_assets(self, config_files_path, rendered_files_path):
+        if self.application.flavor == "lambda-lite":
+            return True
+
         log.debug(f"Generating provider assets for {self}...")
         # Zip the js file
         # ensure its in env_collection config_files_path

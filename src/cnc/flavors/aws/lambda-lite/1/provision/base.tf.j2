@@ -8,10 +8,6 @@ terraform {
 
 {% if not output_only %}
 
-{% block providers %}
-{% include "partials/collection/providers.tf.j2" %}
-{% endblock providers%}
-
 {% block environments %}
 {% include "partials/collection/environments.tf.j2" %}
 {% endblock environments %}
@@ -35,12 +31,6 @@ terraform {
 {% include "partials/collection/dynamodb/variables.tf.j2" %}
 {% include "partials/collection/dynamodb/outputs.tf.j2" %}
 {% endblock dynamodb %}
-{% endif %}
-
-{% if env_collection.database_resources %}
-{% block database %}
-{% include "partials/collection/database/rds.tf.j2" %}
-{% endblock database %}
 {% endif %}
 
 {% endif %}{# {% if not output_only %} #}
