@@ -213,6 +213,10 @@ class EnvironmentCollection(BaseModel):
         return self.all_services_for_type("message_queue")
 
     @property
+    def has_dynamodb_resources(self):
+        return bool(self.dynamodb_resources)
+
+    @property
     def has_object_storage(self):
         return bool(self.object_storage_resources)
 

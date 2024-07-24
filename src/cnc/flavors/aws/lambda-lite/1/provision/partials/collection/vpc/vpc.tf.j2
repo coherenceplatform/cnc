@@ -277,6 +277,7 @@ resource "aws_route" "{{ environment.name }}_{{environment.collection.instance_n
   }
 }
 
+{% if env_collection.has_dynamodb_resources %}
 resource "aws_vpc_endpoint" "{{ environment.name }}_{{environment.collection.instance_name}}_dynamodb" {
   vpc_id       = local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_id
   service_name = "com.amazonaws.${var.region}.dynamodb"
@@ -290,4 +291,6 @@ resource "aws_vpc_endpoint" "{{ environment.name }}_{{environment.collection.ins
     Name = "DynamoDB VPC Endpoint"
   }
 }
+{% endif %}
+
 {% endfor %}
