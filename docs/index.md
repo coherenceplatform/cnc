@@ -121,7 +121,7 @@ Add a 2nd environment (e.g. `dev2`) to the `environments.yml` and run the comman
 
 ## Contributing
 
-Interested in contributing to CNC? Check out our Developers Getting Started guide for guidelines and project setup instructions.
+Interested in contributing to CNC? Check out our Developers [Getting Started](https://github.com/coherenceplatform/cnc/blob/main/development.md) guide for guidelines and project setup instructions.
 
 ## Coherence Hosted CNC
 

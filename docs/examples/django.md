@@ -4,7 +4,7 @@ We are going to deploy a django app with a postgres DB to ECS using the built-in
 
 Before starting, follow the steps at [Getting Started](../README.md). If you are using `aws sso` for your credentials locally, you'll need to set `AWS_PROFILE=PROFILE_NAME` in your environment.
 
-## repo setup 
+## repo setup
 
 Following the instructions at the [django tutorial](https://docs.djangoproject.com/en/5.0/intro/tutorial01/) we have set up our app. Here's an example: [django](https://github.com/coherenceplatformdemos/django-cnc-demo-1).
 
@@ -23,7 +23,7 @@ DATABASES = {
 }
 ```
 
-The environment variables refereced will be automatically populated by `cnc` based on the configuration's resources. In your app, you'd want to handle setting these in development to the right values, having defaults that work locally when these are not set (e.g. in dev), or using an alternate `settings.py` with different values.
+The environment variables referenced will be automatically populated by `cnc` based on the configuration's resources. In your app, you'd want to handle setting these in development to the right values, having defaults that work locally when these are not set (e.g. in dev), or using an alternate `settings.py` with different values.
 
 ## cnc.yml
 
