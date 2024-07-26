@@ -5,17 +5,17 @@
 resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
     name = "{{ resource.instance_name }}"
     description = "RDS subnet group"
-    subnet_ids = concat(aws_subnet.{{ environment.name }}_{{environment.collection.instance_name}}_private.*.id)
+    subnet_ids = concat(aws_subnet.{{ environment.name }}-{{environment.collection.instance_name}}_private.*.id)
 }
 
 resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
-    vpc_id = aws_vpc.{{ environment.name }}_{{environment.collection.instance_name}}.id
+    vpc_id = aws_vpc.{{ environment.name }}-{{environment.collection.instance_name}}.id
     name = "{{ resource.instance_name }}-db-access"
     description = "Allow access to RDS"
 }
 
 resource "aws_security_group" "{{ resource.instance_name }}_db" {
-    vpc_id = aws_vpc.{{ environment.name }}_{{environment.collection.instance_name}}.id
+    vpc_id = aws_vpc.{{ environment.name }}-{{environment.collection.instance_name}}.id
     name = "{{ resource.instance_name }}-db"
     description = "RDS Security Group"
 

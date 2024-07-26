@@ -25,4 +25,26 @@ terraform {
 {% endblock database %}
 {% endif %}
 
+{% block collection_level_resources %}
+
+{% if env_collection.serverless_services %}
+{% block lambda %}
+{% include "partials/collection/lambda/security_group.tf.j2" %}
+{% include "partials/collection/lambda/lambda_function.tf.j2" %}
+{% include "partials/collection/lambda/lambda.tf.j2" %}
+{% include "partials/collection/lambda/variables.tf.j2" %}
+{% include "partials/collection/lambda/outputs.tf.j2" %}
+{% endblock lambda %}
+{% endif %}
+
+{% if env_collection.dynamodb_resources %}
+{% block dynamodb %}
+{% include "partials/collection/dynamodb/dynamodb.tf.j2" %}
+{% include "partials/collection/dynamodb/variables.tf.j2" %}
+{% include "partials/collection/dynamodb/outputs.tf.j2" %}
+{% endblock dynamodb %}
+{% endif %}
+
+{% endblock collection_level_resources %}
+
 {% endif %}{# {% if not output_only %} #}
