@@ -8,6 +8,10 @@ terraform {
 
 {% if not output_only %}
 
+{% block providers %}
+{% include "partials/collection/providers.tf.j2" %}
+{% endblock providers%}
+
 {% block environments %}
 {% include "partials/collection/environments.tf.j2" %}
 {% endblock environments %}
