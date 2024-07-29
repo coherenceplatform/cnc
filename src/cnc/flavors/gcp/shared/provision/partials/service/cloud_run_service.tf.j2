@@ -37,6 +37,14 @@ output "{{ service.instance_name }}_cloud_run_url" {
     value = google_cloud_run_service.{{ service.instance_name }}.status.0.url
 }
 
+output "{{ service.instance_name }}_repository_url" {
+    value = join("", [
+      "{{ env_collection.region }}-docker.pkg.dev/",
+      "{{ env_collection.account_id }}/{{ env_collection.instance_name }}/",
+      "{{ service.gcr_image_name }}",
+    ])
+}
+
 {%- if service.is_backend %}
 resource "google_cloud_run_v2_job" "{{ service.instance_name }}" {
   project = "{{ env_collection.account_id }}"

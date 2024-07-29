@@ -5,6 +5,10 @@ resource "aws_ecr_repository" "{{ service.instance_name }}" {
     force_delete = true
 }
 
+output "{{ service.instance_name }}_repository_url" {
+    value = aws_ecr_repository.{{ service.instance_name }}.repository_url
+}
+
 {# {% if service.is_frontend %}
 {% include "partials/service/all_frontend.tf.j2" %}
 {% endif %}if service.is_frontend #}
