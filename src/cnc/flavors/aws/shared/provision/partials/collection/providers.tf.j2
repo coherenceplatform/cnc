@@ -1,4 +1,3 @@
-{% block shared_functions %}
 provider "aws" {
     region = "{{ env_collection.region }}"
     allowed_account_ids = ["{{ env_collection.account_id }}"]
@@ -35,5 +34,3 @@ terraform {
     }
   }
 }
-
-{% endblock %}

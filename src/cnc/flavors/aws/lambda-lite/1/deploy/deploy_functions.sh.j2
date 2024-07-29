@@ -1,5 +1,50 @@
 #!/bin/bash
 
+send_{{ service.name }}_status_hook () {
+    echo -e \\nSending deploy status webhook...\\n
+
+    if [ $1 -eq 0 ]; then
+        cnc_build_status=${2:-"success"}
+    else
+        cnc_build_status="failed"
+    fi
+
+    if test -f {{ deployer.rendered_files_path }}/task_rev_{{ service.instance_name }}.txt; then
+        task_revision=$(cat {{ deployer.rendered_files_path }}/task_rev_{{ service.instance_name }}.txt)
+    fi
+
+    data='{
+        "token": "{{ deployer.webhook_token }}",
+        "status": "'"$cnc_build_status"'",
+        "stage": "deploy",
+        "service": "{{ service.name }}",
+        "revision_id": "'"$task_revision"'"
+    }'
+    echo "===== {{ service.name }} deploy status ====="
+    echo "$data" | jq .
+    echo "===== {{ service.name }} deploy status ====="
+
+    which curl; curl_exists=$?
+    if [ $curl_exists -ne 0 ]; then
+        echo -e \\nWarning: Cannot find curl binary, skipping deploy status webhook...\\n
+    else
+        {% if deployer.webhook_url %}
+        webhook_status=$(curl -X PUT -H "Content-Type: application/json" \
+        -o /dev/null \
+        -d "$data" -w "%{http_code}" \
+        {{ deployer.webhook_url }}) || true
+
+        if [ "$webhook_status" != "200" ]; then
+            echo -e \\nDeploy status webhook failed.
+        else
+            echo -e \\nDeploy status webhook succeeded.
+        fi
+        {% else %}
+        echo -e \\nNo webhook URL provided. Skipping deploy status webhook...
+        {% endif %}
+    fi
+}
+
 # Assigning variables
 name_lambda="{{ service.instance_name }}"
 output_dir="{{ service.environment.collection.config_files_path }}/build/{{ service.instance_name }}_lambda_function.zip"
@@ -131,6 +176,8 @@ fi
 rm $env_vars_file
 rm current_lambda_function.json
 rm current_lambda_function.zip
+
+send_{{ service.name }}_status_hook 0 "working"
 
 # Exit with the captured exit code
 exit $exit_code

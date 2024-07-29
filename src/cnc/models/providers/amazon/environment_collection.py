@@ -5,6 +5,7 @@ import json
 from cnc.models import EnvironmentCollection
 from typing import Literal
 from cnc.logger import get_logger
+from pathlib import Path
 
 log = get_logger(__name__)
 
@@ -173,6 +174,12 @@ class AWSEnvironmentCollection(EnvironmentCollection):
 
     def generate_tf_assets(self, config_files_path, rendered_files_path):
         if self.application.flavor == "lambda-lite":
+            lambda_payload_path = os.path.join(rendered_files_path, "lambda_function_payload")
+            shutil.make_archive(
+                lambda_payload_path,
+                "zip",
+                root_dir=(f"{config_files_path}/lambda_function_payload"),
+            )
             return True
 
         log.debug(f"Generating provider assets for {self}...")
@@ -184,5 +191,4 @@ class AWSEnvironmentCollection(EnvironmentCollection):
             "zip",
             root_dir=(f"{config_files_path}/frontend_routing_lambda"),
         )
-
         return True
