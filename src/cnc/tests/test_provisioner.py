@@ -362,6 +362,8 @@ class AWSProvisionStageOneBackendOneServerlessOneDatabaseTest(
 
     def test_tf_is_valid(self):
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
+        self.assertEqual(len(self.resources["aws_lb_target_group"]), 1)
+        self.assertEqual(len(self.resources["aws_security_group"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
         self.assertEqual(len(self.resources["aws_db_proxy"]), 1)
         self.assertEqual(len(self.resources["aws_ecs_service"]), 1)
