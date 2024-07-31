@@ -377,6 +377,42 @@ class AWSProvisionStageOneServiceServerlessOneDatabaseTest(AWSProvisionStageTest
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
 
 
+class AWSProvisionStageOneServiceServerlessTwoDatabaseTest(AWSProvisionStageTestBase):
+    fixture_name = "serverless-1-service-2-db"
+    env_data_filepath = "environments_serverless_1_service_2_db.yml"
+
+    def test_tf_is_valid(self):
+        self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
+        self.assertEqual(len(self.resources["aws_vpc"]), 1)
+        self.assertEqual(len(self.resources["aws_db_instance"]), 2)
+
+
+class AWSProvisionStageOneServiceServerlessTwoResourceDynamoDBTwoDatabaseTest(
+    AWSProvisionStageTestBase
+):
+    fixture_name = "serverless-1-service-2-dynamodb-2-db"
+    env_data_filepath = "environments_serverless_1_service_2_dynamodb_2_db.yml"
+
+    def test_tf_is_valid(self):
+        self.assertEqual(len(self.resources["aws_dynamodb_table"]), 2)
+        self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
+        self.assertEqual(len(self.resources["aws_vpc"]), 1)
+        self.assertEqual(len(self.resources["aws_db_instance"]), 2)
+
+
+class AWSProvisionStageOneServiceServerlessTwoResourceDynamoDBTwoDatabaseTest(
+    AWSProvisionStageTestBase
+):
+    fixture_name = "serverless-2-service-2-dynamodb-2-db"
+    env_data_filepath = "environments_serverless_2_service_2_dynamodb_2_db.yml"
+
+    def test_tf_is_valid(self):
+        self.assertEqual(len(self.resources["aws_dynamodb_table"]), 2)
+        self.assertEqual(len(self.resources["aws_lambda_function"]), 2)
+        self.assertEqual(len(self.resources["aws_vpc"]), 1)
+        self.assertEqual(len(self.resources["aws_db_instance"]), 2)
+
+
 # class AWSProvisionStageOneBackendOneServerlessOneDatabaseTest(
 #     AWSProvisionStageTestBase
 # ):
