@@ -17,6 +17,12 @@ class AWSEnvironmentCollection(EnvironmentCollection):
     # ------------------------------
 
     @property
+    def has_service_domains(self):
+        if self.application.flavor == "lambda-lite":
+            return True
+        return False
+
+    @property
     def hosted_zone_ns_records(self):
         return self.get_terraform_output("hosted_zone_ns_records")
 
@@ -166,6 +172,17 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         return secret_string
 
     def generate_tf_assets(self, config_files_path, rendered_files_path):
+        if self.application.flavor == "lambda-lite":
+            lambda_payload_path = os.path.join(
+                rendered_files_path, "lambda_function_payload"
+            )
+            shutil.make_archive(
+                lambda_payload_path,
+                "zip",
+                root_dir=(f"{config_files_path}/lambda_function_payload"),
+            )
+            return True
+
         log.debug(f"Generating provider assets for {self}...")
         # Zip the js file
         # ensure its in env_collection config_files_path
@@ -175,5 +192,4 @@ class AWSEnvironmentCollection(EnvironmentCollection):
             "zip",
             root_dir=(f"{config_files_path}/frontend_routing_lambda"),
         )
-
         return True

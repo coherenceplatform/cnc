@@ -1,0 +1,109 @@
+{% for environment in env_collection.active_environments %}
+{% for service in environment.services %}
+{% if service.is_serverless %}
+
+################################################################################
+# Locals Lambda
+################################################################################
+
+locals {
+  {{ service.instance_name }}_lambda_infrastructure_suffix = "{{ service.instance_name }}"
+  {{ service.instance_name }}_lambda_log_group = join("/", ["/aws/lambda", local.{{ service.instance_name }}_lambda_infrastructure_suffix])
+}
+
+################################################################################
+# IAM Role | Role Policy for Lambda to access DynamoDB and CloudWatch
+################################################################################
+resource "aws_iam_role" "{{ service.instance_name }}" {
+  name = join("-", [local.{{ service.instance_name }}_lambda_infrastructure_suffix, "lambda"])
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Action    = "sts:AssumeRole",
+      Effect    = "Allow",
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_policy" "{{ service.instance_name }}" {
+  name        = join("-", [local.{{ service.instance_name }}_lambda_infrastructure_suffix, "lambda"])
+  description = "IAM policy for Lambda to access specified AWS services"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      for resource in var.{{ service.instance_name }}_aws_resources_permission_lambda : {
+        Action = [
+          "${resource}:*"
+        ],
+        Effect   = "Allow",
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "{{ service.instance_name }}" {
+  role       = aws_iam_role.{{ service.instance_name }}.name
+  policy_arn = aws_iam_policy.{{ service.instance_name }}.arn
+}
+
+################################################################################
+# Lambda Function
+################################################################################
+resource "aws_lambda_function" "{{ service.instance_name }}" {
+  
+  function_name = local.{{ service.instance_name }}_lambda_infrastructure_suffix
+  handler       = var.{{ service.instance_name }}_handler
+  runtime       = var.{{ service.instance_name }}_runtime
+  role          = aws_iam_role.{{ service.instance_name }}.arn
+
+  filename      = "./lambda_function_payload.zip"
+  source_code_hash = filebase64sha256("./lambda_function_payload.zip")
+
+  lifecycle {
+    ignore_changes = [ 
+      source_code_hash,
+      filename
+      ]
+  }
+
+  dynamic "environment" {
+    for_each = length(keys(var.{{ service.instance_name }}_lambda_variables)) == 0 ? [] : [true]
+    content {
+      variables = var.{{ service.instance_name }}_lambda_variables
+    }
+  }
+
+  vpc_config {
+      security_group_ids = [aws_security_group.{{ environment.name }}_{{environment.collection.instance_name}}_lambda.id]
+      subnet_ids = aws_subnet.{{ environment.name }}_{{environment.collection.instance_name}}_public[*].id
+    }
+
+  dynamic "logging_config" {
+    for_each = can(regex("^[a-zA-Z0-9_\\-/#.]+$", local.{{ service.instance_name }}_lambda_log_group)) ? [true] : []
+    content {
+      log_group  = local.{{ service.instance_name }}_lambda_log_group
+      log_format = "Text"
+  }
+
+  }
+  depends_on = [ 
+    aws_iam_role.{{ service.instance_name }},
+  ]
+}
+
+resource "aws_lambda_function_url" "{{ service.instance_name }}" {
+  depends_on = [aws_lambda_function.{{ service.instance_name }}]
+
+  function_name = local.{{ service.instance_name }}_lambda_infrastructure_suffix
+  authorization_type = "NONE"
+}
+
+{% endif %}
+{% endfor %}
+{% endfor %}

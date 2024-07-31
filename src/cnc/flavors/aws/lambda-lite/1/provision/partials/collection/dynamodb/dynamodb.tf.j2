@@ -1,0 +1,64 @@
+{% for environment in env_collection.active_environments %}
+{% for resource in environment.dynamodb_resources %}
+{% if resource.is_dynamodb %}
+################################################################################
+# Locals DynamoDB
+################################################################################
+locals {
+
+  {{ resource.instance_name }}_dynamodb_infrastructure_suffix = "{{ resource.instance_name }}"
+
+}
+
+resource "aws_dynamodb_table" "{{ resource.instance_name }}" {
+  name         = local.{{ resource.instance_name }}_dynamodb_infrastructure_suffix
+  billing_mode = var.{{ resource.instance_name }}_billing_mode
+  hash_key     = var.{{ resource.instance_name }}_hash_key
+
+  read_capacity = var.{{ resource.instance_name }}_billing_mode == "PROVISIONED" ? var.{{ resource.instance_name }}_read_capacity : null
+  write_capacity = var.{{ resource.instance_name }}_billing_mode == "PROVISIONED" ? var.{{ resource.instance_name }}_write_capacity : null
+
+  deletion_protection_enabled = var.{{ resource.instance_name }}_deletion_protection_enabled == true ? true : false
+  table_class = var.{{ resource.instance_name }}_table_class
+
+  point_in_time_recovery {
+    enabled = var.{{ resource.instance_name }}_point_in_time_recovery_enabled
+  }
+
+  ttl {
+    attribute_name = var.{{ resource.instance_name }}_ttl_attribute_name
+    enabled        = var.{{ resource.instance_name }}_ttl_enabled
+  }
+
+  dynamic "attribute" {
+    for_each = var.{{ resource.instance_name }}_attributes
+    content {
+      name = attribute.value.name
+      type = attribute.value.type
+    }
+  }
+  
+  dynamic "global_secondary_index" {
+    for_each = var.{{ resource.instance_name }}_global_secondary_indexes
+    content {
+      name               = global_secondary_index.value.name
+      hash_key           = global_secondary_index.value.hash_key
+      range_key          = global_secondary_index.value.range_key
+      projection_type    = global_secondary_index.value.projection_type
+      read_capacity      = var.{{ resource.instance_name }}_billing_mode == "PROVISIONED" ? global_secondary_index.value.read_capacity : null
+      write_capacity     = var.{{ resource.instance_name }}_billing_mode == "PROVISIONED" ? global_secondary_index.value.write_capacity : null
+    }
+    
+  }
+
+  tags = merge(
+    {
+      Name = local.{{ resource.instance_name }}_dynamodb_infrastructure_suffix
+    },
+  )
+}
+
+{% endif %}
+{% endfor %}
+{% endfor %}
+

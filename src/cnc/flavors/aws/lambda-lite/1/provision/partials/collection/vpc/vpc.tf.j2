@@ -1,0 +1,296 @@
+{% for environment in env_collection.active_environments %}
+locals {
+  {{ environment.name }}_{{environment.collection.instance_name}}_len_public_subnets      = max(length(var.{{ environment.name }}_{{environment.collection.instance_name}}_public_subnets))
+  {{ environment.name }}_{{environment.collection.instance_name}}_len_private_subnets     = max(length(var.{{ environment.name }}_{{environment.collection.instance_name}}_private_subnets))
+
+  {{ environment.name }}_{{environment.collection.instance_name}}_max_subnet_length = max(
+    local.{{ environment.name }}_{{environment.collection.instance_name}}_len_private_subnets,
+    local.{{ environment.name }}_{{environment.collection.instance_name}}_len_public_subnets,
+  )
+
+  {{ environment.name }}_{{environment.collection.instance_name}}_vpc_id = aws_vpc.{{ environment.name }}_{{environment.collection.instance_name}}.id
+
+  {{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix = join("-", [ "{{ environment.name }}" ,"{{environment.collection.instance_name}}","vpc"]) 
+
+}
+
+################################################################################
+# VPC
+################################################################################
+
+resource "aws_vpc" "{{ environment.name }}_{{environment.collection.instance_name}}" {
+  cidr_block          = var.{{ environment.name }}_{{environment.collection.instance_name}}_cidr
+
+  enable_dns_hostnames                 = var.{{ environment.name }}_{{environment.collection.instance_name}}_enable_dns_hostnames
+  enable_dns_support                   = var.{{ environment.name }}_{{environment.collection.instance_name}}_enable_dns_support
+
+  tags = merge(
+    { "Name" = local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix },
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_tags,
+  )
+}
+
+################################################################################
+# Security Group
+################################################################################
+resource "aws_security_group" "{{ environment.name }}_{{environment.collection.instance_name}}" {
+  for_each    = { for sg in var.{{ environment.name }}_{{environment.collection.instance_name}}_add_security_groups : sg.name => sg }
+  name        = join("-", [each.key,])
+  vpc_id      = aws_vpc.{{ environment.name }}_{{environment.collection.instance_name}}.id
+
+  dynamic "ingress" {
+    for_each = each.value.ingress
+    content {
+      from_port   = ingress.value.from_port
+      to_port     = ingress.value.to_port
+      protocol    = ingress.value.protocol
+      cidr_blocks = ingress.value.cidr_blocks
+    }
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "{{ environment.name }}_{{environment.collection.instance_name}}_lambda" {
+
+  name        = join("-", [local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix, "lambda-sg"])
+  vpc_id      = aws_vpc.{{ environment.name }}_{{environment.collection.instance_name}}.id
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [ var.{{ environment.name }}_{{environment.collection.instance_name}}_cidr ]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+################################################################################
+# Publiс Subnets
+################################################################################
+
+locals {
+  {{ environment.name }}_{{environment.collection.instance_name}}_create_public_subnets = local.{{ environment.name }}_{{environment.collection.instance_name}}_len_public_subnets > 0
+}
+
+resource "aws_subnet" "{{ environment.name }}_{{environment.collection.instance_name}}_public" {
+  count = local.{{ environment.name }}_{{environment.collection.instance_name}}_create_public_subnets && (!var.{{ environment.name }}_{{environment.collection.instance_name}}_one_nat_gateway_per_az || local.{{ environment.name }}_{{environment.collection.instance_name}}_len_public_subnets >= length(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs)) ? local.{{ environment.name }}_{{environment.collection.instance_name}}_len_public_subnets : 0
+
+  availability_zone                              = length(regexall("^[a-z]{2}-", element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index))) > 0 ? element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index) : null
+  availability_zone_id                           = length(regexall("^[a-z]{2}-", element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index))) == 0 ? element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index) : null
+  cidr_block                                     = element(concat(var.{{ environment.name }}_{{environment.collection.instance_name}}_public_subnets, [""]), count.index)
+  vpc_id                                         = local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_id
+
+  tags = merge(
+    {
+      Name = try(
+        var.{{ environment.name }}_{{environment.collection.instance_name}}_public_subnet_names[count.index],
+        format("${local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix}-${var.{{ environment.name }}_{{environment.collection.instance_name}}_public_subnet_suffix}-%s", element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index))
+      )
+    },
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_public_subnet_tags,
+    lookup(var.{{ environment.name }}_{{environment.collection.instance_name}}_public_subnet_tags_per_az, element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index), {})
+  )
+}
+
+locals {
+  {{ environment.name }}_{{environment.collection.instance_name}}_num_public_route_tables = var.{{ environment.name }}_{{environment.collection.instance_name}}_create_multiple_public_route_tables ? local.{{ environment.name }}_{{environment.collection.instance_name}}_len_public_subnets : 1
+}
+
+resource "aws_route_table" "{{ environment.name }}_{{environment.collection.instance_name}}_public" {
+  count = local.{{ environment.name }}_{{environment.collection.instance_name}}_create_public_subnets ? local.{{ environment.name }}_{{environment.collection.instance_name}}_num_public_route_tables : 0
+
+  vpc_id = local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_id
+
+  tags = merge(
+    {
+      "Name" = var.{{ environment.name }}_{{environment.collection.instance_name}}_create_multiple_public_route_tables ? format(
+        "${local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix}-${var.{{ environment.name }}_{{environment.collection.instance_name}}_public_subnet_suffix}-%s",
+        element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index),
+      ) : "${local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix}-${var.{{ environment.name }}_{{environment.collection.instance_name}}_public_subnet_suffix}"
+    },
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_public_route_table_tags,
+  )
+}
+
+resource "aws_route_table_association" "{{ environment.name }}_{{environment.collection.instance_name}}_public" {
+  count = local.{{ environment.name }}_{{environment.collection.instance_name}}_create_public_subnets ? local.{{ environment.name }}_{{environment.collection.instance_name}}_len_public_subnets : 0
+
+  subnet_id      = element(aws_subnet.{{ environment.name }}_{{environment.collection.instance_name}}_public[*].id, count.index)
+  route_table_id = element(aws_route_table.{{ environment.name }}_{{environment.collection.instance_name}}_public[*].id, var.{{ environment.name }}_{{environment.collection.instance_name}}_create_multiple_public_route_tables ? count.index : 0)
+}
+
+resource "aws_route" "{{ environment.name }}_{{environment.collection.instance_name}}_public_internet_gateway" {
+  count = local.{{ environment.name }}_{{environment.collection.instance_name}}_create_public_subnets && var.{{ environment.name }}_{{environment.collection.instance_name}}_create_igw ? 1 : 0
+
+  route_table_id         = aws_route_table.{{ environment.name }}_{{environment.collection.instance_name}}_public[0].id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.{{ environment.name }}_{{environment.collection.instance_name}}[0].id
+
+  timeouts {
+    create = "5m"
+  }
+}
+
+################################################################################
+# Private Subnets
+################################################################################
+
+locals {
+  {{ environment.name }}_{{environment.collection.instance_name}}_create_private_subnets = local.{{ environment.name }}_{{environment.collection.instance_name}}_len_private_subnets > 0
+}
+
+resource "aws_subnet" "{{ environment.name }}_{{environment.collection.instance_name}}_private" {
+  count = local.{{ environment.name }}_{{environment.collection.instance_name}}_create_private_subnets ? local.{{ environment.name }}_{{environment.collection.instance_name}}_len_private_subnets : 0
+
+  availability_zone                              = length(regexall("^[a-z]{2}-", element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index))) > 0 ? element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index) : null
+  availability_zone_id                           = length(regexall("^[a-z]{2}-", element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index))) == 0 ? element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index) : null
+  vpc_id                                         = local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_id
+  cidr_block                                     = element(concat(var.{{ environment.name }}_{{environment.collection.instance_name}}_private_subnets, [""]), count.index)
+
+  tags = merge(
+    {
+      Name = try(
+        var.{{ environment.name }}_{{environment.collection.instance_name}}_private_subnet_names[count.index],
+        format("${local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix}-${var.{{ environment.name }}_{{environment.collection.instance_name}}_private_subnet_suffix}-%s", element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index))
+      )
+    },
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_private_subnet_tags,
+    lookup(var.{{ environment.name }}_{{environment.collection.instance_name}}_private_subnet_tags_per_az, element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index), {})
+  )
+}
+
+# There are as many routing tables as the number of NAT gateways
+resource "aws_route_table" "{{ environment.name }}_{{environment.collection.instance_name}}_private" {
+  count = local.{{ environment.name }}_{{environment.collection.instance_name}}_create_private_subnets && local.{{ environment.name }}_{{environment.collection.instance_name}}_max_subnet_length > 0 ? local.{{ environment.name }}_{{environment.collection.instance_name}}_nat_gateway_count : 0
+
+  vpc_id = local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_id
+
+  tags = merge(
+    {
+      "Name" = var.{{ environment.name }}_{{environment.collection.instance_name}}_single_nat_gateway ? "${local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix}-${var.{{ environment.name }}_{{environment.collection.instance_name}}_private_subnet_suffix}" : format(
+        "${local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix}-${var.{{ environment.name }}_{{environment.collection.instance_name}}_private_subnet_suffix}-%s",
+        element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, count.index),
+      )
+    },
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_private_route_table_tags,
+  )
+}
+
+resource "aws_route_table_association" "{{ environment.name }}_{{environment.collection.instance_name}}_private" {
+  count = local.{{ environment.name }}_{{environment.collection.instance_name}}_create_private_subnets ? local.{{ environment.name }}_{{environment.collection.instance_name}}_len_private_subnets : 0
+
+  subnet_id = element(aws_subnet.{{ environment.name }}_{{environment.collection.instance_name}}_private[*].id, count.index)
+  route_table_id = element(
+    aws_route_table.{{ environment.name }}_{{environment.collection.instance_name}}_private[*].id,
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_single_nat_gateway ? 0 : count.index,
+  )
+}
+
+################################################################################
+# Internet Gateway
+################################################################################
+
+resource "aws_internet_gateway" "{{ environment.name }}_{{environment.collection.instance_name}}" {
+  count = local.{{ environment.name }}_{{environment.collection.instance_name}}_create_public_subnets && var.{{ environment.name }}_{{environment.collection.instance_name}}_create_igw ? 1 : 0
+
+  vpc_id = local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_id
+
+  tags = merge(
+    { "Name" = local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix },
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_igw_tags,
+  )
+}
+
+################################################################################
+# NAT Gateway
+################################################################################
+
+locals {
+  {{ environment.name }}_{{environment.collection.instance_name}}_nat_gateway_count = var.{{ environment.name }}_{{environment.collection.instance_name}}_single_nat_gateway ? 1 : var.{{ environment.name }}_{{environment.collection.instance_name}}_one_nat_gateway_per_az ? length(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs) : local.{{ environment.name }}_{{environment.collection.instance_name}}_max_subnet_length
+  {{ environment.name }}_{{environment.collection.instance_name}}_nat_gateway_ips   = var.{{ environment.name }}_{{environment.collection.instance_name}}_reuse_nat_ips ? var.{{ environment.name }}_{{environment.collection.instance_name}}_external_nat_ip_ids : aws_eip.{{ environment.name }}_{{environment.collection.instance_name}}[*].id
+}
+
+resource "aws_eip" "{{ environment.name }}_{{environment.collection.instance_name}}" {
+  count = var.{{ environment.name }}_{{environment.collection.instance_name}}_enable_nat_gateway && !var.{{ environment.name }}_{{environment.collection.instance_name}}_reuse_nat_ips ? local.{{ environment.name }}_{{environment.collection.instance_name}}_nat_gateway_count : 0
+
+  domain = "vpc"
+
+  tags = merge(
+    {
+      "Name" = format(
+        "${local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix}-%s",
+        element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, var.{{ environment.name }}_{{environment.collection.instance_name}}_single_nat_gateway ? 0 : count.index),
+      )
+    },
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_nat_eip_tags,
+  )
+
+  depends_on = [aws_internet_gateway.{{ environment.name }}_{{environment.collection.instance_name}}]
+}
+
+resource "aws_nat_gateway" "{{ environment.name }}_{{environment.collection.instance_name}}" {
+  count = var.{{ environment.name }}_{{environment.collection.instance_name}}_enable_nat_gateway ? local.{{ environment.name }}_{{environment.collection.instance_name}}_nat_gateway_count : 0
+
+  allocation_id = element(
+    local.{{ environment.name }}_{{environment.collection.instance_name}}_nat_gateway_ips,
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_single_nat_gateway ? 0 : count.index,
+  )
+  subnet_id = element(
+    aws_subnet.{{ environment.name }}_{{environment.collection.instance_name}}_public[*].id,
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_single_nat_gateway ? 0 : count.index,
+  )
+
+  tags = merge(
+    {
+      "Name" = format(
+        "${local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix}-%s",
+        element(var.{{ environment.name }}_{{environment.collection.instance_name}}_azs, var.{{ environment.name }}_{{environment.collection.instance_name}}_single_nat_gateway ? 0 : count.index),
+      )
+    },
+    var.{{ environment.name }}_{{environment.collection.instance_name}}_nat_gateway_tags,
+  )
+
+  depends_on = [aws_internet_gateway.{{ environment.name }}_{{environment.collection.instance_name}}]
+}
+
+resource "aws_route" "{{ environment.name }}_{{environment.collection.instance_name}}_private_nat_gateway" {
+  count = var.{{ environment.name }}_{{environment.collection.instance_name}}_enable_nat_gateway ? local.{{ environment.name }}_{{environment.collection.instance_name}}_nat_gateway_count : 0
+
+  route_table_id         = element(aws_route_table.{{ environment.name }}_{{environment.collection.instance_name}}_private[*].id, count.index)
+  destination_cidr_block = var.{{ environment.name }}_{{environment.collection.instance_name}}_nat_gateway_destination_cidr_block
+  nat_gateway_id         = element(aws_nat_gateway.{{ environment.name }}_{{environment.collection.instance_name}}[*].id, count.index)
+
+  timeouts {
+    create = "5m"
+  }
+}
+
+{% if env_collection.has_dynamodb_resources %}
+resource "aws_vpc_endpoint" "{{ environment.name }}_{{environment.collection.instance_name}}_dynamodb" {
+  vpc_id       = local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_id
+  service_name = "com.amazonaws.${var.region}.dynamodb"
+
+  route_table_ids = concat(
+    [for rt in aws_route_table.{{ environment.name }}_{{environment.collection.instance_name}}_private : rt.id],
+    [for rt in aws_route_table.{{ environment.name }}_{{environment.collection.instance_name}}_public : rt.id]
+  )
+
+  tags = {
+    Name = "DynamoDB VPC Endpoint"
+  }
+}
+{% endif %}
+
+{% endfor %}

@@ -1,0 +1,12 @@
+
+variable "account_id" {
+  description = "Environment to be used on all the resources as identifier"
+  type        = string
+  default = "{{ env_collection.account_id | default('null') }}"
+}
+
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "{{ env_collection.region | default('us-east-1') }}"
+}

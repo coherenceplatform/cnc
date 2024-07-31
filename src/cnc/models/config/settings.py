@@ -126,6 +126,10 @@ class BaseServiceSettings(BaseModel):
         return False
 
     @property
+    def is_dynamodb(self):
+        return False
+
+    @property
     def is_cache(self):
         return False
 
@@ -188,6 +192,10 @@ class CORSSettings(BaseModel):
     allowed_origins: List[str]
 
 
+class ServerlessCDNConfig(BaseModel):
+    enabled: Optional[bool] = True
+
+
 class FrontendCDNConfig(BaseModel):
     enabled: Optional[bool] = True
 
@@ -200,6 +208,17 @@ ProviderDeployResourceLimits = Annotated[
     Union[GCPDeployResourceLimits, AWSDeployResourceLimits],
     Field(discriminator="provider"),
 ]
+
+
+class ServerlessServiceSettings(BaseServiceSettings):
+    type: Literal["serverless"]
+    handler: Optional[str] = "function.lambda_handler"
+    runtime: Optional[str] = "python3.12"
+    cdn: Optional[ServerlessCDNConfig] = Field(default_factory=ServerlessCDNConfig)
+
+    @property
+    def is_web(self):
+        return True
 
 
 class FrontendServiceSettings(BaseServiceSettings):

@@ -1,0 +1,40 @@
+{% block state %}
+terraform {
+  backend "local" {
+    path = "{{ config_renderer.working_dir }}/.terraform/{{ config_renderer.tf_state_namespace }}.tfstate"
+  }
+}
+{% endblock %}
+
+{% if not output_only %}
+
+{% block providers %}
+{% include "partials/collection/providers.tf.j2" %}
+{% endblock providers%}
+
+{% block environments %}
+{% include "partials/collection/environments.tf.j2" %}
+{% endblock environments %}
+
+{% if env_collection.serverless_services %}
+{% block vpc %}
+{% include "partials/collection/vpc/vpc.tf.j2" %}
+{% include "partials/collection/vpc/variables.tf.j2" %}
+{% endblock vpc %}
+
+{% block lambda %}
+{% include "partials/collection/lambda/lambda.tf.j2" %}
+{% include "partials/collection/lambda/variables.tf.j2" %}
+{% include "partials/collection/lambda/outputs.tf.j2" %}
+{% endblock lambda %}
+{% endif %}
+
+{% if env_collection.dynamodb_resources %}
+{% block dynamodb %}
+{% include "partials/collection/dynamodb/dynamodb.tf.j2" %}
+{% include "partials/collection/dynamodb/variables.tf.j2" %}
+{% include "partials/collection/dynamodb/outputs.tf.j2" %}
+{% endblock dynamodb %}
+{% endif %}
+
+{% endif %}{# {% if not output_only %} #}
