@@ -31,7 +31,10 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
 
   vpc_config {
       security_group_ids = [aws_security_group.{{ service.instance_name }}_lambda.id]
-      subnet_ids = aws_subnet.{{ environment.name }}-{{environment.collection.instance_name}}_public[*].id
+      subnet_ids = concat(
+        aws_subnet.{{ environment.name }}-{{ environment.collection.instance_name }}_public[*].id,
+        aws_subnet.{{ environment.name }}-{{ environment.collection.instance_name }}_private[*].id
+      )
     }
 
   dynamic "logging_config" {

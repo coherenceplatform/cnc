@@ -2,9 +2,9 @@ name: Lint and Test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "tests/two_flavors" ] #TODO
   pull_request:
-    branches: [ "main" ]
+    branches: [ "tests/two_flavors" ] #TODO
 
 jobs:
   build:

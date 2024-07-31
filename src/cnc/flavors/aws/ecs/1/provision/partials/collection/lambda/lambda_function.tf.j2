@@ -30,9 +30,12 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
   }
 
   vpc_config {
-      security_group_ids = [aws_security_group.{{ service.instance_name }}_lambda.id]
-      subnet_ids = aws_subnet.{{ env_collection.instance_name }}_public[*].id
-    }
+    security_group_ids = [aws_security_group.{{ service.instance_name }}_lambda.id]
+    subnet_ids = concat(
+      aws_subnet.{{ env_collection.instance_name }}_public[*].id,
+      aws_subnet.{{ env_collection.instance_name }}_private[*].id
+    )
+  }
 
   dynamic "logging_config" {
     for_each = can(regex("^[a-zA-Z0-9_\\-/#.]+$", local.{{ service.instance_name }}_lambda_log_group)) ? [true] : []
