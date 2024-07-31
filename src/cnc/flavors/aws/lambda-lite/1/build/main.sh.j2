@@ -11,4 +11,5 @@ fi
 {% block install_commands %}
 source {{ builder.rendered_files_path }}/build-{{ service.name }}-functions.sh
 send_{{ service.name }}_status_hook 0 "working"
+build_{{ service.name }}
 {% endblock %}

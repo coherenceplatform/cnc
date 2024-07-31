@@ -40,29 +40,30 @@ send_{{ service.name }}_status_hook () {
     fi
 }
 
-echo "ZIP Lambda function code..."
+build_{{ service.name }} () {
+  echo "ZIP Lambda function code..."
 
-source_dir="{{ service.build.context }}"
-output_dir="{{ service.environment.collection.config_files_path }}/build"
-output_file="$output_dir/{{ service.instance_name }}_lambda_function.zip"
+  source_dir="{{ service.build.context }}"
+  output_dir="{{ service.environment.collection.config_files_path }}/build"
+  output_file="$output_dir/{{ service.instance_name }}_lambda_function.zip"
 
-if [ -d "$source_dir" ]; then
-  echo "Source is a directory: $source_dir"
-  (cd "$source_dir" && zip -r "$output_file" .)
-elif [ -f "$source_dir" ]; then
-  echo "Source is a file: $source_dir"
-  base_name=$(basename "$source_dir")
-  dir_name=$(dirname "$source_dir")
-  (cd "$dir_name" && zip -r "$output_file" "$base_name")
-else
-  echo "Error: Source path is not valid: $source_dir"
-  exit 1
-fi
+  if [ -d "$source_dir" ]; then
+    echo "Source is a directory: $source_dir"
+    (cd "$source_dir" && zip -r "$output_file" .)
+  elif [ -f "$source_dir" ]; then
+    echo "Source is a file: $source_dir"
+    base_name=$(basename "$source_dir")
+    dir_name=$(dirname "$source_dir")
+    (cd "$dir_name" && zip -r "$output_file" "$base_name")
+  else
+    echo "Error: Source path is not valid: $source_dir"
+    exit 1
+  fi
 
-if [ $? -eq 0 ]; then
-  echo "ZIP file created successfully at $output_file"
-  send_{{ service.name }}_status_hook 0 "working"
-else
-  echo "Error creating ZIP file"
-  exit 1
-fi
+  if [ $? -eq 0 ]; then
+    echo "ZIP file created successfully at $output_file"
+  else
+    echo "Error creating ZIP file"
+    exit 1
+  fi
+}

@@ -11,4 +11,5 @@ fi
 {% block install_commands %}
 source {{ deployer.rendered_files_path }}/deploy-{{ service.name }}-functions.sh
 send_{{ service.name }}_status_hook 0 "working"
+deploy_{{ service.name }}
 {% endblock %}
