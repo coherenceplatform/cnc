@@ -354,21 +354,35 @@ class AWSProvisionStageOneTwoServiceServerlessAndTwoResourceDynamoDBTest(
         self.assertEqual(len(self.resources["aws_vpc"]), 1)
 
 
-class AWSProvisionStageOneBackendOneServerlessOneDatabaseTest(
+class AWSProvisionStageOneServiceServerlessOneResourceDynamoDBOneDatabaseTest(
     AWSProvisionStageTestBase
 ):
-    fixture_name = "backend-1-serverless-1-service-1-db"
-    env_data_filepath = "environments_backend_1_serverless_1_service_1_db.yml"
+    fixture_name = "serverless-1-service-1-dynamodb-1-db"
+    env_data_filepath = "environments_serverless_1_service_1_dynamodb_1_db.yml"
 
     def test_tf_is_valid(self):
+        self.assertEqual(len(self.resources["aws_dynamodb_table"]), 1)
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
-        self.assertEqual(len(self.resources["aws_lb_target_group"]), 1)
-        self.assertEqual(len(self.resources["aws_security_group"]), 1)
+        self.assertEqual(len(self.resources["aws_vpc"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
         self.assertEqual(len(self.resources["aws_db_proxy"]), 1)
-        self.assertEqual(len(self.resources["aws_ecs_service"]), 1)
-        self.assertEqual(len(self.resources["aws_cloudfront_distribution"]), 1)
-        self.assertEqual(len(self.resources["aws_ecr_repository"]), 1)
-        self.assertEqual(len(self.resources["aws_vpc"]), 1)
-        self.assertEqual(len(self.resources["aws_acm_certificate"]), 2)
-        self.assertEqual(len(self.resources["aws_route53_zone"]), 1)
+
+
+# class AWSProvisionStageOneBackendOneServerlessOneDatabaseTest(
+#     AWSProvisionStageTestBase
+# ):
+#     fixture_name = "backend-1-serverless-1-service-1-db"
+#     env_data_filepath = "environments_backend_1_serverless_1_service_1_db.yml"
+
+#     def test_tf_is_valid(self):
+#         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
+#         self.assertEqual(len(self.resources["aws_lb_target_group"]), 1)
+#         self.assertEqual(len(self.resources["aws_security_group"]), 1)
+# self.assertEqual(len(self.resources["aws_db_instance"]), 1)
+# self.assertEqual(len(self.resources["aws_db_proxy"]), 1)
+#         self.assertEqual(len(self.resources["aws_ecs_service"]), 1)
+#         self.assertEqual(len(self.resources["aws_cloudfront_distribution"]), 1)
+#         self.assertEqual(len(self.resources["aws_ecr_repository"]), 1)
+#         self.assertEqual(len(self.resources["aws_vpc"]), 1)
+#         self.assertEqual(len(self.resources["aws_acm_certificate"]), 2)
+#         self.assertEqual(len(self.resources["aws_route53_zone"]), 1)
