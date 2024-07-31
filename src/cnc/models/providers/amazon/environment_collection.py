@@ -5,7 +5,6 @@ import json
 from cnc.models import EnvironmentCollection
 from typing import Literal
 from cnc.logger import get_logger
-from pathlib import Path
 
 log = get_logger(__name__)
 
