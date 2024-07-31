@@ -412,7 +412,6 @@ class AWSProvisionStageOneServiceServerlessTwoResourceDynamoDBTwoDatabaseTest(
         self.assertEqual(len(self.resources["aws_vpc"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 2)
 
-
 # class AWSProvisionStageOneBackendOneServerlessOneDatabaseTest(
 #     AWSProvisionStageTestBase
 # ):
