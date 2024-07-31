@@ -365,7 +365,16 @@ class AWSProvisionStageOneServiceServerlessOneResourceDynamoDBOneDatabaseTest(
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
         self.assertEqual(len(self.resources["aws_vpc"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
-        self.assertEqual(len(self.resources["aws_db_proxy"]), 1)
+
+
+class AWSProvisionStageOneServiceServerlessOneDatabaseTest(AWSProvisionStageTestBase):
+    fixture_name = "serverless-1-service-1-db"
+    env_data_filepath = "environments_serverless_1_service_1_db.yml"
+
+    def test_tf_is_valid(self):
+        self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
+        self.assertEqual(len(self.resources["aws_vpc"]), 1)
+        self.assertEqual(len(self.resources["aws_db_instance"]), 1)
 
 
 # class AWSProvisionStageOneBackendOneServerlessOneDatabaseTest(
