@@ -8,7 +8,7 @@
 
 ## Introduction
 
-CNC simplifies cloud application lifecycle management. It reduces repetitive work in environment setup, code deployment, and infrastructure management across projects and teams. By consolidating common DevOps tasks into a single, customizable tool, CNC eliminates the need to reinvent processes for each project. It provides a flexible, consistent foundation that teams can share and improve, facilitating the adoption of best practices in cloud application management.
+`cnc` simplifies cloud application lifecycle management. It reduces repetitive work in environment setup, code deployment, and infrastructure management across projects and teams. By consolidating ccommon DevOps tasks into a powerful framework, `cnc` eliminates the need to build the same tools and glue for each project. It provides a flexible, consistent foundation that teams can share and improve, facilitating the adoption of best practices in cloud application management.
 
 ## What is cnc
 
