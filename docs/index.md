@@ -8,6 +8,10 @@
 
 ## Introduction
 
+CNC was developed to simplify the management of cloud applications across their entire lifecycle. It arose from the practical need to reduce repetitive work in setting up environments, building and deploying code, and managing infrastructure across multiple projects and teams. CNC consolidates common DevOps tasks into a single, customizable tool, eliminating the need to reinvent the wheel for each new project. While maintaining flexibility for specific project needs, it provides a consistent foundation that can be shared and improved over time, making it easier for teams to adopt best practices in cloud application management.
+
+## What is cnc
+
 `cnc` is an open-source framework that sits on top of Infastructure-as-Code tools like `terraform` or `OpenTofu`. It transforms high-level service definitions into infrastructure deployments across various environments, including development, staging, production, and ephemeral deployments for preview environments or testing.
 
 Key features of `cnc`:
