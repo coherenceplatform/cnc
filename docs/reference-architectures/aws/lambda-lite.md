@@ -27,7 +27,6 @@ description: What does CNC deploy to my AWS cloud account with the Lambda Lite r
 - [DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html) is used as the primary database service.
     - Tables are created with configurable settings such as billing mode, read/write capacity, and global secondary indexes.
     - Point-in-time recovery and TTL can be enabled on tables as needed.
-- [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) can be used for object storage when configured in your `cnc.yml`.
 
 ### Build & Deploy
 
