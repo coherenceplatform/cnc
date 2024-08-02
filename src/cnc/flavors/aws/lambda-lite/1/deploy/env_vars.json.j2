@@ -1,0 +1,7 @@
+{
+    "Variables": {
+        {%- for item in service.insecure_environment_items %}
+        "{{ item.name }}": {{ item.value | tojson }}{%- if not loop.last %},{%- endif %}
+        {%- endfor %}
+    }
+}
