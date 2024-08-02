@@ -79,19 +79,8 @@ deploy_{{ service.name }} () {
   echo "output_dir: $output_dir"
   echo "region: $region"
 
-  env_vars_file="env_vars.json"
-  echo "Creating environment variables file $env_vars_file..."
-
-  # Start JSON file
-  echo '{ "Variables": {' > $env_vars_file
-
-  {% for item in service.insecure_environment_items %}
-  echo "  \"{{item.name}}\": \"{{item.value}}\"," >> $env_vars_file
-  {% endfor %}
-  sed -i '$ s/,$//' $env_vars_file
-
-  # Close JSON file
-  echo '}}' >> $env_vars_file
+  env_vars_file="{{ deployer.rendered_files_path }}/{{ service.name }}_env_vars.json"
+  {{ render_template("env_vars.json.j2", "{}_env_vars.json".format(service.name)) }}
 
   cat $env_vars_file
 
