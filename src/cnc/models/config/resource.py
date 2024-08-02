@@ -336,7 +336,7 @@ class DatabaseResourceSettings(BaseResourceSettings):
 
         db_url_params = {}
         # SSL is enabled by default for postgres >= 15
-        if not self.engine.lower() == "postgres" or int(self.version) < 15:
+        if not self.engine.lower() == "postgres" or float(self.version) < 15:
             db_url_params["sslmode"] = "disable"
 
         environment = self.service.environment
