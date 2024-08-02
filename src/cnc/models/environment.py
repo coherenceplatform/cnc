@@ -277,7 +277,7 @@ class Environment(BaseModel):
         )
 
     def variable_by_name(self, name):
-        for variable in self.environment_variables:
+        for variable in self.environment_variables + self.managed_environment_items:
             if variable.name == name:
                 return variable
         log.debug(f"{name} var not found for {self}")
