@@ -15,6 +15,7 @@ services:
   api:
     x-cnc:
       type: backend
+      url_path: /api
     build:
       context: ./api
 
