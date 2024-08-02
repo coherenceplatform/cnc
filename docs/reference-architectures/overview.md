@@ -19,6 +19,7 @@ flavor: run-light
 ### AWS
 
 - [ecs](./aws/ecs.md)
+- [lambda-lite](./aws/lambda-lite.md)
 
 ### GCP
 
