@@ -8,6 +8,10 @@
 
 ## Introduction
 
+`cnc` simplifies cloud application lifecycle management. It reduces repetitive work in environment setup, code deployment, and infrastructure management across projects and teams. By consolidating ccommon DevOps tasks into a powerful framework, `cnc` eliminates the need to rebuild and glue together the same scaffolding for each project. It provides a flexible, consistent foundation that teams can share and improve, facilitating the adoption of best practices in cloud application management.
+
+## What is cnc
+
 `cnc` is an open-source framework that sits on top of Infastructure-as-Code tools like `terraform` or `OpenTofu`. It transforms high-level service definitions into infrastructure deployments across various environments, including development, staging, production, and ephemeral deployments for preview environments or testing.
 
 Key features of `cnc`:
