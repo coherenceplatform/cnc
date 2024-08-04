@@ -9,7 +9,7 @@
 locals {
   {{ service.instance_name }}_lambda_infrastructure_suffix = "{{ service.instance_name }}"
   {{ service.instance_name }}_lambda_log_group = join("/", ["/aws/lambda", local.{{ service.instance_name }}_lambda_infrastructure_suffix])
-  secret_values = jsondecode(aws_secretsmanager_secret_version.{{ service.instance_name }}_secrets_version.secret_string)
+  {{ service.instance_name }}_secret_values = jsondecode(aws_secretsmanager_secret_version.{{ service.instance_name }}_secrets_version.secret_string)
 }
 
 ################################################################################
@@ -100,7 +100,7 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
     content {
       variables = merge(
         var.{{ service.instance_name }}_lambda_variables,
-        local.secret_values
+        local.s{{ service.instance_name }}_secret_values
       )
     }
   }
