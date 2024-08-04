@@ -65,27 +65,18 @@ While similar in concept to AWS Amplify CLI, `cnc` offers broader applicability 
 
 ### How `cnc` Compares
 
-`cnc` offers a unique combination of features that sets it apart from other cloud management solutions. The following table compares `cnc` with alternative approaches, highlighting its strengths in providing a comprehensive, flexible, and integrated solution for modern cloud operations:
+`cnc` offers a unique combination of features that sets it apart from other cloud management solutions. The following table highlights key differences between `cnc` and alternative approaches:
 
-| Feature | `cnc` | DevOps Consulting | Raw IaC (e.g., Terraform) | Gruntwork | PaaS | IDP/PaaS in Own Cloud |
-|---------|-------|-------------------|---------------------------|-----------|------|----------------------|
-| Time to Value | Fast | Slow | Moderate | Moderate | Fast | Moderate |
-| Built-in Reference Architecture | ✅ | Varies | ❌ | ✅ | ✅ | ✅ |
-| Stays Updated | ✅ | Requires ongoing engagement | Manual updates | ✅ | ✅ | ✅ |
-| Environment Management | ✅ | Varies | Limited (e.g., Terraform workspaces) | Limited | ✅ | ✅ |
-| SDLC Integration | ✅ | Varies | ❌ | ❌ | Partial | Partial |
-| Developer Self-Service | ✅ | Varies | ❌ | ❌ | ✅ | ✅ |
-| Day 2 Operations (Toolbox) | ✅ | Varies | ❌ | ❌ | Partial | Partial |
-| Compliance in Own Cloud | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Customizability | High | High | High | Moderate | Low | Moderate |
-| Cost Model | Direct cloud costs | High consulting fees | Direct cloud costs | Subscription + cloud costs | Markup on resources | Subscription + cloud costs |
-| Lock-in Risk | Low | Low | Low | Moderate | High | High |
-| Open-Source CLI | ✅ | N/A | ✅ | ❌ | ❌ | ❌ |
-| Complexity | Moderate | High | High | Moderate | Low | High |
-| Integration with Existing Tools | ✅ | Varies | ✅ | Partial | ❌ | Partial |
-| Local/CI Execution | ✅ | N/A | ✅ | ✅ | ❌ | ❌ |
+| Solution | Key Characteristics | Advantages | Limitations |
+|----------|---------------------|------------|-------------|
+| `cnc` | - Open-source framework<br>- Built on IaC tools<br>- Full lifecycle management<br>- Local CLI execution | - Rapid time-to-value<br>- Developer self-service<br>- Customizable architecture<br>- No vendor lock-in | - Requires some IaC knowledge |
+| DevOps Consulting | - Tailored solutions<br>- Expert guidance | - Highly customized<br>- Knowledge transfer | - High cost<br>- Dependency on consultants |
+| Raw IaC (e.g., Terraform) | - Full infrastructure control<br>- Highly flexible | - Maximum customization<br>- Broad ecosystem | - Steep learning curve<br>- Limited lifecycle management |
+| Gruntwork | - IaC modules<br>- Best practices built-in | - Faster start than raw IaC<br>- Maintained modules | - Limited to infrastructure (not full lifecycle)<br>- Less flexible than raw IaC |
+| PaaS | - Fully managed platform<br>- Rapid deployment | - Easy to use<br>- Minimal DevOps needed | - Limited customization<br>- Vendor lock-in<br>- Potentially higher costs |
+| IDP/PaaS in Own Cloud | - Self-hosted platform<br>- Managed workflows | - More control than PaaS<br>- Standardized processes | - Complex setup<br>- Often closed-source<br>- Potential lock-in to platform |
 
-As you can see, `cnc` combines the best aspects of various approaches, offering rapid time-to-value, built-in best practices, and the flexibility to customize and control your infrastructure. It integrates seamlessly with your existing tools and workflows while providing the convenience typically associated with Platform-as-a-Service solutions.
+`cnc` combines the flexibility of Infrastructure-as-Code with the convenience of a Platform-as-a-Service, all while avoiding vendor lock-in. It provides a comprehensive solution for managing your entire application lifecycle in the cloud, directly from your local environment or CI system.
 
 ## Hello World
 
