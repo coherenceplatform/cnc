@@ -9,6 +9,29 @@
 locals {
   {{ service.instance_name }}_lambda_infrastructure_suffix = "{{ service.instance_name }}"
   {{ service.instance_name }}_lambda_log_group = join("/", ["/aws/lambda", local.{{ service.instance_name }}_lambda_infrastructure_suffix])
+  {{ service.instance_name }}_secret_values = jsondecode(aws_secretsmanager_secret_version.{{ service.instance_name }}_secrets_version.secret_string)
+}
+
+################################################################################
+# Secrets Manager
+################################################################################
+
+resource "aws_secretsmanager_secret" "{{ service.instance_name }}_secrets" {
+    name = "{{ service.instance_name }}-secrets"
+    {% if environment.is_preview %}
+    recovery_window_in_days = 0
+    {% endif %}
+}
+
+resource "aws_secretsmanager_secret_version" "{{ service.instance_name }}_secrets_version" {
+    secret_id = aws_secretsmanager_secret.{{ service.instance_name }}_secrets.id
+    secret_string = jsonencode({
+        {% for resource in environment.config.resources %}
+        {% for k, v in resource.settings.managed_secret_values_for_tf.items() %}
+        {{ k }} = "{{ v }}"
+        {% endfor %}
+        {% endfor %}
+    })
 }
 
 ################################################################################
@@ -75,7 +98,10 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
   dynamic "environment" {
     for_each = length(keys(var.{{ service.instance_name }}_lambda_variables)) == 0 ? [] : [true]
     content {
-      variables = var.{{ service.instance_name }}_lambda_variables
+      variables = merge(
+        var.{{ service.instance_name }}_lambda_variables,
+        local.{{ service.instance_name }}_secret_values
+      )
     }
   }
 
