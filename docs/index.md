@@ -33,7 +33,7 @@
 
 ## What is cnc
 
-`cnc` is an open-source framework that sits on top of Infastructure-as-Code tools like `terraform` or `OpenTofu`. It transforms high-level service definitions into infrastructure deployments across various environments, including development, staging, production, and ephemeral deployments for preview environments or testing.
+`cnc` is an open-source framework that sits on top of Infrastructure-as-Code tools like `terraform` or `OpenTofu`. It transforms high-level service definitions into infrastructure deployments across various environments, including development, staging, production, and ephemeral deployments for preview environments or testing.
 
 Key features of `cnc`:
 
@@ -45,24 +45,47 @@ Key features of `cnc`:
 
 While similar in concept to AWS Amplify CLI, `cnc` offers broader applicability and adaptability to diverse deployment needs.
 
-Core Lifecycle Events Managed by `cnc`:
+### Core Lifecycle Events Managed by `cnc`:
 
 <picture>
   <img src="/images/cnc_diagram_dark.png" alt="cnc diagram" width="auto" height="auto">
 </picture>
-</p>
 
 - Provision: Uses terraform to create, manage, and dismantle cloud resources, ensuring each environment is crafted to fit its specific purpose.
 - Build: Assembles the necessary deployment artifacts for each environment, from docker containers to static assets for web applications.
 - Deploy: Seamlessly updates infrastructure to deploy new artifacts, such as modifying k8s manifests or updating ECS services.
 - Toolbox: A `toolbox` is a managed shell against a `cnc`-managed environment, making it easy to get a REPL or run database migrations, for example
 
-Getting Started with `cnc`:
+### Getting Started with `cnc`:
 
 - Experience `cnc` in just a few minutes: install and see for yourself the power of cnc in under 5 minutes without needing any cloud permissions or incurring any costs.
 - Rapid Deployment: Have your first environment up and running in less than 15 minutes, demonstrating the straightforward power of cnc.
 
 `cnc` is designed to be a powertool that empowers you to build and manage your infrastructure with the same attention to detail and creativity that you bring to your code. Just like web devs use frameworks to build better products, with `cnc`, you gain the freedom to implement your vision precisely as intended, making each project not only functional but finely tuned to your standards.
+
+### How `cnc` Compares
+
+`cnc` offers a unique combination of features that sets it apart from other cloud management solutions. The following table compares `cnc` with alternative approaches, highlighting its strengths in providing a comprehensive, flexible, and integrated solution for modern cloud operations:
+
+| Feature | `cnc` | DevOps Consulting | Raw IaC (e.g., Terraform) | Gruntwork | PaaS | IDP/PaaS in Own Cloud |
+|---------|-------|-------------------|---------------------------|-----------|------|----------------------|
+| Time to Value | Fast | Slow | Moderate | Moderate | Fast | Moderate |
+| Built-in Reference Architecture | ✅ | Varies | ❌ | ✅ | ✅ | ✅ |
+| Stays Updated | ✅ | Requires ongoing engagement | Manual updates | ✅ | ✅ | ✅ |
+| Environment Management | ✅ | Varies | Limited (e.g., Terraform workspaces) | Limited | ✅ | ✅ |
+| SDLC Integration | ✅ | Varies | ❌ | ❌ | Partial | Partial |
+| Developer Self-Service | ✅ | Varies | ❌ | ❌ | ✅ | ✅ |
+| Day 2 Operations (Toolbox) | ✅ | Varies | ❌ | ❌ | Partial | Partial |
+| Compliance in Own Cloud | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Customizability | High | High | High | Moderate | Low | Moderate |
+| Cost Model | Direct cloud costs | High consulting fees | Direct cloud costs | Subscription + cloud costs | Markup on resources | Subscription + cloud costs |
+| Lock-in Risk | Low | Low | Low | Moderate | High | High |
+| Open-Source CLI | ✅ | N/A | ✅ | ❌ | ❌ | ❌ |
+| Complexity | Moderate | High | High | Moderate | Low | High |
+| Integration with Existing Tools | ✅ | Varies | ✅ | Partial | ❌ | Partial |
+| Local/CI Execution | ✅ | N/A | ✅ | ✅ | ❌ | ❌ |
+
+As you can see, `cnc` combines the best aspects of various approaches, offering rapid time-to-value, built-in best practices, and the flexibility to customize and control your infrastructure. It integrates seamlessly with your existing tools and workflows while providing the convenience typically associated with Platform-as-a-Service solutions.
 
 ## Hello World
 
