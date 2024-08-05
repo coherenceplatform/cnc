@@ -67,6 +67,28 @@ class Application(BaseModel):
     def validate_name(cls, value: str) -> str:
         return clean_name_string(value)
 
+    @model_validator(mode="after")
+    def validate_no_duplicate_url_path(self):
+        for collection in self.collections:
+            if collection.has_service_domains:
+                continue
+
+            for environment in collection.environments:
+                url_paths = []
+                for service in environment.services:
+                    if service.settings.is_web:
+                        if service.settings.url_path in url_paths:
+                            raise ValueError(
+                                "Duplicate URL path for environment "
+                                f"{environment.name} in collection {collection.name}: "
+                                f"{service.settings.url_path}. "
+                                "URL paths must be unique per service."
+                            )
+
+                        url_paths.append(service.settings.url_path)
+
+        return self
+
     # ------------------------------
     # Class methods
     # ------------------------------
