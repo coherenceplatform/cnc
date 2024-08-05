@@ -1,0 +1,45 @@
+{% for environment in env_collection.active_environments %}
+{% for service in environment.services %}
+{% if service.is_serverless %}
+
+################################################################################
+# ALB Configuration
+################################################################################
+resource "aws_lb_target_group" "{{ service.instance_name }}_tg" {
+  name        = "${local.{{ service.instance_name }}_lambda_infrastructure_suffix}-tg"
+  target_type = "lambda"
+  vpc_id      = aws_vpc.{{ env_collection.instance_name }}.id
+}
+
+resource "aws_lb_target_group_attachment" "{{ service.instance_name }}_tg_attachment" {
+  target_group_arn = aws_lb_target_group.{{ service.instance_name }}_tg.arn
+  target_id        = aws_lambda_function.{{ service.instance_name }}.arn
+}
+
+resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
+  listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_http.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.{{ service.instance_name }}_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/{{ service.instance_name }}/*"]
+    }
+  }
+}
+
+resource "aws_lambda_permission" "{{ service.instance_name }}_alb_permission" {
+  statement_id  = "AllowExecutionFromALB"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.{{ service.instance_name }}.function_name
+  principal     = "elasticloadbalancing.amazonaws.com"
+  source_arn    = aws_lb_target_group.{{ service.instance_name }}_tg.arn
+}
+
+{% endif %}
+{% endfor %}
+{% endfor %}

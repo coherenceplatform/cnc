@@ -16,6 +16,15 @@ terraform {
 {% include "partials/collection/environments.tf.j2" %}
 {% endblock environments %}
 
+{% if env_collection.database_resources %}
+{% for environment in env_collection.valid_environments %}
+{% block active_and_paused_envs scoped %}
+{% include "partials/collection/database/rds.tf.j2" %}
+{% endblock active_and_paused_envs %}
+{% endfor %}
+{% endif %}
+
+{% block collection_level_resources %}
 {% if env_collection.serverless_services %}
 {% block vpc %}
 {% include "partials/collection/vpc/vpc.tf.j2" %}
@@ -24,17 +33,22 @@ terraform {
 
 {% block lambda %}
 {% include "partials/collection/lambda/lambda.tf.j2" %}
-{% include "partials/collection/lambda/variables.tf.j2" %}
-{% include "partials/collection/lambda/outputs.tf.j2" %}
 {% endblock lambda %}
+
+{% block lambda_shared %}
+{% include "partials/collection/lambda_shared/lambda.tf.j2" %}
+{% include "partials/collection/lambda_shared/variables.tf.j2" %}
+{% include "partials/collection/lambda_shared/outputs.tf.j2" %}
+{% endblock lambda_shared %}
 {% endif %}
 
 {% if env_collection.dynamodb_resources %}
-{% block dynamodb %}
-{% include "partials/collection/dynamodb/dynamodb.tf.j2" %}
-{% include "partials/collection/dynamodb/variables.tf.j2" %}
-{% include "partials/collection/dynamodb/outputs.tf.j2" %}
-{% endblock dynamodb %}
+{% block dynamodb_shared %}
+{% include "partials/collection/dynamodb_shared/dynamodb.tf.j2" %}
+{% include "partials/collection/dynamodb_shared/variables.tf.j2" %}
+{% include "partials/collection/dynamodb_shared/outputs.tf.j2" %}
+{% endblock dynamodb_shared %}
 {% endif %}
+{% endblock collection_level_resources %}
 
 {% endif %}{# {% if not output_only %} #}

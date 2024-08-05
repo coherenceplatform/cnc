@@ -56,26 +56,6 @@ resource "aws_security_group" "{{ environment.name }}_{{environment.collection.i
   }
 }
 
-resource "aws_security_group" "{{ environment.name }}_{{environment.collection.instance_name}}_lambda" {
-
-  name        = join("-", [local.{{ environment.name }}_{{environment.collection.instance_name}}_vpc_infrastructure_suffix, "lambda-sg"])
-  vpc_id      = aws_vpc.{{ environment.name }}_{{environment.collection.instance_name}}.id
-
-  ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [ var.{{ environment.name }}_{{environment.collection.instance_name}}_cidr ]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
 ################################################################################
 # Publiс Subnets
 ################################################################################
