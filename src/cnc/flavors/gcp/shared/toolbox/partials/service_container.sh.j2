@@ -48,8 +48,13 @@ then
     docker_auth_var="CLOUDSDK_AUTH_ACCESS_TOKEN=$CLOUDSDK_AUTH_ACCESS_TOKEN"
 fi
 
+USER=$(docker inspect --format='{{"{{.Config.User}}"}}' {{ service.instance_name }}_toolbox)
+if [ -z "$USER" ]; then
+    USER="root"
+fi
+
 # Start & exec into docker container
-docker run --entrypoint sh \
+docker run --user $USER --entrypoint sh \
 -e $docker_auth_var \
 {%- for variable in toolbox.environment_items -%}
 -e {{ variable.name }}={{ shlex.quote(variable.value) }} \
