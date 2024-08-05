@@ -69,12 +69,11 @@ While similar in concept to AWS Amplify CLI, `cnc` offers broader applicability 
 
 | Solution | Key Characteristics | Advantages | Limitations |
 |----------|---------------------|------------|-------------|
-| `cnc` | - Open-source framework<br>- Built on IaC tools<br>- Full lifecycle management<br>- Local CLI execution | - Rapid time-to-value<br>- Developer self-service<br>- Customizable architecture<br>- No vendor lock-in | - Requires some IaC knowledge |
-| DevOps Consulting | - Tailored solutions<br>- Expert guidance | - Highly customized<br>- Knowledge transfer | - High cost<br>- Dependency on consultants |
+| `cnc` | - Open-source framework<br>- Built on IaC tools<br>- Full lifecycle management | - Highly customizable architecture<br>- No vendor lock-in<br>- Suitable for large teams and complex deployments | - Requires some IaC knowledge |
 | Raw IaC (e.g., Terraform) | - Full infrastructure control<br>- Highly flexible | - Maximum customization<br>- Broad ecosystem | - Steep learning curve<br>- Limited lifecycle management |
-| Gruntwork | - IaC modules<br>- Best practices built-in | - Faster start than raw IaC<br>- Maintained modules | - Limited to infrastructure (not full lifecycle)<br>- Less flexible than raw IaC |
-| PaaS | - Fully managed platform<br>- Rapid deployment | - Easy to use<br>- Minimal DevOps needed | - Limited customization<br>- Vendor lock-in<br>- Potentially higher costs |
-| IDP/PaaS in Own Cloud | - Self-hosted platform<br>- Managed workflows | - More control than PaaS<br>- Standardized processes | - Complex setup<br>- Often closed-source<br>- Potential lock-in to platform |
+| Gruntwork | - IaC modules<br>- Best practices built-in | - Faster start than raw IaC<br>- Maintained modules | - Limited to infrastructure<br>- Less flexible than raw IaC |
+| PaaS | - Fully managed platform<br>- Rapid deployment | - Easy to use<br>- Minimal DevOps needed | - Limited customization<br>- Vendor lock-in |
+| IDP in Own Cloud | - Managed workflows<br>- Deploys to your cloud | - More control than PaaS<br>- Standardized processes | - Limited architectural flexibility<br>- Control plane often vendor-managed |
 
 `cnc` combines the flexibility of Infrastructure-as-Code with the convenience of a Platform-as-a-Service, all while avoiding vendor lock-in. It provides a comprehensive solution for managing your entire application lifecycle in the cloud, directly from your local environment or CI system.
 
