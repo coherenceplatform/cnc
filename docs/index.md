@@ -10,7 +10,7 @@
 
 ### Elevate Your Cloud Operations: Streamline. Standardize. Scale.
 
-`cnc` is the cutting-edge framework that revolutionizes cloud application lifecycle management for DevOps/Platform teams and ambitious startups. Built on the foundations of Infrastructure-as-Code, `cnc` empowers you to take control of your cloud ecosystem like never before.
+cnc simplifies cloud application lifecycle management. It reduces repetitive work in environment setup, code deployment, and cloud infrastructure management across projects and teams. By consolidating common DevOps tasks into a powerful framework, cnc eliminates the need to rebuild and glue together the same scaffolding for each project. It provides a flexible, consistent foundation that teams can share and improve, facilitating the adoption of best practices in cloud application management.
 
 ### Why Choose `cnc`?
 
