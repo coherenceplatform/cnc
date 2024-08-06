@@ -266,6 +266,9 @@ class EnvironmentCollection(BaseModel):
 
             buckets[bucket].append(domain)
 
+        # 22 will never be used by the modulo 6 above
+        buckets[22] = [e.domain for e in self.environments[:12]]
+
         return buckets
 
     @property
