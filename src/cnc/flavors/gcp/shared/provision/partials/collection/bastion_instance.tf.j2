@@ -1,12 +1,56 @@
 {% if env_collection.has_active_deployments %}
+
+# Get available zones in the region
+data "google_compute_zones" "available" {
+  region = "{{ env_collection.region }}"
+  status = "UP"
+}
+
+# Check capabilities for each zone
+data "google_compute_zone_capabilities" "zone_capabilities" {
+  for_each = toset(data.google_compute_zones.available.names)
+  zone     = each.key
+}
+
+locals {
+  desired_machine_types = [
+    "{{ env_collection.bastion_instance_type }}",
+    "f1-micro",
+    "e2-micro",
+    "e2-small",
+    "g1-small"
+  ]
+
+  # Find available machine types for each zone
+  zone_machine_types = {
+    for zone, capabilities in data.google_compute_zone_capabilities.zone_capabilities :
+    zone => [
+      for machine_type in local.desired_machine_types :
+      machine_type
+      if contains(capabilities.available_machine_types, machine_type)
+    ]
+  }
+
+  # Select the first zone that has any of our desired machine types
+  selected_zone = [
+    for zone, types in local.zone_machine_types :
+    zone
+    if length(types) > 0
+  ][0]
+
+  # Choose the machine type for the selected zone
+  chosen_machine_type = local.zone_machine_types[local.selected_zone][0]
+}
+
+# Updated instance resource
 resource "google_compute_instance" "{{ env_collection.instance_name }}-bastion" {
   name         = "{{ env_collection.instance_name }}-bastion"
-  machine_type = "{{ env_collection.bastion_instance_type }}"
-  zone         = "{{ env_collection.region }}-b"
-  allow_stopping_for_update = true
-  deletion_protection = false
+  machine_type = local.chosen_machine_type
+  zone         = local.selected_zone
 
-  tags = ["bastion"]
+  allow_stopping_for_update = true
+  deletion_protection       = false
+  tags                      = ["bastion"]
 
   boot_disk {
     initialize_params {
@@ -15,15 +59,25 @@ resource "google_compute_instance" "{{ env_collection.instance_name }}-bastion" 
   }
 
   network_interface {
-    network = google_compute_network.app-network.id
+    network    = google_compute_network.app-network.id
     subnetwork = "{{ env_collection.instance_name }}"
-
     access_config {
       // Ephemeral public IP
     }
   }
 
   depends_on = [google_compute_network.app-network]
+}
+
+# Outputs for visibility
+output "bastion_machine_type" {
+  description = "Machine type of the bastion host"
+  value       = google_compute_instance.{{ env_collection.instance_name }}-bastion.machine_type
+}
+
+output "bastion_zone" {
+  description = "Zone of the bastion host"
+  value       = google_compute_instance.{{ env_collection.instance_name }}-bastion.zone
 }
 
 resource "google_project_iam_member" "project-app-ssh-bastion" {
