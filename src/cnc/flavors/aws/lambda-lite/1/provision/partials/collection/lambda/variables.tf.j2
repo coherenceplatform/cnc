@@ -15,6 +15,19 @@ variable "{{ service.instance_name }}_lambda_variables" {
   }
 }
 
+{% if service.settings.secrets_mode == 'plaintext' %}
+variable "{{ service.instance_name }}_lambda_secrets" {
+  description = "Secrets to pass to the Lambda function"
+  type        = map(string)
+  default     = {
+    {% for item in service.environment_secrets %}
+    "{{ item.name }}" = "{{ item.value }}"
+    {% if not loop.last %}{% endif %}
+    {% endfor %}
+  }
+}
+{% endif %}
+
 variable "{{ service.instance_name }}_aws_resources_permission_lambda" {
   description = "List of AWS resources that the Lambda function needs to access"
   type        = list(string)

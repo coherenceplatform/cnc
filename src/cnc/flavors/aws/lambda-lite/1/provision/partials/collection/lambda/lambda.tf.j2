@@ -9,29 +9,11 @@
 locals {
   {{ service.instance_name }}_lambda_infrastructure_suffix = "{{ service.instance_name }}"
   {{ service.instance_name }}_lambda_log_group = join("/", ["/aws/lambda", local.{{ service.instance_name }}_lambda_infrastructure_suffix])
-  {{ service.instance_name }}_secret_values = jsondecode(aws_secretsmanager_secret_version.{{ service.instance_name }}_secrets_version.secret_string)
-}
 
-################################################################################
-# Secrets Manager
-################################################################################
+{% if service.settings.secrets_mode == 'arn' %}
+  {{ service.instance_name }}_secret_values = jsondecode(data.aws_secretsmanager_secret_version.{{ service.instance_name }}_secrets_version.secret_string)
+{% endif %}
 
-resource "aws_secretsmanager_secret" "{{ service.instance_name }}_secrets" {
-    name = "{{ service.instance_name }}-secrets"
-    {% if environment.is_preview %}
-    recovery_window_in_days = 0
-    {% endif %}
-}
-
-resource "aws_secretsmanager_secret_version" "{{ service.instance_name }}_secrets_version" {
-    secret_id = aws_secretsmanager_secret.{{ service.instance_name }}_secrets.id
-    secret_string = jsonencode({
-        {% for resource in environment.config.resources %}
-        {% for k, v in resource.settings.managed_secret_values_for_tf.items() %}
-        {{ k }} = "{{ v }}"
-        {% endfor %}
-        {% endfor %}
-    })
 }
 
 ################################################################################
@@ -75,6 +57,18 @@ resource "aws_iam_role_policy_attachment" "{{ service.instance_name }}" {
   policy_arn = aws_iam_policy.{{ service.instance_name }}.arn
 }
 
+{% if service.settings.secrets_mode == 'arn' %}
+data "aws_secretsmanager_secret" "{{ service.instance_name }}_secrets" {
+{% for item in service.environment_secrets %}
+  arn = "arn:aws:secretsmanager:{{ environment.collection.region }}:{{ environment.collection.account_id }}:secret:{{ item.secret_id }}"
+{% endfor %}
+}
+
+data "aws_secretsmanager_secret_version" "{{ service.instance_name }}_secrets_version" {
+  secret_id = data.aws_secretsmanager_secret.{{ service.instance_name }}_secrets.id
+}
+{% endif %}
+
 ################################################################################
 # Lambda Function
 ################################################################################
@@ -100,7 +94,12 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
     content {
       variables = merge(
         var.{{ service.instance_name }}_lambda_variables,
+        {% if service.settings.secrets_mode == 'arn' %}
         local.{{ service.instance_name }}_secret_values
+        {% endif %}
+        {% if service.settings.secrets_mode == 'plaintext' %}
+        var.{{ service.instance_name }}_lambda_secrets
+        {% endif %}
       )
     }
   }
