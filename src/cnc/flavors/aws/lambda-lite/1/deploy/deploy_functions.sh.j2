@@ -120,9 +120,23 @@ deploy_{{ service.name }} () {
   echo "Backing up current environment variables for lambda function $name_lambda"
   current_env_vars=$(aws lambda get-function-configuration --function-name "$name_lambda" --region "$region" --query 'Environment' --output json)
 
+  # Prepare the new environment variables
+  new_env_vars=$(cat $env_vars_file)
+
+  {% for item in service.environment_secrets %}
+  # Fetch the secret value from AWS Secrets Manager
+  secret_value=$(aws secretsmanager get-secret-value --secret-id "{{ item.secret_id }}" --query SecretString --output text --region "{{ environment.collection.region }}")
+
+  # Update the new environment variables with the secret value
+  new_env_vars=$(echo $new_env_vars | jq --arg name "{{ item.name }}" --arg value "$secret_value" '.Variables[$name]=$value')
+  {% endfor %}
+
+  # Save the new environment variables to a file
+  echo $new_env_vars | jq . > new_env_vars.json
+
   # Updating the lambda function configuration to add environment variables
   echo "Updating environment variables for lambda function $name_lambda"
-  aws lambda update-function-configuration --function-name "$name_lambda" --environment "file://$env_vars_file" --region "$region" --no-cli-pager
+  aws lambda update-function-configuration --function-name "$name_lambda" --environment "file://new_env_vars.json" --region "$region" --no-cli-pager
 
   # Capturing the exit status of the aws command
   exit_code=$?
@@ -166,6 +180,7 @@ deploy_{{ service.name }} () {
   rm $env_vars_file
   rm current_lambda_function.json
   rm current_lambda_function.zip
+  rm new_env_vars.json
 
   # Exit with the captured exit code
   exit $exit_code
