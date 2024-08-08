@@ -48,9 +48,14 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
   dynamic "environment" {
     for_each = length(keys(var.{{ service.instance_name }}_lambda_variables)) == 0 ? [] : [true]
     content {
-      variables = merge(
+       variables = merge(
         var.{{ service.instance_name }}_lambda_variables,
+        {% if service.settings.secrets_mode == 'arn' %}
         local.{{ service.instance_name }}_secret_values
+        {% endif %}
+        {% if service.settings.secrets_mode == 'plaintext' %}
+        var.{{ service.instance_name }}_lambda_secrets
+        {% endif %}
       )
     }
   }
