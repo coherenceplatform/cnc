@@ -1,6 +1,6 @@
 {% for environment in env_collection.active_environments %}
 {% for resource in environment.database_resources %}
-{% if resource.is_dynamodb %}
+{% if resource.is_database %}
 {% if not resource.settings.use_existing %}
 
 resource "aws_secretsmanager_secret" "{{ resource.instance_name }}_db_creds" {
@@ -202,7 +202,7 @@ data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_ro
 
 resource "aws_iam_role" "{{ resource.instance_name }}_db_proxy" {
     name = "{{ resource.instance_name }}-db-proxy"
-    assume_role_policy = "${data.aws_iam_policy_document.db_proxy_service_role.json}"
+    assume_role_policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_role.json}"
 
     provisioner "local-exec" {
         command = "sleep 30"
@@ -219,7 +219,7 @@ data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_po
 
 resource "aws_iam_role_policy" "{{ resource.instance_name }}_db_proxy" {
     name = "{{ resource.instance_name }}-db-proxy"
-    policy = "${data.aws_iam_policy_document.db_proxy_service_policy.json}"
+    policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_policy.json}"
     role = "${aws_iam_role.{{ resource.instance_name }}_db_proxy.id}"
 }
 
