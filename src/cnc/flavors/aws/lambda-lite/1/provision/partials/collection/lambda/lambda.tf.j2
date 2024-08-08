@@ -75,9 +75,7 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
   dynamic "environment" {
     for_each = length(keys(var.{{ service.instance_name }}_lambda_variables)) == 0 ? [] : [true]
     content {
-      variables = merge(
-        var.{{ service.instance_name }}_lambda_variables,
-      )
+      variables = var.{{ service.instance_name }}_lambda_variables
     }
   }
 
