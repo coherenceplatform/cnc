@@ -75,9 +75,9 @@ services:
           memory: 2g
           cpus: 2
 
-      # how many instances of the server to run
+      # how many minimum instances of the server to run
       # any autoscaling rules will still apply and can modify this higher
-      # cnc is careful not to reduce scale if higher than this value during a deployment
+      # see max_scale in system settings below
       # optional, default is 1
       replicas: 1
 
@@ -103,6 +103,13 @@ services:
         # health check is required on AWS apps
         # can be anything that return 200-399 HTTP code
         health_check: /
+
+        # control cloud behavior
+        platform_settings:
+          # the higher value of min_scale and replicas in deploy will be used as the min
+          # optional, default is 1
+          min_scale: 1
+          max_scale: 4
 
       workers:
       # will run a daemon without LB connection

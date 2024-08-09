@@ -230,6 +230,16 @@ class Service(BaseModel):
         return "8080"
 
     @property
+    def min_scale(self):
+        return max(
+            [self.deploy.replicas, self.settings.system.platform_settings.min_scale]
+        )
+
+    @property
+    def max_scale(self):
+        return self.settings.platform_settings.max_scale
+
+    @property
     def instance_name(self):
         if (
             hasattr(self.settings, "existing_instance_name")
