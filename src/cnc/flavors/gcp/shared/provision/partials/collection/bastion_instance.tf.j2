@@ -83,5 +83,26 @@ output "bastion_zone" {
   value       = google_compute_instance.{{ env_collection.instance_name }}-bastion.zone
 }
 
+resource "google_project_iam_member" "project-app-ssh-bastion" {
+  project = "{{ env_collection.account_id }}"
+  role    = "roles/compute.instanceAdmin.v1"
+  member  = "serviceAccount:${google_service_account.{{ env_collection.instance_name }}.email}"
+  depends_on = [google_project_service.iam, google_compute_instance.{{ env_collection.instance_name }}-bastion]
+}
+
+resource "google_compute_firewall" "rules" {
+  project     = "{{ env_collection.account_id }}"
+  name        = "bastion-{{ env_collection.instance_name }}"
+  network     = google_compute_network.app-network.id
+  description = "Allow ssh to bastion for {{ env_collection.instance_name }}"
+
+  allow {
+    protocol  = "tcp"
+    ports     = ["22"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags = ["bastion"]
+
 {% endif %}{# if env_collection.has_active_deployments #}
 
