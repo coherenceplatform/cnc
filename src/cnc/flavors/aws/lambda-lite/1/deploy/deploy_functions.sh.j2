@@ -70,7 +70,7 @@ wait_for_active() {
 deploy_{{ service.name }} () {
   # Assigning variables
   name_lambda="{{ service.instance_name }}"
-  output_dir="{{ service.environment.collection.config_files_path }}/build/{{ service.instance_name }}_lambda_function.zip"
+  output_dir="{{ deployer.rendered_files_path }}/build/{{ service.instance_name }}_lambda_function.zip"
   region="{{ service.environment.collection.region }}"
 
   # Validation echos
