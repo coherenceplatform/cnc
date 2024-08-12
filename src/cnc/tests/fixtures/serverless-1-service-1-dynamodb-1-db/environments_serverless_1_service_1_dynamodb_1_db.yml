@@ -1,0 +1,17 @@
+name: my-serverless-test-app
+provider: aws
+region: us-east-1
+flavor: lambda-lite
+version: 1
+
+collections:
+- name: preview
+  base_domain: my-serverless-test-app.testnewsite.coherencesites.com
+  account_id: "foo-bar-123"
+  environments:
+  - name: main
+    environment_variables:
+    - name: type
+      value: "serverless"
+    - name: bar
+      value: "non-json stuff"
