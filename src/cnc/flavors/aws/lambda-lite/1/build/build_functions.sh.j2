@@ -44,7 +44,7 @@ build_{{ service.name }} () {
   echo "ZIP Lambda function code..."
 
   source_dir="{{ service.build.context }}"
-  output_dir="{{ service.environment.collection.config_files_path }}/build"
+  output_dir="{{ builder.rendered_files_path }}/build"
   output_file="$output_dir/{{ service.instance_name }}_lambda_function.zip"
 
   if [ -d "$source_dir" ]; then
