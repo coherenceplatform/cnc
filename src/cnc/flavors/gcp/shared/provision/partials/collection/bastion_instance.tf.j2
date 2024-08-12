@@ -21,27 +21,28 @@ locals {
 resource "null_resource" "machine_type_finder" {
   triggers = {
     desired_machine_types = join(",", local.desired_machine_types)
+    zone                  = local.selected_zone
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
-      #!/bin/bash
-      IFS=',' read -ra TYPES <<< "${self.triggers.desired_machine_types}"
-      for type in "$${TYPES[@]}"; do
-        if gcloud compute machine-types describe "$type" --zone="${local.selected_zone}" &>/dev/null; then
-          echo "$type" > ${path.module}/selected_machine_type.txt
-          exit 0
-        fi
-      done
-      echo "No valid machine type found" >&2
-      exit 1
-    EOT
+    command = <<EOF
+#!/bin/bash
+IFS=',' read -ra TYPES <<< "${self.triggers.desired_machine_types}"
+for type in "$${TYPES[@]}"; do
+  if gcloud compute machine-types describe "$type" --zone="${self.triggers.zone}" >/dev/null 2>&1; then
+    echo "$type" > ${path.module}/selected_machine_type.txt
+    exit 0
+  fi
+done
+echo "No valid machine type found" >&2
+exit 1
+EOF
   }
 }
 
 # Read the selected machine type from the file
 data "local_file" "selected_machine_type" {
-  filename = "${path.module}/selected_machine_type.txt"
+  filename   = "${path.module}/selected_machine_type.txt"
   depends_on = [null_resource.machine_type_finder]
 }
 
