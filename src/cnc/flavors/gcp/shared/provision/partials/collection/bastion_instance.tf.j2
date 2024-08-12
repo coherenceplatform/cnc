@@ -14,7 +14,7 @@ locals {
     "e2-small",
     "g1-small"
   ]
-  selected_zone = "{{ env_collection.region }}-b"  # Adjust as needed
+  selected_zone = data.google_compute_zones.available.names[0]
 }
 
 resource "null_resource" "check_machine_types" {
