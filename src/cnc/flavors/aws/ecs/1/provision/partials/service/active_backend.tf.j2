@@ -75,8 +75,8 @@ resource "aws_appautoscaling_target" "{{ service.instance_name }}" {
     scalable_dimension = "ecs:service:DesiredCount"
     role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_autoscaling.arn}"
     {% if environment.is_production %}
-    min_capacity = {{ service.settings.system.platform_settings.min_scale }}
-    max_capacity = {{ service.settings.system.platform_settings.max_scale }}
+    min_capacity = {{ service.min_scale }}
+    max_capacity = {{ service.max_scale }}
     {% else %}
     min_capacity = 1
     max_capacity = 4
