@@ -7,49 +7,40 @@ data "google_compute_zones" "available" {
 }
 
 locals {
-  desired_machine_types = [
+  machine_types = [
     "{{ env_collection.bastion_instance_type }}",
     "f1-micro",
     "e2-micro",
     "e2-small",
     "g1-small"
   ]
-  selected_zone = data.google_compute_zones.available.names[0]
+  selected_zone = "{{ env_collection.region }}-b"  # Adjust as needed
 }
 
-# This null_resource will try to find an available machine type
-resource "null_resource" "machine_type_finder" {
-  triggers = {
-    desired_machine_types = join(",", local.desired_machine_types)
-    zone                  = local.selected_zone
-  }
-
+resource "null_resource" "check_machine_types" {
   provisioner "local-exec" {
-    command = <<EOF
-#!/bin/bash
-IFS=',' read -ra TYPES <<< "${self.triggers.desired_machine_types}"
-for type in "$${TYPES[@]}"; do
-  if gcloud compute machine-types describe "$type" --zone="${self.triggers.zone}" >/dev/null 2>&1; then
-    echo "$type" > ${path.module}/selected_machine_type.txt
-    exit 0
-  fi
-done
-echo "No valid machine type found" >&2
-exit 1
-EOF
+    command = <<EOT
+      for type in ${join(" ", local.machine_types)}; do
+        if gcloud compute machine-types describe $type --zone=${local.selected_zone} &>/dev/null; then
+          echo $type > ${path.module}/available_machine_type.txt
+          exit 0
+        fi
+      done
+      echo "None of the specified machine types are available." >&2
+      exit 1
+    EOT
+    interpreter = ["/bin/sh", "-c"]
   }
 }
 
-# Read the selected machine type from the file
-data "local_file" "selected_machine_type" {
-  filename   = "${path.module}/selected_machine_type.txt"
-  depends_on = [null_resource.machine_type_finder]
+data "local_file" "available_machine_type" {
+  filename = "${path.module}/available_machine_type.txt"
+  depends_on = [null_resource.check_machine_types]
 }
 
-# Instance resource
 resource "google_compute_instance" "{{ env_collection.instance_name }}-bastion" {
   name         = "{{ env_collection.instance_name }}-bastion"
-  machine_type = trimspace(data.local_file.selected_machine_type.content)
+  machine_type = trimspace(data.local_file.available_machine_type.content)
   zone         = local.selected_zone
 
   allow_stopping_for_update = true
@@ -70,10 +61,9 @@ resource "google_compute_instance" "{{ env_collection.instance_name }}-bastion" 
     }
   }
 
-  depends_on = [google_compute_network.app-network, null_resource.machine_type_finder]
+  depends_on = [google_compute_network.app-network, null_resource.check_machine_types]
 }
 
-# Outputs for visibility
 output "bastion_machine_type" {
   description = "Machine type of the bastion host"
   value       = google_compute_instance.{{ env_collection.instance_name }}-bastion.machine_type
