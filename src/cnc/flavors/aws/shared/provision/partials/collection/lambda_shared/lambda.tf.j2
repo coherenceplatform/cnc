@@ -9,23 +9,7 @@
 locals {
   {{ service.instance_name }}_lambda_infrastructure_suffix = "{{ service.instance_name }}"
   {{ service.instance_name }}_lambda_log_group = join("/", ["/aws/lambda", local.{{ service.instance_name }}_lambda_infrastructure_suffix])
-  
-  {% if service.settings.secrets_mode == 'arn' %}
-    {{ service.instance_name }}_secret_values = jsondecode(data.aws_secretsmanager_secret_version.{{ service.instance_name }}_secrets_version.secret_string)
-  {% endif %}
 }
-
-{% if service.settings.secrets_mode == 'arn' %}
-data "aws_secretsmanager_secret" "{{ service.instance_name }}_secrets" {
-{% for item in service.environment_secrets %}
-  arn = "arn:aws:secretsmanager:{{ environment.collection.region }}:{{ environment.collection.account_id }}:secret:{{ item.secret_id }}"
-{% endfor %}
-}
-
-data "aws_secretsmanager_secret_version" "{{ service.instance_name }}_secrets_version" {
-  secret_id = data.aws_secretsmanager_secret.{{ service.instance_name }}_secrets.id
-}
-{% endif %}
 
 ################################################################################
 # IAM Role | Role Policy for Lambda to access DynamoDB and CloudWatch
