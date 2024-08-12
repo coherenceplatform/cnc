@@ -1,51 +1,12 @@
 {% if env_collection.has_active_deployments %}
-
-# Get available zones in the region
-data "google_compute_zones" "available" {
-  region = "{{ env_collection.region }}"
-  status = "UP"
-}
-
-locals {
-  machine_types = [
-    "{{ env_collection.bastion_instance_type }}",
-    "f1-micro",
-    "e2-micro",
-    "e2-small",
-    "g1-small"
-  ]
-  selected_zone = data.google_compute_zones.available.names[0]
-}
-
-resource "null_resource" "check_machine_types" {
-  provisioner "local-exec" {
-    command = <<EOT
-      for type in ${join(" ", local.machine_types)}; do
-        if gcloud compute machine-types describe $type --zone=${local.selected_zone} &>/dev/null; then
-          echo $type > ${path.module}/available_machine_type.txt
-          exit 0
-        fi
-      done
-      echo "None of the specified machine types are available." >&2
-      exit 1
-    EOT
-    interpreter = ["/bin/sh", "-c"]
-  }
-}
-
-data "local_file" "available_machine_type" {
-  filename = "${path.module}/available_machine_type.txt"
-  depends_on = [null_resource.check_machine_types]
-}
-
 resource "google_compute_instance" "{{ env_collection.instance_name }}-bastion" {
   name         = "{{ env_collection.instance_name }}-bastion"
-  machine_type = trimspace(data.local_file.available_machine_type.content)
-  zone         = local.selected_zone
-
+  machine_type = "{{ env_collection.bastion_instance_type }}"
+  zone         = "{{ env_collection.region }}-b"
   allow_stopping_for_update = true
-  deletion_protection       = false
-  tags                      = ["bastion"]
+  deletion_protection = false
+
+  tags = ["bastion"]
 
   boot_disk {
     initialize_params {
@@ -54,24 +15,15 @@ resource "google_compute_instance" "{{ env_collection.instance_name }}-bastion" 
   }
 
   network_interface {
-    network    = google_compute_network.app-network.id
+    network = google_compute_network.app-network.id
     subnetwork = "{{ env_collection.instance_name }}"
+
     access_config {
       // Ephemeral public IP
     }
   }
 
-  depends_on = [google_compute_network.app-network, null_resource.check_machine_types]
-}
-
-output "bastion_machine_type" {
-  description = "Machine type of the bastion host"
-  value       = google_compute_instance.{{ env_collection.instance_name }}-bastion.machine_type
-}
-
-output "bastion_zone" {
-  description = "Zone of the bastion host"
-  value       = google_compute_instance.{{ env_collection.instance_name }}-bastion.zone
+  depends_on = [google_compute_network.app-network]
 }
 
 resource "google_project_iam_member" "project-app-ssh-bastion" {
@@ -97,4 +49,3 @@ resource "google_compute_firewall" "rules" {
 }
 
 {% endif %}{# if env_collection.has_active_deployments #}
-
