@@ -123,7 +123,6 @@ deploy_{{ service.name }} () {
   # Updating the lambda function configuration to add environment variables
   echo "Updating environment variables for lambda function $name_lambda"
   aws lambda update-function-configuration --function-name "$name_lambda" --environment "file://$env_vars_file" --region "$region" --no-cli-pager
-
   # Capturing the exit status of the aws command
   exit_code=$?
 
