@@ -353,6 +353,7 @@ class AWSProvisionStageTwoServiceServerlessAndTwoResourceDynamoDBTest(
         self.assertEqual(len(self.resources["aws_lambda_function"]), 2)
         self.assertEqual(len(self.resources["aws_vpc"]), 1)
 
+
 class AWSProvisionStageOneServiceServerlessOneResourceDynamoDBOneDatabaseTest(
     AWSProvisionStageTestBase
 ):
