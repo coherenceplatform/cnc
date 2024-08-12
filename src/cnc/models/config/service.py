@@ -310,10 +310,6 @@ class Service(BaseModel):
         return self.settings.type == "filesystem"
 
     @property
-    def is_web(self):
-        return self.settings.type in ["frontend", "backend"]
-
-    @property
     def included_build_globs(self):
         if self.build.context == ".":
             # match everything
