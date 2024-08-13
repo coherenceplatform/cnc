@@ -49,21 +49,10 @@ build_{{ service.name }} () {
 
   if [ -d "$source_dir" ]; then
     echo "Source is a directory: $source_dir"
-    (cd "$source_dir" && zip -r "$output_file" . -x "*.git*") || { echo "Error creating ZIP file"; exit 1; }
   elif [ -f "$source_dir" ]; then
     echo "Source is a file: $source_dir"
-    base_name=$(basename "$source_dir")
-    dir_name=$(dirname "$source_dir")
-    (cd "$dir_name" && zip -r "$output_file" "$base_name" -x "*.git*") || { echo "Error creating ZIP file"; exit 1; }
   else
     echo "Error: Source path is not valid: $source_dir"
-    exit 1
-  fi
-
-  if [ -f "$output_file" ]; then
-    echo "ZIP file created successfully at $output_file"
-  else
-    echo "Error: ZIP file was not created at $output_file"
     exit 1
   fi
 }
