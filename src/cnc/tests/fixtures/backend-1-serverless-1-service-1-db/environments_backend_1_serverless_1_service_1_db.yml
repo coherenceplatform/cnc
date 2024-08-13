@@ -11,7 +11,7 @@ collections:
   data:
     infrastructure_outputs:
       hosted_zone_ns_records:
-        value: ['record1', 'record2']
+        value: ['record1']
 
   environments:
   - name: main
