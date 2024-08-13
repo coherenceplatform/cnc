@@ -6,9 +6,9 @@
 # ALB Configuration
 ################################################################################
 resource "aws_lb_target_group" "{{ service.instance_name }}_tg" {
-  name        = "${local.{{ service.instance_name }}_lambda_infrastructure_suffix}-tg"
+  name        = var.{{ service.instance_name }}_tg
   target_type = "lambda"
-  vpc_id      = aws_vpc.{{ env_collection.instance_name }}.id
+  vpc_id = {{ env_collection.vpc_resource_address }}.id
 }
 
 resource "aws_lb_target_group_attachment" "{{ service.instance_name }}_tg_attachment" {

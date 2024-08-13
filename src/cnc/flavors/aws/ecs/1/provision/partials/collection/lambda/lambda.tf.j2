@@ -2,13 +2,14 @@
 {% for service in environment.services %}
 {% if service.is_serverless %}
 
+
 ################################################################################
 # Security Group for Lambda
 ################################################################################
 resource "aws_security_group" "{{ service.instance_name }}_lambda" {
 
   name        = join("-", [local.{{ service.instance_name }}_lambda_infrastructure_suffix, "lambda-sg"])
-  vpc_id      = aws_vpc.{{ env_collection.instance_name }}.id
+  vpc_id = {{ env_collection.vpc_resource_address }}.id
 
   ingress {
     from_port   = 0
