@@ -44,15 +44,8 @@ build_{{ service.name }} () {
   echo "ZIP Lambda function code..."
 
   source_dir="{{ service.build.context }}"
-  output_dir="{{ builder.rendered_files_path }}/build"
+  output_dir="{{ builder.rendered_files_path }}"
   output_file="$output_dir/{{ service.instance_name }}_lambda_function.zip"
-
-  echo "Source directory: $source_dir"
-  echo "Output directory: $output_dir"
-  echo "Output file: $output_file"
-
-  # Ensure output directory exists
-  mkdir -p "$output_dir"
 
   if [ -d "$source_dir" ]; then
     echo "Source is a directory: $source_dir"
