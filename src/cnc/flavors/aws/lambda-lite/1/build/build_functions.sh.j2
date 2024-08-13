@@ -47,23 +47,30 @@ build_{{ service.name }} () {
   output_dir="{{ builder.rendered_files_path }}/build"
   output_file="$output_dir/{{ service.instance_name }}_lambda_function.zip"
 
+  echo "Source directory: $source_dir"
+  echo "Output directory: $output_dir"
+  echo "Output file: $output_file"
+
+  # Ensure output directory exists
+  mkdir -p "$output_dir"
+
   if [ -d "$source_dir" ]; then
     echo "Source is a directory: $source_dir"
-    (cd "$source_dir" && zip -r "$output_file" .)
+    (cd "$source_dir" && zip -r "$output_file" . ) || { echo "Error creating ZIP file"; exit 1; }
   elif [ -f "$source_dir" ]; then
     echo "Source is a file: $source_dir"
     base_name=$(basename "$source_dir")
     dir_name=$(dirname "$source_dir")
-    (cd "$dir_name" && zip -r "$output_file" "$base_name")
+    (cd "$dir_name" && zip -r "$output_file" "$base_name") || { echo "Error creating ZIP file"; exit 1; }
   else
     echo "Error: Source path is not valid: $source_dir"
     exit 1
   fi
 
-  if [ $? -eq 0 ]; then
+  if [ -f "$output_file" ]; then
     echo "ZIP file created successfully at $output_file"
   else
-    echo "Error creating ZIP file"
+    echo "Error: ZIP file was not created at $output_file"
     exit 1
   fi
 }
