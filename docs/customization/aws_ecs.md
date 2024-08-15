@@ -2,7 +2,7 @@
 
 For the `ecs` flavor of `cnc`, ultimately one or more ECS Fargate tasks is created in each environment for each service.
 
-You can customize the task definition (you can also do the same thing for any other file in the repo...). For example, here's the default ECS task JSON Jinja template (lives in the repo at `provision/ecs_wb_task.json.j2` in the flavor):
+You can customize the task definition (you can also do the same thing for any other file in the repo...). For example, here's the default ECS task JSON Jinja template (lives in the repo at `provision/ecs_web_task.json.j2` in the flavor):
 
 ```json
 {
@@ -67,14 +67,6 @@ You can customize the task definition (you can also do the same thing for any ot
                 }{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]
-        },
-        {
-            "name": "log_router",
-            "image": "amazon/aws-for-fluent-bit:stable",
-            "firelensConfiguration": {
-                "type": "fluentbit",
-                "options": { "enable-ecs-log-metadata": "true" }
-            }
         }
     ]
 }
@@ -140,7 +132,7 @@ Add this in `provision/ecs_web_task.json.j2` in the `custom` directory. This wil
                     "dd_service": "{{ service.instance_name }}",
                     "dd_source": "{{ service.log_stream_prefix('web') }}",
                     "dd_message_key": "log",
-                    "dd_tags": "project:fluentbit,env:{{ environment.name }},version:{{ deployer.tag_for_service(service.name) or "latest" }}",
+                    "dd_tags": "project:fluentbit,env:{{ environment.name }},version:{{ deployer.tag_for_service(service.name) or 'latest' }}",
                     "TLS": "on",
                     "provider": "ecs"
                 }
@@ -238,3 +230,5 @@ Add this in `provision/ecs_web_task.json.j2` in the `custom` directory. This wil
     ]
 }
 ```
+
+If you haven't installed it already, there are instructions for setting up the datadog <=> aws integration [here](https://docs.datadoghq.com/getting_started/integrations/aws/#setup). The integration allows datadog to pull metrics from aws and enables various additional features.
