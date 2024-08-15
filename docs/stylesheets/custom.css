@@ -41,3 +41,14 @@
 .md-typeset h1 {
     color: var(--md-typeset-color);
 }
+
+/* Improve search input text visibility */
+[data-md-toggle=search]:checked~.md-header .md-search__form {
+    color: inherit;
+}
+
+/* Improve search result heading visibility */
+.md-search-result .md-typeset h1,
+.md-search-result .md-typeset h2 {
+    color: inherit;
+}
