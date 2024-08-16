@@ -426,7 +426,7 @@ class AWSProvisionStageOneBackendOneServerlessOneDatabaseTest(
         self.assertEqual(len(self.resources["aws_cloudfront_distribution"]), 1)
         self.assertEqual(len(self.resources["aws_ecr_repository"]), 1)
         self.assertEqual(len(self.resources["aws_vpc"]), 1)
-        self.assertEqual(len(self.resources["aws_acm_certificate"]), 1)
+        self.assertEqual(len(self.resources["aws_acm_certificate"]), 2)
         self.assertEqual(len(self.resources["aws_route53_zone"]), 1)
         self.assertEqual(len(self.resources["aws_security_group"]), 1)
         self.assertEqual(len(self.resources["aws_lb_target_group"]), 1)
