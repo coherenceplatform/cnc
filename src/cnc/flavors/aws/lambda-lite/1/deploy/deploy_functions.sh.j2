@@ -68,9 +68,35 @@ wait_for_active() {
 }
 
 deploy_{{ service.name }} () {
+  echo "ZIP Lambda function code..."
+
+  source_dir="{{ service.build.context }}"
+  output_dir="{{ deployer.rendered_files_path }}"
+  output_file="$output_dir/{{ service.instance_name }}_lambda_function.zip"
+
+  if [ -d "$source_dir" ]; then
+    echo "Source is a directory: $source_dir"
+    (cd "$source_dir" && zip -r "$output_file" . -x "*.git*") || { echo "Error creating ZIP file"; exit 1; }
+  elif [ -f "$source_dir" ]; then
+    echo "Source is a file: $source_dir"
+    base_name=$(basename "$source_dir")
+    dir_name=$(dirname "$source_dir")
+    (cd "$dir_name" && zip -r "$output_file" "$base_name" -x "*.git*") || { echo "Error creating ZIP file"; exit 1; }
+  else
+    echo "Error: Source path is not valid: $source_dir"
+    exit 1
+  fi
+
+  if [ -f "$output_file" ]; then
+    echo "ZIP file created successfully at $output_file"
+  else
+    echo "Error: ZIP file was not created at $output_file"
+    exit 1
+  fi
+
   # Assigning variables
   name_lambda="{{ service.instance_name }}"
-  output_dir="{{ service.environment.collection.config_files_path }}/build/{{ service.instance_name }}_lambda_function.zip"
+  output_dir="{{ deployer.rendered_files_path }}/{{ service.instance_name }}_lambda_function.zip"
   region="{{ service.environment.collection.region }}"
 
   # Validation echos
@@ -123,7 +149,6 @@ deploy_{{ service.name }} () {
   # Updating the lambda function configuration to add environment variables
   echo "Updating environment variables for lambda function $name_lambda"
   aws lambda update-function-configuration --function-name "$name_lambda" --environment "file://$env_vars_file" --region "$region" --no-cli-pager
-
   # Capturing the exit status of the aws command
   exit_code=$?
 

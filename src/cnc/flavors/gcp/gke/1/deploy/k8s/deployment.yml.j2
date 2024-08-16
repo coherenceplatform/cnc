@@ -16,7 +16,7 @@ metadata:
   name: {{ service.instance_name }}-app
   namespace: {{ service.environment.instance_name }}-deploy
 spec:
-  replicas: {{ service.deploy.replicas }}
+  replicas: {{ service.min_scale }}
   revisionHistoryLimit: 0
   selector:
     matchLabels:

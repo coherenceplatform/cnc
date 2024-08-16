@@ -105,13 +105,8 @@ resource "aws_db_proxy" "{{ resource.instance_name }}" {
     }
 
     depends_on = [
-        aws_iam_role.{{ env_collection.instance_name }}_db_proxy,
-        aws_iam_role_policy.{{ env_collection.instance_name }}_db_proxy
+        time_sleep.wait_for_proxy_role
     ]
-
-    provisioner "local-exec" {
-        command = "sleep 60"
-    }
 }
 
 resource "aws_db_proxy_default_target_group" "{{ resource.instance_name }}" {

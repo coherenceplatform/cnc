@@ -1,4 +1,5 @@
 provider_links_templates:
+    serverless: https://{{ service.environment.collection.region }}.console.aws.amazon.com/lambda/home?region={{ service.environment.collection.region }}#/functions/{{ service.instance_name }}?tab=monitoring
     backend: "https://{{ service.environment.collection.region }}.console.aws.amazon.com/ecs/v2/clusters/{{ service.environment.collection.instance_name }}/services/{{ service.instance_name }}/deployments?region={{ service.environment.collection.region }}"
     worker: "https://{{ service.environment.collection.region }}.console.aws.amazon.com/ecs/v2/clusters/{{ service.environment.collection.instance_name }}/services/{{ service.instance_name }}_{{ worker.name }}/deployments?region={{ service.environment.collection.region }}"
     task: "https://{{ service.environment.collection.region }}.console.aws.amazon.com/ecs/v2/clusters/{{ service.environment.collection.instance_name }}/services/{{ service.instance_name }}_{{ task.name }}/deployments?region={{ service.environment.collection.region }}"

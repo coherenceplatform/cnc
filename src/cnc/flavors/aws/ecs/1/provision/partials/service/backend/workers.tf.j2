@@ -64,7 +64,7 @@ resource "aws_appautoscaling_target" "{{ service.instance_name }}_{{ worker.name
     role_arn = "${aws_iam_role.{{ env_collection.instance_name }}_autoscaling.arn}"
     {% if environment.is_production %}
     min_capacity = {{ worker.replicas }}
-    max_capacity = {{ [worker.replicas, service.system.platform.max_scale] | max }}
+    max_capacity = {{ [worker.replicas, service.max_scale] | max }}
     {% else %}
     min_capacity = {{ worker.replicas }}
     max_capacity = {{ [worker.replicas, 4] | max }}

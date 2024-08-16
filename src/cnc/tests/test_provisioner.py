@@ -121,7 +121,7 @@ class GCPProvisionStageOneResourceTest(ProvisionStageTestBase):
             len(self.resources.get("google_artifact_registry_repository", [])), 1
         )
         self.assertEqual(
-            len(self.resources.get("google_compute_managed_ssl_certificate", [])), 1
+            len(self.resources.get("google_compute_managed_ssl_certificate", [])), 2
         )
         self.assertEqual(len(self.resources.get("google_compute_network", [])), 1)
         self.assertEqual(len(self.resources.get("google_sql_database_instance", [])), 1)

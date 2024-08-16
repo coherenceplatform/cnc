@@ -75,6 +75,12 @@ services:
           memory: 2g
           cpus: 2
 
+      # how many minimum instances of the server to run
+      # any autoscaling rules will still apply and can modify this higher
+      # see max_scale in system settings below
+      # optional, default is 1
+      replicas: 1
+
     build:
       # see comments in frontend above
       context: backend
@@ -98,12 +104,21 @@ services:
         # can be anything that return 200-399 HTTP code
         health_check: /
 
+        # control cloud behavior
+        platform_settings:
+          # the higher value of min_scale and replicas in deploy will be used as the min
+          # optional, default is 1
+          min_scale: 1
+          max_scale: 4
+
       workers:
       # will run a daemon without LB connection
       - name: default queue
         # what command to run? will run in same container as the service
         command: ["node", "worker.js", "default"]
-        # define resources (will default to service if not defined)
+        # how many instances of this worker to run
+        replicas: 1 # optional, default is 1
+        # define resources (will default to service definitions if not defined)
         system:
           cpus: 2
           memory: 4g
@@ -115,7 +130,7 @@ services:
         # use k8s syntax for all providers/flavors
         # this is every 2 mins (can be expensive)
         schedule: "*/2 * * * *"
-        # define resources (will default to service if not defined)
+        # define resources (will default to service definitions if not defined)
         system:
           memory: 2g
 
