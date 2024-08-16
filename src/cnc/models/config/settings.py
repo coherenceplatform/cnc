@@ -130,6 +130,10 @@ class BaseServiceSettings(BaseModel):
         return False
 
     @property
+    def is_dynamodb(self):
+        return False
+
+    @property
     def is_cache(self):
         return False
 
@@ -190,6 +194,10 @@ class BaseServiceSettings(BaseModel):
 
 class CORSSettings(BaseModel):
     allowed_origins: List[str]
+
+
+class ServerlessCDNConfig(BaseModel):
+    enabled: Optional[bool] = True
 
 
 class ServerlessCDNConfig(BaseModel):

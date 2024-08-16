@@ -1,0 +1,27 @@
+{% for environment in env_collection.active_environments %}
+{% for service in environment.services %}
+{% if service.is_serverless %}
+
+resource "aws_security_group" "{{ service.instance_name }}_lambda" {
+
+  name        = join("-", [local.{{ service.instance_name }}_lambda_infrastructure_suffix, "lambda"])
+  vpc_id      = aws_vpc.{{ env_collection.instance_name }}.id
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+{% endif %}
+{% endfor %}
+{% endfor %}

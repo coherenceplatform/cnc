@@ -5,6 +5,7 @@ import json
 from cnc.models import EnvironmentCollection
 from typing import Literal
 from cnc.logger import get_logger
+from pathlib import Path
 
 log = get_logger(__name__)
 
@@ -15,6 +16,12 @@ class AWSEnvironmentCollection(EnvironmentCollection):
     # ------------------------------
     # Properties
     # ------------------------------
+
+    @property
+    def has_service_domains(self):
+        if self.application.flavor == "lambda-lite":
+            return True
+        return False
 
     @property
     def has_service_domains(self):

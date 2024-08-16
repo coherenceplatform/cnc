@@ -76,6 +76,10 @@ class BaseResourceSettings(BaseModel):
         return self.type == "dynamodb"
 
     @property
+    def is_dynamodb(self):
+        return self.type == "dynamodb"
+
+    @property
     def is_cache(self):
         return self.type == "cache"
 
