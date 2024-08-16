@@ -237,7 +237,7 @@ class Service(BaseModel):
 
     @property
     def max_scale(self):
-        return self.settings.platform_settings.max_scale
+        return self.settings.system.platform_settings.max_scale
 
     @property
     def instance_name(self):
