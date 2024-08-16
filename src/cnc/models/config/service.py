@@ -374,7 +374,15 @@ class Service(BaseModel):
     def insecure_environment_items(self):
         # this does not include secrets, meant for deploy runtime config
         # e.g. ECS/cloud run, includes standard/outputs
-        return self.environment_variables + self.environment_outputs
+        _insecure_items = []
+        _insecure_items.extend(self.environment_outputs)
+        for item in self.environment_variables:
+            if item.alias and item.secret_id:
+                continue
+
+            _insecure_items.append(item)
+
+        return _insecure_items
 
     @property
     def gcr_image_name(self):
