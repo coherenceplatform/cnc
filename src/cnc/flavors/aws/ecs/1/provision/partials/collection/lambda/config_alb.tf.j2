@@ -6,7 +6,7 @@
 # ALB Configuration
 ################################################################################
 resource "aws_lb_target_group" "{{ service.instance_name }}_tg" {
-  name        = "{{environment.collection.instance_name[32:]}}-tg"
+  name        = "{{environment.collection.instance_name[:29]}}-tg"
   target_type = "lambda"
   vpc_id = {{ env_collection.vpc_resource_address }}.id
 }
