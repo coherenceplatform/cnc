@@ -57,8 +57,11 @@ class EnvironmentVariable(
     @property
     def secret_id(self):
         if self.variable_type == self.VARIABLE_TYPE_ALIAS:
-            for other_variable in self.environment.environment_variables:
-                if other_variable.name == self.alias:
+            for other_variable in self.environment.environment_items:
+                if (
+                    other_variable.name == self.alias
+                    and other_variable.variable_type == self.VARIABLE_TYPE_SECRET
+                ):
                     return other_variable.secret_id
         if self.variable_type == self.VARIABLE_TYPE_SECRET:
             return self.raw_secret_id
@@ -91,7 +94,10 @@ class EnvironmentVariable(
                     self.output_name
                 )
             if self.variable_type == self.VARIABLE_TYPE_ALIAS:
-                for other_variable in self.environment.environment_variables:
+                for other_variable in (
+                    self.environment.managed_environment_items
+                    + self.environment.environment_variables
+                ):
                     if other_variable.name == self.alias:
                         return other_variable.value
         except Exception:
