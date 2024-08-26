@@ -1,3 +1,35 @@
+resource "aws_cloudfront_cache_policy" "{{ env_collection.instance_name }}_frontend" {
+  name        = "{{ env_collection.instance_name }}-frontend"
+  comment     = "Frontend cache policy"
+  default_ttl = 0
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "all"
+    }
+    headers_config {
+      header_behavior = "none"
+    }
+    query_strings_config {
+      query_string_behavior = "all"
+    }
+  }
+}
+
+resource "aws_cloudfront_origin_request_policy" "{{ env_collection.instance_name }}_frontend" {
+  name    = "{{ env_collection.instance_name }}-frontend"
+  comment = "Frontend origin request policy"
+  cookies_config {
+    cookie_behavior = "all"
+  }
+  headers_config {
+    header_behavior = "none"
+  }
+  query_strings_config {
+    query_string_behavior = "all"
+  }
+}
+
+
 {% if environment.custom_domains %}
 {% for domain in environment.custom_domains %}
 resource "aws_route53_zone" "{{ re.sub('\W', '', domain) }}" {
@@ -414,7 +446,6 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
         viewer_protocol_policy = "redirect-to-https"
     }
     {% endif %}
-
     {% endfor %}
 
     {% if environment.default_service.is_frontend %}
