@@ -56,7 +56,7 @@ resource "aws_iam_role_policy_attachment" "{{ service.instance_name }}" {
 # Lambda Function
 ################################################################################
 resource "aws_lambda_function" "{{ service.instance_name }}" {
-  
+
   function_name = local.{{ service.instance_name }}_lambda_infrastructure_suffix
   handler       = var.{{ service.instance_name }}_handler
   runtime       = var.{{ service.instance_name }}_runtime
@@ -66,17 +66,11 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
   source_code_hash = filebase64sha256("./lambda_function_payload.zip")
 
   lifecycle {
-    ignore_changes = [ 
+    ignore_changes = [
+      environment,
       source_code_hash,
       filename
       ]
-  }
-
-  dynamic "environment" {
-    for_each = length(keys(var.{{ service.instance_name }}_lambda_variables)) == 0 ? [] : [true]
-    content {
-      variables = var.{{ service.instance_name }}_lambda_variables
-    }
   }
 
   vpc_config {
@@ -87,12 +81,12 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
   dynamic "logging_config" {
     for_each = can(regex("^[a-zA-Z0-9_\\-/#.]+$", local.{{ service.instance_name }}_lambda_log_group)) ? [true] : []
     content {
-      log_group  = local.{{ service.instance_name }}_lambda_log_group
-      log_format = "Text"
+        log_group  = local.{{ service.instance_name }}_lambda_log_group
+        log_format = "Text"
+    }
   }
 
-  }
-  depends_on = [ 
+  depends_on = [
     aws_iam_role.{{ service.instance_name }},
   ]
 }
