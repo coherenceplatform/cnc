@@ -530,11 +530,18 @@ class DynamoDBResourceSettings(BaseResourceSettings):
     @property
     def managed_environment_variables(self):
         _env = self.common_managed_environment_variables
+
         _env.update(
             {
-                f"{self.env_var_base}_DYNAMODB_ID": self.dynamodb_table_output_id,
-                f"{self.env_var_base}_DYNAMODB_ARN": self.dynamodb_table_output_arn,
-                f"{self.env_var_base}_DYNAMODB_BILLING_MODE": self.dynamodb_table_output_billing_mode,
+                f"{self.env_var_base}_DYNAMODB_ID": self.collection.get_terraform_output(
+                    self.dynamodb_table_output_id
+                ),
+                f"{self.env_var_base}_DYNAMODB_ARN": self.collection.get_terraform_output(
+                    self.dynamodb_table_output_arn
+                ),
+                f"{self.env_var_base}_DYNAMODB_BILLING_MODE": self.collection.get_terraform_output(
+                    self.dynamodb_table_output_billing_mode
+                ),
             }
         )
         return _env
