@@ -95,35 +95,21 @@ class _TemplatedBase:
             custom_template_dir = Path(
                 f"{cwd}/{self.template_config.template_directory}"
             )
-            main_file = getattr(
-                self.template_config, f"{self.template_type}_filename", None
-            )
 
             if not custom_template_dir.is_dir():
                 raise Exception(
                     f"Template directory {custom_template_dir} does not exist"
                 )
 
-            shutil.copytree(
-                str(custom_template_dir),
-                self.custom_template_dir,
-                dirs_exist_ok=True,
+            custom_template_dir = Path(
+                f"{cwd}/{self.template_config.template_directory}/{self.template_type}"
             )
 
-            # Check if the custom main template file exists
-            path_to_copy = Path(
-                f"{custom_template_dir}/{self.template_type}/{main_file}"
-            )
-            if path_to_copy.is_file():
-                # Optionally delete an entrypoint script in the final directory before copying the main file
-                entry_script_path = Path(
-                    f"{final_template_dir}/{self.entrypoint_script_name}"
-                )
-                if entry_script_path.exists():
-                    os.remove(entry_script_path)
-                shutil.copy(
-                    str(path_to_copy),
-                    f"{str(final_template_dir)}/{self.entrypoint_script_name}",
+            if custom_template_dir.is_dir():
+                shutil.copytree(
+                    str(custom_template_dir),
+                    final_template_dir,
+                    dirs_exist_ok=True,
                 )
 
         return True

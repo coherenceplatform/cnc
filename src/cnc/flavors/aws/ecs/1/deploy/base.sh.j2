@@ -1,0 +1,65 @@
+#!/bin/bash
+set -e
+
+trap 'send_{{ service.name }}_status_hook $?' EXIT
+
+{% block install_commands %}
+source {{ deployer.rendered_files_path }}/deploy-{{ service.name }}-functions.sh
+send_{{ service.name }}_status_hook 0 "working"
+{% endblock %}
+
+{% block build_commands %}
+
+{% if service.is_backend %}
+
+{% if service.settings.migrate %}
+run_{{ service.name }}_migrate
+{% endif %}
+
+{% if (not service.environment.is_production) and load_database_snapshot %}
+load_snapshot
+{% endif %}
+
+{% if not service.environment.is_production and service.settings.seed %}
+seed_databases
+{% endif %}
+
+deploy_{{ service.name }}_to_ecs
+
+{% if service.environment.is_production %}
+
+check_{{ service.name }}_ecs_service_deploy_status
+
+{% if service.settings.workers %}
+deploy_{{ service.name }}_workers_to_ecs
+check_{{ service.name }}_ecs_workers_deploy_status
+{% endif %}
+
+{% else %}
+
+{% if service.settings.workers %}
+deploy_{{ service.name }}_workers_to_ecs
+{% endif %}
+
+check_{{ service.name }}_ecs_service_deploy_status
+{% if service.settings.workers %}
+check_{{ service.name }}_ecs_workers_deploy_status
+{% endif %}
+
+{% endif %}
+
+{% if service.settings.scheduled_tasks %}
+deploy_{{ service.name }}_scheduled_tasks
+{% endif %}
+
+{% else %}
+
+build_{{ service.name }}_frontend_assets
+deploy_{{ service.name }}_to_s3
+
+{% endif %}
+
+{% endblock %}
+
+{% block finally_build_commands %}
+{% endblock %}
