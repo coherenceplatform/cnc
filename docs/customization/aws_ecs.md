@@ -2,7 +2,7 @@
 
 For the `ecs` flavor of `cnc`, ultimately one or more ECS Fargate tasks is created in each environment for each service.
 
-You can customize the task definition (you can also do the same thing for any other file in the repo...). For example, here's the default ECS task JSON Jinja template (lives in the repo at `provision/ecs_web_task.json.j2` in the flavor):
+You can customize the task definition (you can also do the same thing for any other file in the repo...). For example, here's the default ECS task JSON Jinja template (lives in the repo at `deploy/ecs_web_task.json.j2` in the flavor):
 
 ```json
 {
@@ -84,7 +84,7 @@ template_config:
   template_directory: custom
 ```
 
-Add this in `provision/ecs_web_task.json.j2` in the `custom` directory. This will overwrite the flavor default that you can see above.
+Add this in `deploy/ecs_web_task.json.j2` in the `custom` directory. This will overwrite the flavor default that you can see above.
 
 ```json
 {
@@ -196,7 +196,7 @@ Add this in `provision/ecs_web_task.json.j2` in the `custom` directory. This wil
                 {% if not service.filtered_environment_items(pattern="^DD_VERSION$") %}
                 {
                     "name": "DD_VERSION",
-                    "value": "{{ environment.config_commit_sha }}"
+                    "value": "{{ deployer.tag_for_service(service.name) or 'latest' }}"
                 },
                 {% endif %}
                 {% if not service.filtered_environment_items(pattern="^DD_ENV$") %}
