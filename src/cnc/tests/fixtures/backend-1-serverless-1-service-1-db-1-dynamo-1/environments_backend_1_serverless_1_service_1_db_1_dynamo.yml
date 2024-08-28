@@ -18,3 +18,5 @@ collections:
     environment_variables:
     - name: foo
       value: bar
+    - name: type
+      value: "serverless"
