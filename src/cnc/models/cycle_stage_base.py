@@ -44,7 +44,7 @@ class _TemplatedBase:
     def current_timestamp(self):
         return datetime.now().isoformat()
 
-    def setup(self):
+    def setup(self, working_dir=None):
         if not os.path.isdir(self.config_files_path):
             os.makedirs(self.config_files_path, exist_ok=True)
 
@@ -55,12 +55,12 @@ class _TemplatedBase:
             if not os.path.isdir(self.custom_template_dir):
                 os.makedirs(self.custom_template_dir, exist_ok=True)
 
-        self.copy_templates()
+        self.copy_templates(working_dir=working_dir)
         return True
 
-    def copy_template_dir(self):
+    def copy_template_dir(self, working_dir=None):
         src_dir = Path(__file__).parent.parent
-        cwd = self.working_dir
+        cwd = working_dir or self.working_dir
 
         # Path to the directory where templates are finally consolidated
         final_template_dir = self.config_files_path
@@ -290,8 +290,8 @@ class EnvironmentTemplatedBase(_TemplatedBase):
 
         return self.environment.services
 
-    def copy_templates(self):
-        self.copy_template_dir()
+    def copy_templates(self, working_dir=None):
+        self.copy_template_dir(working_dir=working_dir)
 
     def tag_for_service(self, service_name=None):
         return self.service_tags.get(service_name, self.default_tag)
