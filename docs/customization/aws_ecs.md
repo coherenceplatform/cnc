@@ -196,7 +196,7 @@ Add this in `deploy/ecs_web_task.json.j2` in the `custom` directory. This will o
                 {% if not service.filtered_environment_items(pattern="^DD_VERSION$") %}
                 {
                     "name": "DD_VERSION",
-                    "value": "{{ environment.config_commit_sha }}"
+                    "value": "{{ deployer.tag_for_service(service.name) or 'latest' }}"
                 },
                 {% endif %}
                 {% if not service.filtered_environment_items(pattern="^DD_ENV$") %}
