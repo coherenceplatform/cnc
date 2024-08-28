@@ -44,7 +44,7 @@ class _TemplatedBase:
     def current_timestamp(self):
         return datetime.now().isoformat()
 
-    def setup(self):
+    def setup(self, working_dir=None):
         if not os.path.isdir(self.config_files_path):
             os.makedirs(self.config_files_path, exist_ok=True)
 
@@ -55,12 +55,12 @@ class _TemplatedBase:
             if not os.path.isdir(self.custom_template_dir):
                 os.makedirs(self.custom_template_dir, exist_ok=True)
 
-        self.copy_templates()
+        self.copy_templates(working_dir=working_dir)
         return True
 
-    def copy_template_dir(self):
+    def copy_template_dir(self, working_dir=None):
         src_dir = Path(__file__).parent.parent
-        cwd = self.working_dir
+        cwd = working_dir or self.working_dir
 
         # Path to the directory where templates are finally consolidated
         final_template_dir = self.config_files_path
@@ -95,35 +95,21 @@ class _TemplatedBase:
             custom_template_dir = Path(
                 f"{cwd}/{self.template_config.template_directory}"
             )
-            main_file = getattr(
-                self.template_config, f"{self.template_type}_filename", None
-            )
 
             if not custom_template_dir.is_dir():
                 raise Exception(
                     f"Template directory {custom_template_dir} does not exist"
                 )
 
-            shutil.copytree(
-                str(custom_template_dir),
-                self.custom_template_dir,
-                dirs_exist_ok=True,
+            custom_template_dir = Path(
+                f"{cwd}/{self.template_config.template_directory}/{self.template_type}"
             )
 
-            # Check if the custom main template file exists
-            path_to_copy = Path(
-                f"{custom_template_dir}/{self.template_type}/{main_file}"
-            )
-            if path_to_copy.is_file():
-                # Optionally delete an entrypoint script in the final directory before copying the main file
-                entry_script_path = Path(
-                    f"{final_template_dir}/{self.entrypoint_script_name}"
-                )
-                if entry_script_path.exists():
-                    os.remove(entry_script_path)
-                shutil.copy(
-                    str(path_to_copy),
-                    f"{str(final_template_dir)}/{self.entrypoint_script_name}",
+            if custom_template_dir.is_dir():
+                shutil.copytree(
+                    str(custom_template_dir),
+                    final_template_dir,
+                    dirs_exist_ok=True,
                 )
 
         return True
@@ -304,8 +290,8 @@ class EnvironmentTemplatedBase(_TemplatedBase):
 
         return self.environment.services
 
-    def copy_templates(self):
-        self.copy_template_dir()
+    def copy_templates(self, working_dir=None):
+        self.copy_template_dir(working_dir=working_dir)
 
     def tag_for_service(self, service_name=None):
         return self.service_tags.get(service_name, self.default_tag)

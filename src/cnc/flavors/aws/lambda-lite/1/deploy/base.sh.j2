@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+trap 'send_{{ service.name }}_status_hook $?' EXIT
+
+if ! command -v bash >/dev/null 2>&1; then
+    echo "Bash not found. Exiting."
+    exit 1
+fi
+
+{% block install_commands %}
+source {{ deployer.rendered_files_path }}/deploy-{{ service.name }}-functions.sh
+send_{{ service.name }}_status_hook 0 "working"
+deploy_{{ service.name }}
+{% endblock %}
