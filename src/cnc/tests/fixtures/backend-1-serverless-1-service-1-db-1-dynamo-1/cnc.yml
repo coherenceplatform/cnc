@@ -2,6 +2,7 @@ services:
   app:
     x-cnc:
       type: backend
+      url_path: /app
     build:
       context: .
 
@@ -14,6 +15,7 @@ services:
   lambda1:
     x-cnc:
       type: serverless
+      url_path: /lambda1
     build:
       context: .
 
