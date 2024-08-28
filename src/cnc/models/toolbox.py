@@ -66,8 +66,8 @@ class ToolboxManager(EnvironmentTemplatedBase):
         context["render_template"] = self.write_template_with_context(self.service)
         self.write_template("main.sh.j2", context=context)
 
-    def copy_templates(self):
-        self.copy_template_dir()
+    def copy_templates(self, working_dir=None):
+        self.copy_template_dir(working_dir=working_dir)
 
     def start(self):
         log.debug(f"Rendering toolbox script for {self} @ {self.config_files_path}")
