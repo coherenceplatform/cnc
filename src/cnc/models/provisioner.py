@@ -122,8 +122,8 @@ class ProvisionStageManager(CollectionTemplatedBase):
             "os_env": os.environ,
         }
 
-    def copy_templates(self):
-        self.copy_template_dir()
+    def copy_templates(self, working_dir=None):
+        self.copy_template_dir(working_dir=working_dir)
 
         if not self.output_only:
             self.collection.generate_tf_assets(
