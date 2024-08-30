@@ -22,6 +22,7 @@ services:
   db1:
     x-cnc:
       type: database
+      use_db_proxy: False
       version: 15
     image: postgres
 
@@ -29,4 +30,5 @@ services:
     x-cnc:
       type: database
       version: 15
+      use_db_proxy: False
     image: postgres

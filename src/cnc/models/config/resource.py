@@ -146,6 +146,7 @@ class DatabaseResourceSettings(BaseResourceSettings):
         default=None,
     )
     use_db_proxy: Optional[bool] = True
+    public: Optional[bool] = True
     version: Union[str, int, float]
 
     # ------------------------------

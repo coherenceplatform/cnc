@@ -25,11 +25,14 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
     engine = "{{ resource.settings.engine }}"
     instance_class = "{{ resource.settings.instance_class }}"
     multi_az = false
+    publicly_accessible = {% if resource.settings.public %} true {% else %} false {% endif %}
     engine_version = "{{ resource.settings.version }}"
     username = "{{ resource.settings.username }}"
     password = "{{ resource.settings.database_password }}"
+    {% if not resource.settings.public %} 
     db_subnet_group_name = "${aws_db_subnet_group.{{ resource.instance_name }}.id}"
     vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db.id]
+    {% endif %}
     skip_final_snapshot = true
     allow_major_version_upgrade = true
     storage_encrypted = true
@@ -83,7 +86,6 @@ data "aws_rds_cluster" "{{ resource.instance_name }}" {
 output "{{ resource.settings.host_output_id }}" {
     value = "{{ resource.settings.host_output_tf_value_string }}"
 }
-
 {% if resource.settings.use_db_proxy %}
 resource "aws_db_proxy" "{{ resource.instance_name }}" {
     name = "{{ resource.instance_name }}"

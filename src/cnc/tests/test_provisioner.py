@@ -315,8 +315,6 @@ class AWSProvisionStageOneServiceTestServerless(AWSProvisionStageTestBase):
 
     def test_tf_is_valid(self):
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
-        self.assertEqual(len(self.resources["aws_vpc"]), 1)
-
 
 class AWSProvisionStageOneServiceServerlessAndOneResourceDynamoDBTest(
     AWSProvisionStageTestBase

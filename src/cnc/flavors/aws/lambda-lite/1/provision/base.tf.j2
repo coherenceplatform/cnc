@@ -27,8 +27,6 @@ terraform {
 {% block collection_level_resources %}
 {% if env_collection.serverless_services %}
 {% block vpc %}
-{% include "partials/collection/vpc/vpc.tf.j2" %}
-{% include "partials/collection/vpc/variables.tf.j2" %}
 {% endblock vpc %}
 
 {% block lambda %}
