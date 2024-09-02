@@ -1,5 +1,7 @@
-resource "aws_cloudfront_cache_policy" "{{ env_collection.instance_name }}_frontend" {
-  name        = "{{ env_collection.instance_name }}-frontend"
+{% for environment in env_collection.environments %}
+
+resource "aws_cloudfront_cache_policy" "{{ env_collection.instance_name }}_{{environment.name}}_frontend" {
+  name        = "{{ env_collection.instance_name }}-{{environment.name}}-frontend"
   comment     = "Frontend cache policy"
   default_ttl = 0
   parameters_in_cache_key_and_forwarded_to_origin {
@@ -15,8 +17,8 @@ resource "aws_cloudfront_cache_policy" "{{ env_collection.instance_name }}_front
   }
 }
 
-resource "aws_cloudfront_origin_request_policy" "{{ env_collection.instance_name }}_frontend" {
-  name    = "{{ env_collection.instance_name }}-frontend"
+resource "aws_cloudfront_origin_request_policy" "{{ env_collection.instance_name }}_{{environment.name}}_frontend" {
+  name    = "{{ env_collection.instance_name }}-{{environment.name}}-frontend"
   comment = "Frontend origin request policy"
   cookies_config {
     cookie_behavior = "all"
@@ -352,8 +354,8 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
         cached_methods = ["GET", "HEAD"]
         target_origin_id = "{{ service.instance_name }}"
         {% if service.settings.cdn.enabled %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
         {% else %}
         cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
         origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
@@ -365,7 +367,7 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
 
         lambda_function_association {
             event_type = "origin-response"
-            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_{{environment.name}}_frontend_routing.qualified_arn
         }
 
         viewer_protocol_policy = "redirect-to-https"
@@ -376,8 +378,8 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
         cached_methods = ["GET", "HEAD"]
         target_origin_id = "{{ service.instance_name }}"
         {% if service.settings.cdn.enabled %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
         {% else %}
         cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
         origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
@@ -389,7 +391,7 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
 
         lambda_function_association {
             event_type = "origin-response"
-            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_{{environment.name}}_frontend_routing.qualified_arn
         }
 
         viewer_protocol_policy = "redirect-to-https"
@@ -418,8 +420,8 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
         target_origin_id = "{{ service.instance_name }}"
 
         {% if service.settings.cdn.enabled %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
         {% else %}
         cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
         origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
@@ -436,8 +438,8 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
         target_origin_id = "{{ service.instance_name }}"
 
         {% if service.settings.cdn.enabled %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
         {% else %}
         cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
         origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
@@ -456,8 +458,8 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
         cached_methods = ["GET", "HEAD"]
         target_origin_id = "{{ environment.default_service.instance_name }}"
 
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
 
         {% if environment.default_service.settings.custom_headers %}
         response_headers_policy_id = "${aws_cloudfront_response_headers_policy.{{ environment.default_service.instance_name }}.id}"
@@ -465,7 +467,7 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
 
         lambda_function_association {
             event_type = "origin-response"
-            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_{{environment.name}}_frontend_routing.qualified_arn
         }
 
         viewer_protocol_policy = "redirect-to-https"
@@ -541,8 +543,8 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
         target_origin_id = "{{ service.instance_name }}"
 
         {% if service.settings.cdn.enabled %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
         {% else %}
         cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
         origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
@@ -554,7 +556,7 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
 
         lambda_function_association {
             event_type = "origin-response"
-            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_{{environment.name}}_frontend_routing.qualified_arn
         }
 
         viewer_protocol_policy = "redirect-to-https"
@@ -566,8 +568,8 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
         target_origin_id = "{{ service.instance_name }}"
 
         {% if service.settings.cdn.enabled %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
         {% else %}
         cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
         origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
@@ -579,7 +581,7 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
 
         lambda_function_association {
             event_type = "origin-response"
-            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_{{environment.name}}_frontend_routing.qualified_arn
         }
 
         viewer_protocol_policy = "redirect-to-https"
@@ -608,8 +610,8 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
         target_origin_id = "{{ service.instance_name }}"
 
         {% if service.settings.cdn.enabled %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
         {% else %}
         cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
         origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
@@ -626,8 +628,8 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
         target_origin_id = "{{ service.instance_name }}"
 
         {% if service.settings.cdn.enabled %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
         {% else %}
         cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
         origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
@@ -647,8 +649,8 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
         cached_methods = ["GET", "HEAD"]
         target_origin_id = "{{ environment.default_service.instance_name }}"
 
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
+        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
+        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_{{environment.name}}_frontend.id}"
 
         {% if environment.default_service.settings.custom_headers %}
         response_headers_policy_id = "${aws_cloudfront_response_headers_policy.{{ environment.default_service.instance_name }}.id}"
@@ -656,7 +658,7 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
 
         lambda_function_association {
             event_type = "origin-response"
-            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
+            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_{{environment.name}}_frontend_routing.qualified_arn
         }
 
         viewer_protocol_policy = "redirect-to-https"
@@ -694,6 +696,7 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
         ignore_changes = [web_acl_id]
     }
 }
+
 {% endif %}{# {% if environment.domains %} #}
 {% endwith %}
 {% endfor %}{# {% for domain in environment.domains %} #}
@@ -701,3 +704,4 @@ resource "aws_cloudfront_distribution" "{{ re.sub('\W', '', domain) }}" {
 
 {% endif %}{# if environment.active_deployment #}
 {% endif %}{# if hosted_zone_ns_records #}
+{% endfor %} {# for environment in env_collection.environments #} 
