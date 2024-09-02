@@ -246,18 +246,18 @@ class AWSProvisionStageTwoServicesandDBsTest(AWSProvisionStageTestBase):
         self.assertEqual(len(self.resources["aws_route53_zone"]), 1)
 
 
-# class AWSProvisionStageTwoServicesandDBsTwoEnvsTest(AWSProvisionStageTestBase):
-#     fixture_name = "backend-1-service-2-db-2-envs"
+class AWSProvisionStageTwoServicesandDBsTwoEnvsTest(AWSProvisionStageTestBase):
+    fixture_name = "backend-1-service-2-db-2-envs"
 
-#     def test_tf_is_valid(self):
-#         self.assertEqual(len(self.resources["aws_db_instance"]), 4)
-#         self.assertEqual(len(self.resources["aws_db_proxy"]), 4)
-#         self.assertEqual(len(self.resources["aws_ecs_service"]), 2)
-#         self.assertEqual(len(self.resources["aws_cloudfront_distribution"]), 2)
-#         self.assertEqual(len(self.resources["aws_ecr_repository"]), 2)
-#         self.assertEqual(len(self.resources["aws_vpc"]), 1)
-#         self.assertEqual(len(self.resources["aws_acm_certificate"]), 3)
-#         self.assertEqual(len(self.resources["aws_route53_zone"]), 1)
+    def test_tf_is_valid(self):
+        self.assertEqual(len(self.resources["aws_db_instance"]), 4)
+        self.assertEqual(len(self.resources["aws_db_proxy"]), 4)
+        self.assertEqual(len(self.resources["aws_ecs_service"]), 2)
+        self.assertEqual(len(self.resources["aws_cloudfront_distribution"]), 2)
+        self.assertEqual(len(self.resources["aws_ecr_repository"]), 2)
+        self.assertEqual(len(self.resources["aws_vpc"]), 1)
+        self.assertEqual(len(self.resources["aws_acm_certificate"]), 3)
+        self.assertEqual(len(self.resources["aws_route53_zone"]), 1)
 
 
 class AWSProvisionStageExistingVpcNoSubnetInfo(AWSProvisionStageTestBase):
