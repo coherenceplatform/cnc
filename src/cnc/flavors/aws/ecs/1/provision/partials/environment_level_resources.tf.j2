@@ -10,6 +10,7 @@ output "{{ re.sub('\W', '', domain) }}_ns_records" {
 {% endfor %}
 {% endif %}
 
+
 {% if env_collection.hosted_zone_ns_records %}
 {% if environment.active_deployment %}
 
