@@ -15,6 +15,10 @@ This makes it easy to perform tasks like running database migrations, starting a
 
 ## Using Toolboxes
 
+### Prerequisites
+
+- For AWS, ensure you have installed the [Session Manager Plugin for the AWS CLI](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html). CNC Toolboxes use AWS Session Manager via the `aws ssm` CLI command to provide temporary access to your environment's VPC without the need to open inbound ports, maintain bastion hosts, or manage ssh keys.
+
 ### Starting a Toolbox
 
 To start an interactive toolbox session:
