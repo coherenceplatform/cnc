@@ -11,6 +11,7 @@ This guide covers the installation of the CNC framework and the necessary cloud 
 - [Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
 - `docker`
 - `jq`
+- (MacOS-Only): The `setsid` shell command is required but not included in MacOS. Run `brew install util-linux`, and follow the instructions in the output to add the resulting commands to your shell PATH.
 
 ## Installation Steps
 
