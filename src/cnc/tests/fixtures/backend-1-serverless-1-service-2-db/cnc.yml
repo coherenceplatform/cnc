@@ -1,0 +1,26 @@
+services:
+  app:
+    x-cnc:
+      type: backend
+      url_path: /app
+    build:
+      context: .
+
+  db1:
+    x-cnc:
+      type: database
+      version: 15
+    image: postgres
+    
+  db2:
+    x-cnc:
+      type: database
+      version: 15
+    image: postgres
+
+  lambda1:
+    x-cnc:
+      type: serverless
+      url_path: /lambda1
+    build:
+      context: .
