@@ -436,7 +436,7 @@ class AWSProvisionStageOneBackendOneServerlessTwoDatabaseTest(
     AWSProvisionStageTestBase
 ):
     fixture_name = "backend-1-serverless-1-service-2-db"
-    env_data_filepath = "environments_backend_1_serverless_1_service_1_db_1_dynamo.yml"
+    env_data_filepath = "environments_backend_1_serverless_1_service_2_db.yml"
 
     def test_tf_is_valid(self):
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)

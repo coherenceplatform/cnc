@@ -18,3 +18,23 @@ services:
       url_path: /lambda1
     build:
       context: .
+
+  api:
+    x-cnc:
+      type: backend
+      url_path: /api
+    build:
+      context: .
+
+  db2:
+    x-cnc:
+      type: database
+      version: 15
+    image: postgres
+
+  lambda2:
+    x-cnc:
+      type: serverless
+      url_path: /lambda2
+    build:
+      context: .
