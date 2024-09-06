@@ -14,18 +14,11 @@ cleanup_toolbox () {
     echo -e "\nCleaning up port-forwarding sessions..."
     rm $TOOLBOX_ACTIVE_TEMP_FILEPATH
 
-    group_id=$(ps -p $port_forwarding_parent_process_id -o pgid= | tr -d "[:space:]")
-    child_process_ids=$(pgrep -g $group_id)
-    for pid in $child_process_ids
-    do
-        if [[ $pid != $port_forwarding_parent_process_id && $pid != $group_id ]]
-        then
-            kill $pid > /dev/null 2>&1
-        fi
-    done
+    # Use pkill instead of pgrep and kill
+    pkill -P $port_forwarding_parent_process_id
 
     {%- for resource in environment.database_resources + environment.cache_resources %}
-    if test -f /tmp/cnc_ssh_output_{{ loop.index }}
+    if [ -f /tmp/cnc_ssh_output_{{ loop.index }} ]
     then
         rm /tmp/cnc_ssh_output_{{ loop.index }}
     fi
@@ -35,10 +28,10 @@ cleanup_toolbox () {
 {# Start ssm sessions #}
 start_ssm_sessions () {
     PID_FALLBACK="none"
-    while test -f $TOOLBOX_ACTIVE_TEMP_FILEPATH
+    while [ -f $TOOLBOX_ACTIVE_TEMP_FILEPATH ]
     do
     {% for resource in environment.database_resources + environment.cache_resources %}
-        if ! test -d /proc/${SSM_PID_{{ loop.index }}:-$PID_FALLBACK}/ > /dev/null
+        if ! kill -0 ${SSM_PID_{{ loop.index }}:-$PID_FALLBACK} 2>/dev/null
         then
             SSM_RETRY_COUNT_{{ loop.index }}=${SSM_RETRY_COUNT_{{ loop.index }}:-0}
             if [ $SSM_RETRY_COUNT_{{ loop.index }} -eq 0 ]
@@ -58,7 +51,7 @@ start_ssm_sessions () {
                 "(failed_attempts: $SSM_RETRY_COUNT_{{ loop.index }})\n$cmd_output"
             fi
 
-            SSM_RETRY_COUNT_{{ loop.index }}=`expr $SSM_RETRY_COUNT_{{ loop.index }} + 1`
+            SSM_RETRY_COUNT_{{ loop.index }}=$((SSM_RETRY_COUNT_{{ loop.index }} + 1))
         fi
     {% endfor %}
     sleep 10

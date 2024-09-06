@@ -11,13 +11,13 @@ gcloud auth configure-docker {{ environment.collection.region }}-docker.pkg.dev
 # copy config from default location
 if ! test -d "{{ toolbox.rendered_files_path }}"/.config
 then
-    mkdir {{ toolbox.rendered_files_path }}/.config
+    mkdir -p {{ toolbox.rendered_files_path }}/.config
 fi
 
-GCP_DEFAULT_CONFIG_DIR=${CLOUDSDK_CONFIG:-~/.config/gcloud}
+GCP_DEFAULT_CONFIG_DIR=${CLOUDSDK_CONFIG:-$HOME/.config/gcloud}
 if test -d "$GCP_DEFAULT_CONFIG_DIR"
 then
-    cp -r $GCP_DEFAULT_CONFIG_DIR {{ toolbox.rendered_files_path }}/.config/gcloud
+    cp -R "$GCP_DEFAULT_CONFIG_DIR" {{ toolbox.rendered_files_path }}/.config/gcloud
 else
     mkdir -p {{ toolbox.rendered_files_path }}/.config/gcloud
 fi
@@ -25,11 +25,11 @@ fi
 # If google credentials file is set then we copy
 # to known location and set correct GOOGLE_APPLICATION_CREDENTIALS path
 # for the toolbox Dockerfile
-if test -v GOOGLE_APPLICATION_CREDENTIALS
+if [ -n "$GOOGLE_APPLICATION_CREDENTIALS" ]
 then
-    if test -e "$GOOGLE_APPLICATION_CREDENTIALS"
+    if [ -e "$GOOGLE_APPLICATION_CREDENTIALS" ]
     then
-        cp $GOOGLE_APPLICATION_CREDENTIALS {{ toolbox.rendered_files_path }}/service_account.json
+        cp "$GOOGLE_APPLICATION_CREDENTIALS" {{ toolbox.rendered_files_path }}/service_account.json
         TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS="/_cnc_temp/service_account.json"
     fi
 fi
@@ -41,20 +41,20 @@ docker build -t {{ service.instance_name }}_toolbox \
 -f {{ toolbox.rendered_files_path }}/Dockerfile {{ toolbox.rendered_files_path }}
 
 docker_auth_var="AUTH_AUTO_DETECTED=false"
-if test -v TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS
+if [ -n "$TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS" ]
 then
     docker_auth_var="GOOGLE_APPLICATION_CREDENTIALS=$TOOLBOX_GOOGLE_APPLICATION_CREDENTIALS"
-elif test -v GOOGLE_AUTH_TOKEN
+elif [ -n "$GOOGLE_AUTH_TOKEN" ]
 then
     docker_auth_var="CLOUDSDK_AUTH_ACCESS_TOKEN=$GOOGLE_AUTH_TOKEN"
-elif test -v CLOUDSDK_AUTH_ACCESS_TOKEN
+elif [ -n "$CLOUDSDK_AUTH_ACCESS_TOKEN" ]
 then
     docker_auth_var="CLOUDSDK_AUTH_ACCESS_TOKEN=$CLOUDSDK_AUTH_ACCESS_TOKEN"
 fi
 
 # Start & exec into docker container
 docker run --entrypoint sh \
--e $docker_auth_var \
+-e "$docker_auth_var" \
 {%- for variable in toolbox.environment_items -%}
 -e {{ variable.name }}={{ shlex.quote(variable.value) }} \
 {%- endfor -%}
