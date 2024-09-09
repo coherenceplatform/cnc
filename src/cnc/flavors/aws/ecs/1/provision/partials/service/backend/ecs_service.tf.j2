@@ -1,0 +1,40 @@
+resource "aws_ecs_service" "{{ service.instance_name }}" {
+    name = "{{ service.instance_name }}"
+    task_definition = "${aws_ecs_task_definition.{{ service.instance_name }}.family}"
+    desired_count = 0
+
+    cluster = "${aws_ecs_cluster.{{ env_collection.instance_name }}.id}"
+    depends_on = [aws_iam_role_policy.{{ env_collection.instance_name }}_ecs_task, aws_alb_target_group.{{ service.instance_name }}]
+
+    network_configuration {
+        security_groups = "${concat([aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id], [aws_security_group.{{ env_collection.instance_name }}_db_access.id], [aws_security_group.{{ env_collection.instance_name }}_cache_access.id])}"
+        subnets = concat(
+            local.private_subnet_ids,
+            length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+        )
+    }
+
+    load_balancer {
+        target_group_arn = "${aws_alb_target_group.{{ service.instance_name }}.arn}"
+        container_name = "{{ service.instance_name }}"
+        container_port = "{{ service.port }}"
+    }
+
+    deployment_circuit_breaker {
+        enable = true
+        rollback = true
+    }
+
+    {% if service.environment.is_static %}
+    launch_type = "FARGATE"
+    {% else %}
+    capacity_provider_strategy {
+        capacity_provider = "FARGATE_SPOT"
+        weight            = 100
+    }
+    {% endif %}
+
+    lifecycle {
+        ignore_changes = [desired_count, task_definition]
+    }
+}

@@ -6,11 +6,12 @@ This guide covers the installation of the CNC framework and the necessary cloud 
 ### Prerequisites
 
 - Access to a terminal
-- Python 3.9-3.11 installed on your machine
-- Cloud provider account (AWS `aws` or Google Cloud `gcloud`) and authenticated CLI
+- Python 3.9-3.11 or higher installed on your machine
+- AWS and/or Google Cloud accounts, with permissions to provision infrastructure
+- [Terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
 - `docker`
-- `terraform`
 - `jq`
+- (MacOS-Only): The `setsid` shell command is required but not included in MacOS. Run `brew install util-linux`, and follow the instructions in the output to add the resulting commands to your shell PATH.
 
 ## Installation Steps
 
@@ -25,24 +26,15 @@ We also offer a `docker` image with all of this installed, `us-docker.pkg.dev/co
 
 ### Install and authenticate cloud CLI:
 
-This would be either the `aws` or `gcloud` CLI. Read more at [aws](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) or [gcp](https://cloud.google.com/sdk/docs/install).
+#### Google
+1. Install the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
+2. [Initialize the Google Cloud CLI](https://cloud.google.com/sdk/docs/initializing).
+3. Run `gcloud auth application-default login` to set up application default credentials 
 
-For google:
-
-You need to do both of these.
-
-```
-gcloud auth application-default login
-gcloud auth login
-```
-
-For AWS:
-
-Choose the appropriate one.
-
-```
-aws configure // aws sso configure
-```
+#### AWS
+1. Install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+1. If you plan to use `cnc toolbox` commands, also install the [Session Manager Plugin for the AWS CLI](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
+1. [Set up auth for the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-authentication.html)
 
 ### Setup CNC configuration files
 

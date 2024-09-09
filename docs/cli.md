@@ -119,11 +119,11 @@ Manage development toolboxes for environments.
 #### Subcommands:
 - `start`: Start a toolbox session
   ```
-  cnc toolbox start <environment_name> [--service <name>] [--tag <tag>] [--proxy-only]
+  cnc toolbox start <environment_name> [--service-name <name>] [--tag <tag>] [--proxy-only]
   ```
 - `run`: Run a command in a toolbox
   ```
-  cnc toolbox run <environment_name> [--service <name>] [--tag <tag>] -- <command>...
+  cnc toolbox run <environment_name> [--service-name <name>] [--tag <tag>] -- <command>...
   ```
 
 ### inspector

@@ -1,7 +1,5 @@
-
-
-
 :root {
+    --white: #ffffff;
     --pampas: #e8e6e3;
     --black: #0C0A10;
     --gray-200: #d2cfdb;
@@ -11,19 +9,88 @@
     --gray-900: #1b191f;
     --gray-1000: var(--black);
     --electric-violet-400: #A495FF;
+    --electric-violet-500: #7762fe;
+    --md-accent-fg-color: var(--electric-violet-400);
     --md-text-font: 'Lausanne', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     --md-default-bg-color: var(--black);
+    --md-default-fg-color: var(--electric-violet-400);
     --md-default-bg-color-lighter: var(--gray-800);
     --md-typeset-color: var(--pampas);
     --md-typeset-a-color: var(--electric-violet-400);
     --md-code-bg-color: var(--md-default-bg-color-lighter);
     --md-code-fg-color: var(--pampas);
     --md-default-fg-color--light: var(--md-typeset-color);
-
 }
 
 .md-header {
-    background-color: black;
+    background-color: var(--black);
+    color: var(--pampas);
+}
+
+.md-header__inner {
+    color: var(--pampas);
+}
+
+.md-header__title {
+    color: var(--pampas);
+}
+
+.md-header__topic:first-child {
+    font-weight: 500;;
+}
+
+.md-header__dropdown .md-header__button.md-button {
+    color: var(--pampas);
+    border-radius: 4px;
+    font-size: 0.7rem;
+}
+
+.md-search__input {
+    background-color: var(--gray-800);
+    color: var(--pampas);
+    font-size: 0.7rem;
+}
+
+.md-search__form {
+    height: 1.5rem;
+}
+
+.md-search__icon {
+    color: var(--pampas);
+}
+
+.md-search__options {
+    top: 0.2rem;
+}
+
+.md-icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.md-search-result .md-typeset h1,
+.md-search-result .md-typeset h2 {
+    color: var(--pampas);
+}
+
+.md-nav__link {
+    color: var(--gray-400);
+}
+
+.md-nav__link:hover {
+    color: var(--electric-violet-400);
+}
+
+.md-nav__item--active > .md-nav__link {
+    color: var(--electric-violet-400);
+}
+
+.md-content {
+    background-color: var(--black);
+}
+
+.md-content__inner {
+    padding-top: 1rem;
 }
 
 .md-typeset {
@@ -41,6 +108,103 @@
 .md-typeset h1 {
     color: var(--md-typeset-color);
 }
+
+.md-typeset code {
+    background-color: var(--gray-800);
+    color: var(--pampas);
+}
+
+.md-typeset a {
+    color: var(--electric-violet-400);
+}
+
+.md-typeset a:hover {
+    color: var(--pampas);
+}
+
+.md-header__option .md-button--primary {
+    background-color: var(--electric-violet-500);
+    color: var(--white);
+    border: none;
+    padding: 0.5em 1em;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    transition: background-color 0.15s ease;
+}
+
+.md-header__option .md-button--primary:hover {
+    background-color: var(--electric-violet-400);
+    opacity: 1;
+}
+
+.md-header__dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.md-header__dropdown .md-button {
+    background-color: transparent;
+    color: var(--pampas);
+    border: 1px solid var(--gray-500);
+    padding: 0.5em 1em;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.md-header__dropdown .md-button:hover {
+    background-color: var(--gray-800);
+}
+
+.md-header__dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: var(--gray-800);
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    font-size: 0.7rem;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.md-header__dropdown:hover .md-header__dropdown-content {
+    display: block;
+}
+
+.md-header__dropdown-content a {
+    color: var(--pampas);
+    padding: 0.5em 1em;
+    text-decoration: none;
+    display: block;
+    font-size: 0.7rem;
+    transition: background-color 0.3s ease;
+}
+
+.md-header__dropdown-content a:hover {
+    background-color: var(--gray-900);
+}
+
+.md-header__option {
+    display: flex;
+    align-items: center;
+
+}
+
+.md-header__inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.md-nav--primary > .md-nav__title {
+    display: none;
+  }
+
+.md-search {
+    margin-right: 1rem; /* Adjust this value to increase/decrease spacing */
+  }
 
 /* Improve search input text visibility */
 [data-md-toggle=search]:checked~.md-header .md-search__form {

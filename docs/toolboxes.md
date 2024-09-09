@@ -15,18 +15,22 @@ This makes it easy to perform tasks like running database migrations, starting a
 
 ## Using Toolboxes
 
+### Prerequisites
+
+- For AWS, ensure you have installed the [Session Manager Plugin for the AWS CLI](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html). CNC Toolboxes use AWS Session Manager via the `aws ssm` CLI command to provide temporary access to your environment's VPC without the need to open inbound ports, maintain bastion hosts, or manage ssh keys.
+
 ### Starting a Toolbox
 
 To start an interactive toolbox session:
 
 ```bash
-cnc toolbox start <environment-name> [--service <service-name>]
+cnc toolbox start <environment-name> [--service-name <service-name>]
 ```
 
 For example:
 
 ```bash
-cnc toolbox start dev --service backend
+cnc toolbox start dev --service-name backend
 ```
 
 This will start an interactive shell in the container for the `backend` service in the `dev` environment.
@@ -36,13 +40,13 @@ This will start an interactive shell in the container for the `backend` service 
 To run a specific command in a toolbox:
 
 ```bash
-cnc toolbox run <environment-name> [--service <service-name>] -- <command>
+cnc toolbox run <environment-name> [--service-name <service-name>] -- <command>
 ```
 
 For example:
 
 ```bash
-cnc toolbox run dev --service backend -- python manage.py migrate
+cnc toolbox run dev --service-name backend -- python manage.py migrate
 ```
 
 This will run the Django migration command in the `backend` service of the `dev` environment.
@@ -52,7 +56,7 @@ This will run the Django migration command in the `backend` service of the `dev`
 If you only need to set up port forwarding to cloud resources without starting a container:
 
 ```bash
-cnc toolbox start <environment-name> --service <service-name> --proxy-only
+cnc toolbox start <environment-name> --service-name <service-name> --proxy-only
 ```
 
 This is useful when you want to connect to cloud resources from your local machine using local tools.
