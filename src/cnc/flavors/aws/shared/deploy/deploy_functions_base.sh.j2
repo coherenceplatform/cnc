@@ -143,13 +143,13 @@ build_{{ service.name }}_frontend_assets () {
 
     echo -e "\\nBuilding assets...\\n"
     mkdir -p .{% if service.build.context != "." %}/{{ service.build.context }}{% endif %}/{{ service.settings.assets_path }}
-    docker run --entrypoint sh {% for variable in service.environment_variables %}-e {{ variable.name }}={{ shlex.quote(variable.value) }} {% endfor %} -d --name app {{ service.image_for_tag(deployer.tag_for_service(service.name)) }} -c "sleep 5000"
-    docker exec app sh -c "{{ ' '.join(service.settings.build) }}"; build_result=$?
-    if [ $build_result -ne 0 ]; then docker logs app && exit $build_result; fi
-    docker cp app:$(docker exec app pwd)/{{service.settings.assets_path }}/. .{% if service.build.context != "." %}/{{ service.build.context }}{% endif %}/{{ service.settings.assets_path }}{% if service.settings.url_path != "/" %}/{% endif %}{{ service.settings.url_path.lstrip("/").rstrip("/") }}; copy_result=$?
+    docker run --entrypoint sh {% for variable in service.environment_variables %}-e {{ variable.name }}={{ shlex.quote(variable.value) }} {% endfor %} -d --name {{ service.instance_name }} {{ service.image_for_tag(deployer.tag_for_service(service.name)) }} -c "sleep 5000"
+    docker exec {{ service.instance_name }} sh -c "{{ ' '.join(service.settings.build) }}"; build_result=$?
+    if [ $build_result -ne 0 ]; then docker logs {{ service.instance_name }} && exit $build_result; fi
+    docker cp {{ service.instance_name }}:$(docker exec {{ service.instance_name }} pwd)/{{service.settings.assets_path }}/. .{% if service.build.context != "." %}/{{ service.build.context }}{% endif %}/{{ service.settings.assets_path }}{% if service.settings.url_path != "/" %}/{% endif %}{{ service.settings.url_path.lstrip("/").rstrip("/") }}; copy_result=$?
     if [ $copy_result -ne 0 ]; then exit $copy_result; fi
-    docker stop app
-    docker rm app
+    docker stop {{ service.instance_name }}
+    docker rm {{ service.instance_name }}
 }
 
 deploy_{{ service.name }}_to_s3 () {

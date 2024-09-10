@@ -60,9 +60,9 @@ docker run --entrypoint sh \
 {%- endfor -%}
 --network ${CNC_TOOLBOX_NETWORK:-host} \
 {%- if command %}
---rm --name app {{ service.instance_name }}_toolbox -c '{{ command }}'; command_result=$?
+--rm {{ service.instance_name }}_toolbox -c '{{ command }}'; command_result=$?
 {%- else %}
--it --rm --name app {{ service.instance_name }}_toolbox
+-it --rm {{ service.instance_name }}_toolbox
 {%- endif %}
 
 {%- if command %}
