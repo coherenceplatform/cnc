@@ -1,0 +1,23 @@
+resource "aws_alb_target_group" "{{ service.instance_name }}" {
+    name = "{{ service.settings.target_group_name }}"
+    port = 80
+    protocol = "HTTP"
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+    target_type = "ip"
+
+    health_check {
+        path = "{{ service.settings.system.health_check }}"
+        {% if service.settings.system.health_check_enabled %}
+        matcher = "200-399"
+        {% else %}
+        matcher = "200-499"
+        {% endif %}
+        interval = 10
+        healthy_threshold = 2
+        unhealthy_threshold = 9
+    }
+
+    lifecycle {
+        create_before_destroy = true
+    }
+}
