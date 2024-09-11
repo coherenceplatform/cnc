@@ -53,14 +53,14 @@ resource "kubernetes_deployment" "{{ service.instance_name }}-{{ worker.name }}"
 
     selector {
       match_labels = {
-        app = "hello-world"
+        app = "{{ service.name }}-{{ worker.name }}"
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "hello-world"
+          app = "{{ service.name }}-{{ worker.name }}"
         }
       }
 
