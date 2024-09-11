@@ -154,7 +154,7 @@ build_{{ service.name }}_frontend_assets () {
 
 deploy_{{ service.name }}_to_s3 () {
     echo -e \\nDeploying {{ service.name }} to Amazon S3...\\n
-    aws s3 sync --region "{{ environment.collection.region }}" .{% if service.build.context != "." %}/{{ service.build.context }}{% endif %}/{{ service.settings.assets_path }}{% if service.settings.url_path != "/" %}/{% endif %}{{ service.settings.url_path.lstrip("/").rstrip("/") }} s3://{{ service.instance_name }}-website --acl public-read --delete; upload_result=$?
+    aws s3 sync --region "{{ environment.collection.region }}" .{% if service.build.context != "." %}/{{ service.build.context }}{% endif %}/{{ service.settings.assets_path }} s3://{{ service.instance_name }}-website --acl public-read --delete; upload_result=$?
     if [ $upload_result -ne 0 ]; then echo "Upload failed" && exit $upload_result; fi
 }
 {% endif %} # endif frontend
