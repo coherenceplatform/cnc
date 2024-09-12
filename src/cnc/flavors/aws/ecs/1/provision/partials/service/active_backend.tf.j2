@@ -224,29 +224,7 @@ resource "aws_ecs_task_definition" "{{ service.instance_name }}" {
 
 {% include "partials/service/backend/ecs_service.tf.j2" %}
 
-resource "aws_alb_target_group" "{{ service.instance_name }}" {
-    name = "{{ service.settings.target_group_name }}"
-    port = 80
-    protocol = "HTTP"
-    vpc_id = {{ env_collection.vpc_resource_address }}.id
-    target_type = "ip"
-
-    health_check {
-        path = "{{ service.settings.system.health_check }}"
-        {% if service.settings.system.health_check_enabled %}
-        matcher = "200-399"
-        {% else %}
-        matcher = "200-499"
-        {% endif %}
-        interval = 10
-        healthy_threshold = 2
-        unhealthy_threshold = 9
-    }
-
-    lifecycle {
-        create_before_destroy = true
-    }
-}
+{% include "partials/service/backend/alb_target_group.tf.j2"%}
 
 {% if service.settings.scheduled_tasks %}
 {% include "partials/service/backend/scheduled_tasks.tf.j2" %}
