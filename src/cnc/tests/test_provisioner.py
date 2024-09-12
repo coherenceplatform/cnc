@@ -360,6 +360,7 @@ class AWSProvisionStageOneServiceServerlessOneResourceDynamoDBOneDatabaseTest(
         self.assertEqual(len(self.resources["aws_dynamodb_table"]), 1)
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
+        self.assertEqual(len(self.resources["aws_vpc"]), None)
 
 
 class AWSProvisionStageOneServiceServerlessOneDatabaseTest(AWSProvisionStageTestBase):

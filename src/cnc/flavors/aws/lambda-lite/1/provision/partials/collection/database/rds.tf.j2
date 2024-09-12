@@ -29,10 +29,8 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
     engine_version = "{{ resource.settings.version }}"
     username = "{{ resource.settings.username }}"
     password = "{{ resource.settings.database_password }}"
-    {% if not resource.settings.public %} 
     db_subnet_group_name = "${aws_db_subnet_group.{{ resource.instance_name }}.id}"
     vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db.id]
-    {% endif %}
     skip_final_snapshot = true
     allow_major_version_upgrade = true
     storage_encrypted = true
@@ -137,13 +135,17 @@ resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
 }
 
 resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
+    {% if not resource.settings.public %}
     vpc_id = aws_vpc.{{ environment.name }}_{{environment.collection.instance_name}}.id
+    {% endif %}
     name = "{{ resource.instance_name }}-db-access"
     description = "Allow access to RDS"
 }
 
 resource "aws_security_group" "{{ resource.instance_name }}_db" {
+    {% if not resource.settings.public %}
     vpc_id = aws_vpc.{{ environment.name }}_{{environment.collection.instance_name}}.id
+    {% endif %}
     name = "{{ resource.instance_name }}-db"
     description = "RDS Security Group"
 
