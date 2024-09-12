@@ -153,7 +153,11 @@ resource "aws_s3_bucket_website_configuration" "{{ service.instance_name }}_webs
     }
 
     error_document {
-        key = "{{ service.settings.url_path.lstrip('/') }}index.html"
+        {% if service.settings.url_path.lstrip('/') %}
+        key = "{{ service.settings.url_path.lstrip('/').rstrip('/') }}/index.html"
+        {% else %}
+        key = "index.html"
+        {% endif %}
     }
 }
 

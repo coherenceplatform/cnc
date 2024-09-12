@@ -74,7 +74,7 @@ You can customize the task definition (you can also do the same thing for any ot
 
 # Adding Datadog Sidecar
 
-One common use would be adding APM sidecars. You coulod do similar for any other provider or OSS project. What you would do is:
+One common use would be adding APM sidecars. You could do similar for any other provider or OSS project. What you would do is:
 
 Add this to `environments.yml`:
 
