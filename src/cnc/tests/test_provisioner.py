@@ -367,15 +367,29 @@ class AWSProvisionStageOneServiceServerlessOneResourceDynamoDBOneDatabaseTest(
 class AWSProvisionStageOneServiceServerlessOneDatabaseTest(AWSProvisionStageTestBase):
     fixture_name = "serverless-1-service-1-db"
     env_data_filepath = "environments_serverless_1_service_1_db.yml"
-    @pytest.mark.parametrize("instance", self.resources.get("aws_db_instance", []))
     def test_tf_is_valid(self):
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
         self.assertEqual(self.resources.get("aws_vpc"), None)
         self.assertEqual(len(self.resources["aws_security_group"]), 2)
-        # db_instances = self.resources.get("aws_db_instance", [])        
-        # for instance in db_instances:
-        assert instance.get("publicly_accessible", False), f"DB instance {instance.get('id')} is not publicly accessible"
+        db_instances = self.resources.get("aws_db_instance", [])
+
+        for instance in db_instances:
+
+            # Assuming instance is a string in the format "aws_db_instance.<id>"
+
+            instance_id = instance.split(".")[-1]
+
+            # Use the instance_id to access the publicly_accessible attribute
+
+            # This assumes that the publicly_accessible attribute is stored in a separate dictionary
+
+            # with the instance_id as the key
+
+            publicly_accessible = self.manager.get_publicly_accessible(instance_id)
+
+            assert publicly_accessible, f"DB instance {instance_id} is not publicly accessible"
+
 
 
 
