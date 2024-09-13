@@ -1,4 +1,5 @@
 from unittest.mock import patch
+import yaml
 
 from .base_test_class import CNCBaseTestCase
 from cnc.models import Application
@@ -7,6 +8,24 @@ from cnc.constants import EnvironmentVariableTypes
 from cnc.logger import get_logger
 
 log = get_logger(__name__)
+
+
+class InvalidServiceTypeForFlavorTestCase(CNCBaseTestCase):
+    fixture_name = "backend-1-service-invalid"
+
+    def test_invalid_service_type_for_flavor(self):
+
+        with open("environments.yml") as parsed_data:
+            env_yml_data = yaml.safe_load(parsed_data)
+
+        self.assertRaises(
+            ValueError,
+            Application.model_validate,
+            env_yml_data,
+            context={
+                "config_file_path": "cnc.yml",
+            },
+        )
 
 
 class ServiceProviderLinksTestCase(CNCBaseTestCase):

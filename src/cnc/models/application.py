@@ -17,6 +17,14 @@ from cnc.logger import get_logger
 
 log = get_logger(__name__)
 
+SUPPORTED_SERVICES_FOR_FLAVOR = {
+    "run": ["backend", "frontend", "database", "cache", "object_storage"],
+    "gke": ["backend", "frontend", "database", "cache", "object_storage"],
+    "run-lite": ["backend", "frontend", "database", "cache", "object_storage"],
+    "ecs": ["backend", "frontend", "database", "cache", "object_storage"],
+    "lambda-lite": ["serverless", "dynamodb"],
+}
+
 
 class TemplateConfig(BaseModel):
     template_directory: Optional[str] = None
@@ -86,6 +94,20 @@ class Application(BaseModel):
                             )
 
                         url_paths.append(service.settings.url_path)
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_service_types(self):
+        for collection in self.collections:
+            allowed_service_types = SUPPORTED_SERVICES_FOR_FLAVOR.get(self.flavor, [])
+
+            for environment in collection.environments:
+                for service in environment.services:
+                    if service.settings.type not in allowed_service_types:
+                        raise ValueError(
+                            f"Unsupported service type {self.settings.type} for flavor {self.environment.collection.application.flavor}"
+                        )
 
         return self
 
