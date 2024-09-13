@@ -21,15 +21,6 @@ from cnc.logger import get_logger
 log = get_logger(__name__)
 
 
-SUPPORTED_SERVICES_FOR_FLAVOR = {
-    "run": ["backend", "frontend", "database", "cache", "object_storage"],
-    "gke": ["backend", "frontend", "database", "cache", "object_storage"],
-    "run-lite": ["backend", "frontend", "database", "cache", "object_storage"],
-    "ecs": ["backend", "frontend", "database", "cache", "object_storage"],
-    "lambda-lite": ["serverless", "dynamodb"],
-}
-
-
 class PlatformBuildSettings(BaseModel):
     machine_type: str
 
@@ -113,15 +104,6 @@ class AppConfig(BaseModel):
             service.settings.config = self
 
         return self
-
-    @model_validator(mode="after")
-    def verify_service_type(self):
-        if not self.settings.type in SUPPORTED_SERVICES_FOR_FLAVOR.get(
-            self.environment.collection.application.flavor, []
-        ):
-            raise ValueError(
-                f"Unsupported service type {self.settings.type} for flavor {self.environment.collection.application.flavor}"
-            )
 
     @property
     def resources(self):
