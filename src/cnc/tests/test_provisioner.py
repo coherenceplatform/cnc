@@ -360,7 +360,7 @@ class AWSProvisionStageOneServiceServerlessOneResourceDynamoDBOneDatabaseTest(
         self.assertEqual(len(self.resources["aws_dynamodb_table"]), 1)
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
-        self.assertEqual(len(self.resources["aws_vpc"]), None)
+        self.assertIsNone(self.resources["aws_vpc"])
         self.assertEqual(len(self.resources["aws_security_group"]), 2)
 
 
@@ -371,7 +371,7 @@ class AWSProvisionStageOneServiceServerlessOneDatabaseTest(AWSProvisionStageTest
     def test_tf_is_valid(self):
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
-        self.assertEqual(len(self.resources["aws_vpc"]), None)
+        self.assertIsNone(self.resources["aws_vpc"])
         self.assertEqual(len(self.resources["aws_security_group"]), 2)
 
 
@@ -396,7 +396,7 @@ class AWSProvisionStageOneServiceServerlessTwoResourceDynamoDBTwoDatabaseTest(
         self.assertEqual(len(self.resources["aws_dynamodb_table"]), 2)
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 2)
-        self.assertEqual(len(self.resources["aws_vpc"]), None)
+        self.assertIsNone(self.resources["aws_vpc"])
         self.assertEqual(len(self.resources["aws_security_group"]), 4)
 
 
@@ -412,7 +412,7 @@ class AWSProvisionStageOneServiceServerlessTwoResourceDynamoDBTwoDatabaseTest(
         self.assertEqual(len(self.resources["aws_dynamodb_table"]), 2)
         self.assertEqual(len(self.resources["aws_lambda_function"]), 2)
         self.assertEqual(len(self.resources["aws_db_instance"]), 2)
-        self.assertEqual(len(self.resources["aws_vpc"]), None)
+        self.assertIsNone(self.resources["aws_vpc"])
         self.assertEqual(len(self.resources["aws_security_group"]), 4)
 
 
