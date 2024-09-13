@@ -29,7 +29,9 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
     engine_version = "{{ resource.settings.version }}"
     username = "{{ resource.settings.username }}"
     password = "{{ resource.settings.database_password }}"
+{% if not resource.settings.public %}
     db_subnet_group_name = "${aws_db_subnet_group.{{ resource.instance_name }}.id}"
+{% endif %}
     vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db.id]
     skip_final_snapshot = true
     allow_major_version_upgrade = true
@@ -162,12 +164,14 @@ resource "aws_iam_role_policy" "{{ resource.instance_name }}_db_proxy" {
 
 {% endif %} # if resource.settings.use_db_proxy
 
+{% if not resource.settings.public %}
+
 resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
     name = "{{ resource.instance_name }}"
     description = "RDS subnet group"
     subnet_ids = concat(aws_subnet.{{environment.name}}_{{environment.collection.instance_name}}_private[*].id)
 }
-
+{% endif %}
 resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
     {% if not resource.settings.public %}
     vpc_id = aws_vpc.{{ environment.name }}_{{environment.collection.instance_name}}.id
