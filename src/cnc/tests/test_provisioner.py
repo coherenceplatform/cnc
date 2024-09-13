@@ -373,6 +373,8 @@ class AWSProvisionStageOneServiceServerlessOneDatabaseTest(AWSProvisionStageTest
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
         self.assertEqual(self.resources.get("aws_vpc"), None)
         self.assertEqual(len(self.resources["aws_security_group"]), 2)
+        print("database resource")
+        print(self.resources.get("aws_db_instance"))
 
 
 class AWSProvisionStageOneServiceServerlessTwoDatabaseTest(AWSProvisionStageTestBase):
