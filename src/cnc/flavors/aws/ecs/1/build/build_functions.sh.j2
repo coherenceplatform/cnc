@@ -131,7 +131,25 @@ push_{{ service.name }}_image_tags () {
 verify_{{ service.name }}_image_exists () {
     echo -e "\\nSkipping image build - using existing image."
     echo -e "\\nVerifying image exists...\\n"
-    docker manifest inspect {{ service.image_for_tag(builder.tag_for_service(service.name)) }}
+
+    IMAGE="{{ service.image_for_tag(builder.tag_for_service(service.name)) }}"
+
+    # Enable Docker experimental features
+    export DOCKER_CLI_EXPERIMENTAL=enabled
+
+    # Check if the image exists and get its manifest
+    if ! MANIFEST=$(docker manifest inspect $IMAGE 2>/dev/null); then
+        echo "Error: Image $IMAGE does not exist or cannot be accessed."
+        exit 1
+    fi
+
+    # Check if the image supports AMD64 architecture
+    if ! echo "$MANIFEST" | jq -e '.manifests[] | select(.platform.architecture == "amd64")' > /dev/null; then
+        echo "Error: Image $IMAGE does not support AMD64 architecture."
+        exit 1
+    fi
+
+    echo "Image $IMAGE exists and supports AMD64 architecture."
 }
 {% endif %}
 
