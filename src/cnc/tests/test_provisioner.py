@@ -367,13 +367,17 @@ class AWSProvisionStageOneServiceServerlessOneResourceDynamoDBOneDatabaseTest(
 class AWSProvisionStageOneServiceServerlessOneDatabaseTest(AWSProvisionStageTestBase):
     fixture_name = "serverless-1-service-1-db"
     env_data_filepath = "environments_serverless_1_service_1_db.yml"
-
+    
     def test_tf_is_valid(self):
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
         self.assertEqual(self.resources.get("aws_vpc"), None)
         self.assertEqual(len(self.resources["aws_security_group"]), 2)
-        self.assertEqual(self.resources.get("aws_db_instance"["publicly_accessible"] ),True )
+        db_instances = self.resources.get("aws_db_instance", [])        
+        for instance in db_instances:
+            assert instance.get("publicly_accessible", False), f"DB instance {instance.get('id')} is not publicly accessible"
+
+
 
 class AWSProvisionStageOneServiceServerlessTwoDatabaseTest(AWSProvisionStageTestBase):
     fixture_name = "serverless-1-service-2-db"
