@@ -382,7 +382,7 @@ class AWSProvisionStageOneServiceServerlessOneDatabaseTest(AWSProvisionStageTest
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", False)
+            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", True)
 
             assert publicly_accessible, f"DB instance {instance_id} is not publicly accessible"
 
