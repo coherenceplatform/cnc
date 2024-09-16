@@ -538,7 +538,7 @@ class AWSProvisionStageOneBackendOneServerlessTwoDatabaseTest(
         self.assertEqual(len(self.resources["aws_ecs_service"]), 1)
         self.assertEqual(len(self.resources["aws_vpc"]), 1)
         self.assertEqual(len(self.resources["aws_lb_target_group"]), 1)
-          db_instances = self.resources.get("aws_db_instance", [])
+        db_instances = self.resources.get("aws_db_instance", [])
 
         for instance in db_instances:
 
@@ -565,7 +565,7 @@ class AWSProvisionStageOneBackendTwoServerlessTwoDatabaseTwoDynamoTest(
         self.assertEqual(len(self.resources["aws_ecs_service"]), 1)
         self.assertEqual(len(self.resources["aws_vpc"]), 1)
         self.assertEqual(len(self.resources["aws_dynamodb_table"]), 2)
-          db_instances = self.resources.get("aws_db_instance", [])
+        db_instances = self.resources.get("aws_db_instance", [])
 
         for instance in db_instances:
 
@@ -616,7 +616,7 @@ class AWSProvisionStageTwoBackendTwoServerlessTwoDatabaseTest(
         self.assertEqual(len(self.resources["aws_lambda_function"]), 2)
         self.assertEqual(len(self.resources["aws_db_instance"]), 2)
         self.assertEqual(len(self.resources["aws_ecs_service"]), 2)
-          db_instances = self.resources.get("aws_db_instance", [])
+        db_instances = self.resources.get("aws_db_instance", [])
 
         for instance in db_instances:
 
