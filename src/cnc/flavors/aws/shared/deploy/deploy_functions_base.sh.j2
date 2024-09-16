@@ -17,7 +17,7 @@ run_pre_build_commands () {
 login_to_registries () {
     echo -e \\nLogging into Amazon ECR...\\n
     aws ecr get-login-password --region {{ environment.collection.region }} | \
-    docker login -u AWS --password-stdin {{ service.image_registry_url().split('/')[0] }}
+    docker login -u AWS --password-stdin {{ service.managed_image_registry_url().split('/')[0] }}
 
     echo -e \\nLogging into dockerhub...\\n
     docker login -u ${DOCKER_USERNAME:-$CO_DOCKER_USERNAME} -p ${DOCKER_PASSWORD:-$CO_DOCKER_PASSWORD}
