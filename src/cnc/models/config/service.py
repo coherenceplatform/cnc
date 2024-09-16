@@ -482,6 +482,9 @@ class Service(BaseModel):
                 image = _split[0]
             return image
 
+        return self.managed_image_registry_url(run=run, region=region)
+
+    def managed_image_registry_url(self, run=False, region=None):
         _run_string = "-run" if run else ""
         region = region or self.config.environment.collection.region
 
