@@ -3,6 +3,7 @@ x-cnc:
   - name: db2
     type: database
     version: 15
+    public: false
     engine: postgres
 
 services:
@@ -23,4 +24,5 @@ services:
     x-cnc:
       type: database
       version: 15
+      public: false
     image: postgres:15

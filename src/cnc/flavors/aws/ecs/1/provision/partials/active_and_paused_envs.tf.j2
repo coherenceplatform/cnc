@@ -32,6 +32,7 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
     skip_final_snapshot = true
     allow_major_version_upgrade = true
     storage_encrypted = true
+    publicly_accessible = {% if resource.settings.public %} true {% else %} false {% endif %}
 
     {%- if resource.settings.db_name %}
     db_name = "{{ resource.settings.db_name }}"

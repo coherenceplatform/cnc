@@ -10,6 +10,7 @@ services:
     x-cnc:
       type: database
       version: 15
+      public: false
     image: postgres
 
   lambda1:
@@ -30,6 +31,7 @@ services:
     x-cnc:
       type: database
       version: 15
+      public: false
     image: postgres
 
   lambda2:
