@@ -1,0 +1,6 @@
+{%- for item in service.insecure_environment_items %}
+{{ item.name }}={{ item.value }}
+{%- endfor %}
+{%- for secret in service.environment_secrets %}
+{{ secret.name }}={{ secret.secret_id }}
+{%- endfor %}

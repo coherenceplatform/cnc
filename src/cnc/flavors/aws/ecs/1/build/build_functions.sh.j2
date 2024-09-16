@@ -67,9 +67,18 @@ send_{{ service.name }}_status_hook () {
 {% endblock %}
 
 {% block render_functions %}
+{{ render_template("env_vars.sh.j2", "{}_env_vars.env".format(service.name)) }}
 {% endblock %}
 
 {% block build_functions %}
+log_{{ service.name }}_variables () {
+    echo -e "\\nLogging {{ service.name }} variables...\\n"
+    echo -e "Values that are stored as secrets are not displayed here. They have been replaced with their corresponding secret identifiers.\\n"
+
+  env_vars_file="{{ builder.rendered_files_path }}/{{ service.name }}_env_vars.env"
+  cat $env_vars_file
+}
+
 {% if not service.image %}
 build_{{ service.name }}_image () {
 {% if builder.file_exists(service.build.dockerfile) or (not service.build.dockerfile_is_default) %}

@@ -26,6 +26,8 @@ send_{{ service.name }}_status_hook 0 "working"
 
 {% block build_commands %}
 
+log_{{ service.name }}_variables
+
 {%- if service.image %}
 verify_{{ service.name }}_image_exists
 {%- else %}
