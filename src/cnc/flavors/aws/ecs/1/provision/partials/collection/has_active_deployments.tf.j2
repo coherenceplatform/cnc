@@ -73,49 +73,24 @@ data "aws_ami" "amazon-linux-2" {
  }
 }
 
-# First, declare the data source
-data "aws_ec2_instance_type_offerings" "available" {
-  filter {
-    name   = "instance-type"
-    values = ["t3.micro", "t2.micro", "t3a.micro"]  # Add more instance types as needed
-  }
-
-  filter {
-    name   = "location"
-    values = [data.aws_availability_zones.available.names[0]]  # Using the first AZ, adjust if needed
-  }
-
-  location_type = "availability-zone"
-}
-
-# Local to choose the instance type
-locals {
-  available_instance_types = tolist(data.aws_ec2_instance_type_offerings.available.instance_types)
-  chosen_instance_type     = length(local.available_instance_types) > 0 ? local.available_instance_types[0] : "t3.micro"
-}
-
-# Updated instance resource
 resource "aws_instance" "{{ env_collection.instance_name }}_bastion" {
-  ami           = data.aws_ami.amazon-linux-2.id
-  instance_type = local.chosen_instance_type
-  subnet_id     = element(concat(
-    local.public_subnet_ids,
-    length(local.public_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_public.*.id,
-  ), 0)
-  associate_public_ip_address = true
-  iam_instance_profile        = aws_iam_instance_profile.{{ env_collection.instance_name }}_bastion.name
-  vpc_security_group_ids      = [
-    aws_security_group.{{ env_collection.instance_name }}_default.id,
-    aws_security_group.{{ env_collection.instance_name }}_ecs.id,
-    aws_security_group.{{ env_collection.instance_name }}_db_access.id,
-    aws_security_group.{{ env_collection.instance_name }}_cache_access.id
-  ]
-  tags = {
-    Name = "{{ env_collection.instance_name }}-bastion"
-  }
-  lifecycle {
-    create_before_destroy = true
-  }
+    ami           = data.aws_ami.amazon-linux-2.id
+    instance_type = "t3.micro"
+    subnet_id = element(concat(
+        local.public_subnet_ids,
+        length(local.public_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_public.*.id,
+    ), 0)
+    associate_public_ip_address = true
+    iam_instance_profile = aws_iam_instance_profile.{{ env_collection.instance_name }}_bastion.name
+    vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id, aws_security_group.{{ env_collection.instance_name }}_db_access.id, aws_security_group.{{ env_collection.instance_name }}_cache_access.id]
+
+    tags = {
+        Name = "{{ env_collection.instance_name }}-bastion"
+    }
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }
 
 output "bastion_instance_id" {

@@ -21,6 +21,8 @@ login_to_registries
 
 {% block build_commands %}
 
+log_{{ service.name }}_variables
+
 {%- if service.image %}
 verify_{{ service.name }}_image_exists
 {%- else %}

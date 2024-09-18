@@ -48,6 +48,7 @@ send_{{ service.name }}_status_hook () {
 {% endblock %}
 
 {% block render_functions %}
+{{ render_template("env_vars.sh.j2", "{}_env_vars.env".format(service.name)) }}
 {% endblock %}
 
 {% block build_functions %}
@@ -55,6 +56,14 @@ verify_{{ service.name }}_image_exists () {
     echo -e "\\nSkipping image build - using existing image."
     echo -e "\\nVerifying image exists...\\n"
     docker manifest inspect {{ service.image_for_tag(builder.tag_for_service(service.name)) }}
+}
+
+log_{{ service.name }}_variables () {
+    echo -e "\\nLogging {{ service.name }} variables...\\n"
+    echo -e "Values that are stored as secrets are not displayed here. They have been replaced with their corresponding secret identifiers.\\n"
+
+  env_vars_file="{{ builder.rendered_files_path }}/{{ service.name }}_env_vars.env"
+  cat $env_vars_file
 }
 
 {% if not service.image %}
