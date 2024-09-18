@@ -25,6 +25,7 @@ resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_snapshot_load
 {% endif %} {# if env_collection.load_database_snapshot #}
 
 {# {% if env_collection.frontend_services %}{% endif %}if env_collection.frontend_services #}
+{% include "partials/collection/s3_gateway_endpoint.tf.j2" %}
 
 {% if env_collection.backend_services %}
 {% include "partials/collection/vpc_configuration.tf.j2" %}

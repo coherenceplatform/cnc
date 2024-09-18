@@ -1,0 +1,31 @@
+{# S3 Gateway Endpoint #}
+resource "aws_vpc_endpoint" "{{ env_collection.instance_name }}_s3_gateway" {
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+    service_name      = "com.amazonaws.{{ env_collection.region }}.s3"
+    vpc_endpoint_type = "Gateway"
+    route_table_ids = [
+        aws_route_table.{{ env_collection.instance_name }}_private.id,
+        aws_route_table.{{ env_collection.instance_name }}_public.id
+    ]
+
+    policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+        {
+            Sid    = "AllowECRImageLayerPulls"
+            Effect = "Allow"
+            Principal = "*"
+            Action = [
+                "s3:GetObject"
+            ]
+            Resource = [
+                "arn:aws:s3:::prod-{{ env_collection.region }}-starport-layer-bucket/*"
+            ]
+        }
+        ]
+    })
+
+    tags = {
+        Name = "s3-gateway-endpoint-ecr"
+    }
+}
