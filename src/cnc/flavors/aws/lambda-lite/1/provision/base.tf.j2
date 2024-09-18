@@ -29,9 +29,9 @@ terraform {
 {% block vpc %}
 {% endblock vpc %}
 
-{% block lambda %}
-{% include "partials/collection/lambda/lambda.tf.j2" %}
-{% endblock lambda %}
+{#% block lambda %#}
+{#% include "partials/collection/lambda/lambda.tf.j2" %#}
+{#% endblock lambda %#}
 
 {% block lambda_shared %}
 {% include "partials/collection/lambda_shared/lambda.tf.j2" %}

@@ -223,9 +223,8 @@ class ServerlessServiceSettings(BaseServiceSettings):
     handler: Optional[str] = "function.lambda_handler"
     runtime: Optional[str] = "python3.12"
     secrets_mode: Optional[Literal["arn", "plaintext"]] = "plaintext"
-
     cdn: Optional[ServerlessCDNConfig] = Field(default_factory=ServerlessCDNConfig)
-
+    # lite: Optional[bool] = True
     @property
     def is_web(self):
         return True

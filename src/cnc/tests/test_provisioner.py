@@ -367,6 +367,7 @@ class AWSProvisionStageOneServiceServerlessOneResourceDynamoDBOneDatabaseTest(
 class AWSProvisionStageOneServiceServerlessOneDatabaseTest(AWSProvisionStageTestBase):
     fixture_name = "serverless-1-service-1-db"
     env_data_filepath = "environments_serverless_1_service_1_db.yml"
+
     def test_tf_is_valid(self):
         self.assertEqual(len(self.resources["aws_lambda_function"]), 1)
         self.assertEqual(len(self.resources["aws_db_instance"]), 1)
@@ -382,10 +383,17 @@ class AWSProvisionStageOneServiceServerlessOneDatabaseTest(AWSProvisionStageTest
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", {})
+            publicly_accessible = (
+                self.resources.get("aws_db_instance", {})
+                .get(instance_id, {})
+                .get("publicly_accessible", {})
+            )
 
-            self.assertEqual(publicly_accessible, True, f"DB instance {instance_id} is not publicly accessible")
-
+            self.assertEqual(
+                publicly_accessible,
+                True,
+                f"DB instance {instance_id} is not publicly accessible",
+            )
 
 
 class AWSProvisionStageOneServiceServerlessTwoDatabaseTest(AWSProvisionStageTestBase):
@@ -406,11 +414,17 @@ class AWSProvisionStageOneServiceServerlessTwoDatabaseTest(AWSProvisionStageTest
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", {})
+            publicly_accessible = (
+                self.resources.get("aws_db_instance", {})
+                .get(instance_id, {})
+                .get("publicly_accessible", {})
+            )
 
-            self.assertEqual(publicly_accessible, True, f"DB instance {instance_id} is not publicly accessible")
-
-
+            self.assertEqual(
+                publicly_accessible,
+                True,
+                f"DB instance {instance_id} is not publicly accessible",
+            )
 
 
 class AWSProvisionStageOneServiceServerlessTwoResourceDynamoDBTwoDatabaseTest(
@@ -435,11 +449,17 @@ class AWSProvisionStageOneServiceServerlessTwoResourceDynamoDBTwoDatabaseTest(
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", {})
+            publicly_accessible = (
+                self.resources.get("aws_db_instance", {})
+                .get(instance_id, {})
+                .get("publicly_accessible", {})
+            )
 
-            self.assertEqual(publicly_accessible, True, f"DB instance {instance_id} is not publicly accessible")
-
-
+            self.assertEqual(
+                publicly_accessible,
+                True,
+                f"DB instance {instance_id} is not publicly accessible",
+            )
 
 
 class AWSProvisionStageOneServiceServerlessTwoResourceDynamoDBTwoDatabaseTest(
@@ -464,11 +484,17 @@ class AWSProvisionStageOneServiceServerlessTwoResourceDynamoDBTwoDatabaseTest(
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", {})
+            publicly_accessible = (
+                self.resources.get("aws_db_instance", {})
+                .get(instance_id, {})
+                .get("publicly_accessible", {})
+            )
 
-            self.assertEqual(publicly_accessible, True, f"DB instance {instance_id} is not publicly accessible")
-
-
+            self.assertEqual(
+                publicly_accessible,
+                True,
+                f"DB instance {instance_id} is not publicly accessible",
+            )
 
 
 class AWSProvisionStageOneBackendOneServerlessOneDatabaseTest(
@@ -493,9 +519,17 @@ class AWSProvisionStageOneBackendOneServerlessOneDatabaseTest(
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", {})
+            publicly_accessible = (
+                self.resources.get("aws_db_instance", {})
+                .get(instance_id, {})
+                .get("publicly_accessible", {})
+            )
 
-            self.assertEqual(publicly_accessible, False, f"DB instance {instance_id} is publicly accessible")
+            self.assertEqual(
+                publicly_accessible,
+                False,
+                f"DB instance {instance_id} is publicly accessible",
+            )
 
 
 class AWSProvisionStageOneBackendOneServerlessOneDatabaseOneDynamoTest(
@@ -521,9 +555,17 @@ class AWSProvisionStageOneBackendOneServerlessOneDatabaseOneDynamoTest(
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", {})
+            publicly_accessible = (
+                self.resources.get("aws_db_instance", {})
+                .get(instance_id, {})
+                .get("publicly_accessible", {})
+            )
 
-            self.assertEqual(publicly_accessible, False, f"DB instance {instance_id} is publicly accessible")
+            self.assertEqual(
+                publicly_accessible,
+                False,
+                f"DB instance {instance_id} is publicly accessible",
+            )
 
 
 class AWSProvisionStageOneBackendOneServerlessTwoDatabaseTest(
@@ -548,9 +590,17 @@ class AWSProvisionStageOneBackendOneServerlessTwoDatabaseTest(
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", {})
+            publicly_accessible = (
+                self.resources.get("aws_db_instance", {})
+                .get(instance_id, {})
+                .get("publicly_accessible", {})
+            )
 
-            self.assertEqual(publicly_accessible, False, f"DB instance {instance_id} is publicly accessible")
+            self.assertEqual(
+                publicly_accessible,
+                False,
+                f"DB instance {instance_id} is publicly accessible",
+            )
 
 
 class AWSProvisionStageOneBackendTwoServerlessTwoDatabaseTwoDynamoTest(
@@ -575,9 +625,17 @@ class AWSProvisionStageOneBackendTwoServerlessTwoDatabaseTwoDynamoTest(
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", {})
+            publicly_accessible = (
+                self.resources.get("aws_db_instance", {})
+                .get(instance_id, {})
+                .get("publicly_accessible", {})
+            )
 
-            self.assertEqual(publicly_accessible, False, f"DB instance {instance_id} is publicly accessible")
+            self.assertEqual(
+                publicly_accessible,
+                False,
+                f"DB instance {instance_id} is publicly accessible",
+            )
 
 
 class AWSProvisionStageTwoBackendTwoServerlessTwoDatabaseTwoDynamoTest(
@@ -601,9 +659,17 @@ class AWSProvisionStageTwoBackendTwoServerlessTwoDatabaseTwoDynamoTest(
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", {})
+            publicly_accessible = (
+                self.resources.get("aws_db_instance", {})
+                .get(instance_id, {})
+                .get("publicly_accessible", {})
+            )
 
-            self.assertEqual(publicly_accessible, False, f"DB instance {instance_id} is publicly accessible")
+            self.assertEqual(
+                publicly_accessible,
+                False,
+                f"DB instance {instance_id} is publicly accessible",
+            )
 
 
 class AWSProvisionStageTwoBackendTwoServerlessTwoDatabaseTest(
@@ -626,7 +692,14 @@ class AWSProvisionStageTwoBackendTwoServerlessTwoDatabaseTest(
 
             # Use the instance_id to access the publicly_accessible attribute
 
-            publicly_accessible = self.resources.get("aws_db_instance", {}).get(instance_id, {}).get("publicly_accessible", {})
+            publicly_accessible = (
+                self.resources.get("aws_db_instance", {})
+                .get(instance_id, {})
+                .get("publicly_accessible", {})
+            )
 
-            self.assertEqual(publicly_accessible, False, f"DB instance {instance_id} is publicly accessible")
-
+            self.assertEqual(
+                publicly_accessible,
+                False,
+                f"DB instance {instance_id} is publicly accessible",
+            )
