@@ -52,7 +52,7 @@ resource "aws_iam_role_policy_attachment" "{{ service.instance_name }}" {
   role       = aws_iam_role.{{ service.instance_name }}.name
   policy_arn = aws_iam_policy.{{ service.instance_name }}.arn
 }
-{%# if service.lite == False #%}
+{% if service.settings.lite == False %}
 
 ################################################################################
 # Security Group for Lambda
@@ -76,7 +76,7 @@ resource "aws_security_group" "{{ service.instance_name }}_lambda" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-{# %- endif %#}
+{%- endif %}
 
 ################################################################################
 # Lambda Function
@@ -107,7 +107,7 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
       )
     }
   }
-{%#  if service.lite == False #%}
+{% if service.settings.lite == False %}
   vpc_config {
       security_group_ids = [aws_security_group.{{ service.instance_name }}_lambda.id]
       subnet_ids = concat(
@@ -115,7 +115,7 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
         aws_subnet.{{ env_collection.instance_name }}_private[*].id
       )
     }
-{%# endif #%}
+{% endif %}
   dynamic "logging_config" {
     for_each = can(regex("^[a-zA-Z0-9_\\-/#.]+$", local.{{ service.instance_name }}_lambda_log_group)) ? [true] : []
     content {

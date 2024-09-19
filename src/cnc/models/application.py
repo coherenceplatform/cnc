@@ -21,7 +21,7 @@ SUPPORTED_SERVICES_FOR_FLAVOR = {
     "run": ["backend", "frontend", "database", "cache", "object_storage"],
     "gke": ["backend", "frontend", "database", "cache", "object_storage"],
     "run-lite": ["backend", "frontend", "database", "cache", "object_storage"],
-    "ecs": ["backend", "frontend", "database", "cache","serverless", "object_storage"],
+    "ecs": ["backend", "frontend", "database", "cache", "dynamodb","serverless", "object_storage"],
     "lambda-lite": ["serverless", "dynamodb", "database"],
 }
 
