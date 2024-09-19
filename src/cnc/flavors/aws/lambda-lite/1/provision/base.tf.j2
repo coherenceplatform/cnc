@@ -19,7 +19,7 @@ terraform {
 {% if env_collection.database_resources %}
 {% for environment in env_collection.valid_environments %}
 {% block active_and_paused_envs scoped %}
-{% include "partials/collection/database/rds.tf.j2" %}
+{% include "partials/collection/database_shared/rds.tf.j2" %}
 {% endblock active_and_paused_envs %}
 {% endfor %}
 {% endif %}

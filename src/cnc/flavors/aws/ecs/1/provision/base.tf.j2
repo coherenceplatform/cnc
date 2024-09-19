@@ -39,6 +39,16 @@ terraform {
 {% endif %}
 {% endblock collection_level_resources %}
 
+{% if env_collection.database_resources %}
+{% for environment in env_collection.valid_environments %}
+{% block active_and_paused_envs scoped %}
+{% block database_shared %}
+{% include "partials/collection/database_shared/rds.tf.j2" %}
+{% endblock database_shared %}
+{% endblock active_and_paused_envs %}
+{% endfor %}
+{% endif %}
+
 {# Per active environment #}
 {% for environment in env_collection.active_environments %}
 {% block environment_resources scoped %}
@@ -56,13 +66,6 @@ terraform {
 {% block service_resources scoped %}
 {% include "partials/service_level_resources.tf.j2" %}
 {% endblock service_resources %}
-{% endfor %}
-
-{# Per active|paused environment #}
-{% for environment in env_collection.valid_environments %}
-{% block active_and_paused_envs scoped %}
-{% include "partials/active_and_paused_envs.tf.j2" %}
-{% endblock active_and_paused_envs %}
 {% endfor %}
 
 {% block custom scoped %}
