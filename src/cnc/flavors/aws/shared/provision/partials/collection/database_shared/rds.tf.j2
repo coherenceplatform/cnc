@@ -167,25 +167,35 @@ resource "aws_iam_role_policy" "{{ resource.instance_name }}_db_proxy" {
 resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
     name = "{{ resource.instance_name }}"
     description = "RDS subnet group"
-    subnet_ids = concat(aws_subnet.{{environment.collection.instance_name}}_private[*].id)
+    subnet_ids = {% if environment.vpc.create_vpc %}
+      concat(aws_subnet.{{environment.collection.instance_name}}_private[*].id)
+    {% else %}
+      data.aws_subnet_ids.{{environment.collection.instance_name}}_private.ids
+    {% endif %}
 }
-{% endif %}
+
 resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
     {% if not resource.settings.public %}
+    {% if environment.vpc.create_vpc %}
     vpc_id = aws_vpc.{{environment.collection.instance_name}}.id
+    {% else %}
+    vpc_id = data.aws_vpc.{{environment.collection.instance_name}}.id
+    {% endif %}
     {% endif %}
     name = "{{ resource.instance_name }}-db-access"
     description = "Allow access to RDS"
 }
 
 resource "aws_security_group" "{{ resource.instance_name }}_db" {
-    {% if not resource.settings.public %}
+    {% if environment.vpc.create_vpc %}
     vpc_id = aws_vpc.{{environment.collection.instance_name}}.id
+    {% else %}
+    vpc_id = data.aws_vpc.{{environment.collection.instance_name}}.id
     {% endif %}
     name = "{{ resource.instance_name }}-db"
     description = "RDS Security Group"
 
-    # Allow traffic from the SG
+    # Allow traffic from the SG itself
     ingress {
         from_port = 0
         to_port = 0
@@ -193,41 +203,60 @@ resource "aws_security_group" "{{ resource.instance_name }}_db" {
         self = true
     }
 
-{% if has_mysql_db %}
+    # Ingress rules based on database type
+    {% if has_mysql_db %}
     ingress {
         from_port = 3306
         to_port = 3306
         protocol = "tcp"
-        security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
+        source_security_group_id = aws_security_group.{{ resource.instance_name }}_db_access.id
     }
-{% endif %}
+    {% endif %}
 
-{% if has_mssql_db %}
+    {% if has_mssql_db %}
     ingress {
         from_port = 1433
         to_port = 1433
         protocol = "tcp"
-        security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
+        source_security_group_id = aws_security_group.{{ resource.instance_name }}_db_access.id
     }
-{% endif %}
+    {% endif %}
 
-{% if has_postgres_db %}
+    {% if has_postgres_db %}
     ingress {
         from_port = 5432
         to_port = 5432
         protocol = "tcp"
-        security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
+        source_security_group_id = aws_security_group.{{ resource.instance_name }}_db_access.id
     }
-{% endif %}
+    {% endif %}
 
-{% if resource.settings.public %}
+    # Public access if resource is public
+    {% if resource.settings.public %}
+    {% if has_mysql_db %}
+    ingress {
+        from_port = 3306
+        to_port = 3306
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+    {% elif has_mssql_db %}
+    ingress {
+        from_port = 1433
+        to_port = 1433
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+    {% elif has_postgres_db %}
     ingress {
         from_port = 5432
         to_port = 5432
         protocol = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
     }
-{% endif %} 
+    {% endif %}
+    {% endif %}
+
     # Outbound internet access
     egress {
         from_port = 0
@@ -236,6 +265,7 @@ resource "aws_security_group" "{{ resource.instance_name }}_db" {
         cidr_blocks = ["0.0.0.0/0"]
     }
 }
+
 
 {% endif %} # if environment.active_deployment
 {% endif %} # if resource.is_database
