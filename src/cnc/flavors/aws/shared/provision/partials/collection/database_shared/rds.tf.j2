@@ -83,8 +83,8 @@
             vpc_security_group_ids  = [aws_security_group.{{ resource.instance_name }}_db.id]
             role_arn                = aws_iam_role.{{ resource.instance_name }}_db_proxy.arn
             vpc_subnet_ids          = concat(
-              aws_subnet.{{ environment.collection.instance_name }}_public[*].id,
-              aws_subnet.{{ environment.collection.instance_name }}_private[*].id
+              aws_subnet.{{ env_collection.instance_name }}_public[*].id,
+              aws_subnet.{{ env_collection.instance_name }}_private[*].id
             )
             auth {
               auth_scheme = "SECRETS"
@@ -152,13 +152,13 @@
           resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
             name        = "{{ resource.instance_name }}"
             description = "RDS subnet group"
-            subnet_ids  = concat(aws_subnet.{{ environment.collection.instance_name }}_private[*].id)
+            subnet_ids  = concat(aws_subnet.{{ env_collection.instance_name }}_private[*].id)
           }
         {% endif %}
 
         resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
           {% if not resource.settings.public %}
-            vpc_id = aws_vpc.{{ environment.collection.instance_name }}.id
+            vpc_id = aws_vpc.{{ env_collection.instance_name }}.id
           {% endif %}
           name        = "{{ resource.instance_name }}-db-access"
           description = "Allow access to RDS"
@@ -166,7 +166,7 @@
 
         resource "aws_security_group" "{{ resource.instance_name }}_db" {
           {% if not resource.settings.public %}
-            vpc_id = aws_vpc.{{ environment.collection.instance_name }}.id
+            vpc_id = aws_vpc.{{ env_collection.instance_name }}.id
           {% endif %}
           name        = "{{ resource.instance_name }}-db"
           description = "RDS Security Group"
