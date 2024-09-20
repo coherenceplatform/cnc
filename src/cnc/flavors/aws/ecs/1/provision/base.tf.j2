@@ -37,7 +37,6 @@ terraform {
 {% include "partials/collection/dynamodb_shared/outputs.tf.j2" %}
 {% endblock dynamodb_shared %}
 {% endif %}
-{% endblock collection_level_resources %}
 
 {% if env_collection.database_resources %}
 {% for environment in env_collection.valid_environments %}
@@ -48,6 +47,7 @@ terraform {
 {% endblock active_and_paused_envs %}
 {% endfor %}
 {% endif %}
+{% endblock collection_level_resources %}
 
 {# Per active environment #}
 {% for environment in env_collection.active_environments %}

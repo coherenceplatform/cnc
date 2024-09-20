@@ -1,15 +1,11 @@
 {% for environment in env_collection.active_environments %}
   {% for resource in environment.database_resources %}
     {% if resource.is_database %}
-
-      # Banco de Dados: {{ resource.instance_name }}
-
       {% if not resource.settings.use_existing %}
-
         resource "aws_secretsmanager_secret" "{{ resource.instance_name }}_db_creds" {
           name = "{{ resource.settings.database_credentials_secret_id }}"
           {% if environment.is_preview %}
-          recovery_window_in_days = 0
+            recovery_window_in_days = 0
           {% endif %}
         }
 
@@ -22,174 +18,212 @@
         }
 
         {% if environment.active_deployment %}
-        resource "aws_db_instance" "{{ resource.instance_name }}" {
-          identifier              = "{{ resource.settings.identifier }}"
-          allocated_storage       = "20"
-          engine                  = "{{ resource.settings.engine }}"
-          instance_class          = "{{ resource.settings.instance_class }}"
-          multi_az                = false
-          publicly_accessible     = {% if resource.settings.public %} true {% else %} false {% endif %}
-          engine_version          = "{{ resource.settings.version }}"
-          username                = "{{ resource.settings.username }}"
-          password                = "{{ resource.settings.database_password }}"
-          {% if not resource.settings.public %}
-          db_subnet_group_name    = aws_db_subnet_group.{{ resource.instance_name }}.id
-          {% endif %}
-          vpc_security_group_ids  = [aws_security_group.{{ resource.instance_name }}_db.id]
-          skip_final_snapshot     = true
-          allow_major_version_upgrade = true
-          storage_encrypted       = true
-
-          {%- if resource.settings.db_name %}
-          db_name = "{{ resource.settings.db_name }}"
-          {%- endif %}
-
-          {%- if resource.settings.license_model %}
-          license_model = "license-included"
-          {% endif %}
-
-          {%- if not resource.settings.minor_version_specified %}
-          auto_minor_version_upgrade  = false
-          {%- endif %}
-
-          {%- if environment.is_static %}
-          deletion_protection = true
-          {%- endif %}
-
-          provisioner "local-exec" {
-            command = "sleep 60"
+          resource "aws_db_instance" "{{ resource.instance_name }}" {
+            identifier              = "{{ resource.settings.identifier }}"
+            allocated_storage       = "20"
+            engine                  = "{{ resource.settings.engine }}"
+            instance_class          = "{{ resource.settings.instance_class }}"
+            multi_az                = false
+            publicly_accessible     = {% if resource.settings.public %} true {% else %} false {% endif %}
+            engine_version          = "{{ resource.settings.version }}"
+            username                = "{{ resource.settings.username }}"
+            password                = "{{ resource.settings.database_password }}"
+            {% if not resource.settings.public %}
+              db_subnet_group_name = "${aws_db_subnet_group.{{ resource.instance_name }}.id}"
+            {% endif %}
+            vpc_security_group_ids  = [aws_security_group.{{ resource.instance_name }}_db.id]
+            skip_final_snapshot     = true
+            allow_major_version_upgrade = true
+            storage_encrypted       = true
+            {%- if resource.settings.db_name %}
+              db_name = "{{ resource.settings.db_name }}"
+            {%- endif %}
+            {%- if resource.settings.license_model %}
+              license_model = "license-included"
+            {% endif %}
+            {%- if not resource.settings.minor_version_specified %}
+              auto_minor_version_upgrade = false
+            {%- endif %}
+            {%- if environment.is_static %}
+              deletion_protection = true
+            {%- endif %}
+            provisioner "local-exec" {
+              command = "sleep 60"
+            }
+            lifecycle {
+              ignore_changes = [allocated_storage, instance_class]
+            }
           }
-
-          lifecycle {
-            ignore_changes = [allocated_storage, instance_class]
-          }
-        }
         {% endif %}
       {% else %}
-
         data "aws_secretsmanager_secret" "{{ resource.instance_name }}_db_creds" {
           name = "{{ resource.settings.use_existing.secret_id }}"
         }
 
         {% if not resource.settings.use_existing.cluster_mode %}
-        data "aws_db_instance" "{{ resource.instance_name }}" {
-          db_instance_identifier = "{{ resource.settings.identifier }}"
-        }
+          data "aws_db_instance" "{{ resource.instance_name }}" {
+            db_instance_identifier = "{{ resource.settings.identifier }}"
+          }
         {% elif not resource.settings.use_db_proxy %}
-        data "aws_rds_cluster" "{{ resource.instance_name }}" {
-          cluster_identifier = "{{ resource.settings.identifier }}"
-        }
+          data "aws_rds_cluster" "{{ resource.instance_name }}" {
+            cluster_identifier = "{{ resource.settings.identifier }}"
+          }
         {% endif %}
-
       {% endif %}
 
       {% if environment.active_deployment %}
+        output "{{ resource.settings.host_output_id }}" {
+          value = "{{ resource.settings.host_output_tf_value_string }}"
+        }
 
-      output "{{ resource.settings.host_output_id }}" {
-        value = "{{ resource.settings.host_output_tf_value_string }}"
-      }
+        {% if resource.settings.use_db_proxy %}
+          resource "aws_db_proxy" "{{ resource.instance_name }}" {
+            name                    = "{{ resource.instance_name }}"
+            engine_family           = "{{ resource.settings.engine_family }}"
+            vpc_security_group_ids  = [aws_security_group.{{ resource.instance_name }}_db.id]
+            role_arn                = aws_iam_role.{{ resource.instance_name }}_db_proxy.arn
+            vpc_subnet_ids          = concat(
+              aws_subnet.{{ environment.collection.instance_name }}_public[*].id,
+              aws_subnet.{{ environment.collection.instance_name }}_private[*].id
+            )
+            auth {
+              auth_scheme = "SECRETS"
+              secret_arn  = {% if resource.settings.use_existing %}data.{% endif %}aws_secretsmanager_secret.{{ resource.instance_name }}_db_creds.arn
+              iam_auth    = "DISABLED"
+            }
+            depends_on = [
+              aws_iam_role.{{ resource.instance_name }}_db_proxy,
+              aws_iam_role_policy.{{ resource.instance_name }}_db_proxy
+            ]
+            provisioner "local-exec" {
+              command = "sleep 60"
+            }
+          }
 
-      {% if resource.settings.use_db_proxy %}
-      # Configurações adicionais para DB Proxy (se aplicável)
-      # (Código para o DB Proxy aqui)
-      {% endif %}
+          resource "aws_db_proxy_default_target_group" "{{ resource.instance_name }}" {
+            db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
+          }
 
-      {% endif %}  # Fim de environment.active_deployment
+          resource "aws_db_proxy_target" "{{ resource.instance_name }}" {
+            {%- if resource.settings.cluster_mode %}
+              db_cluster_identifier = "{{ resource.settings.identifier }}"
+            {%- else %}
+              db_instance_identifier = "{{ resource.settings.identifier }}"
+            {%- endif %}
+            db_proxy_name     = aws_db_proxy.{{ resource.instance_name }}.name
+            target_group_name = aws_db_proxy_default_target_group.{{ resource.instance_name }}.name
+          }
 
-      {% if not resource.settings.public %}
+          data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_role" {
+            statement {
+              effect  = "Allow"
+              actions = ["sts:AssumeRole"]
+              principals {
+                type        = "Service"
+                identifiers = ["rds.amazonaws.com"]
+              }
+            }
+          }
 
-      resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
-        name        = "{{ resource.instance_name }}"
-        description = "RDS subnet group"
-        subnet_ids  = [
-          {% if environment.vpc is defined and environment.vpc.create_vpc %}
-            {% for i in range(environment.vpc.private_subnets | length) %}
-              aws_subnet.{{ environment.collection.instance_name }}_private[{{ i }}].id{{ "," if not loop.last }}
-            {% endfor %}
-          {% else %}
-            {% for id in data.aws_subnet_ids.{{ environment.collection.instance_name }}_private.ids %}
-              "{{ id }}"{{ "," if not loop.last }}
-            {% endfor %}
+          resource "aws_iam_role" "{{ resource.instance_name }}_db_proxy" {
+            name               = "{{ resource.instance_name }}-db-proxy"
+            assume_role_policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_role.json}"
+            provisioner "local-exec" {
+              command = "sleep 30"
+            }
+          }
+
+          data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_policy" {
+            statement {
+              effect    = "Allow"
+              resources = ["*"]
+              actions   = ["secretsManager:GetSecretValue"]
+            }
+          }
+
+          resource "aws_iam_role_policy" "{{ resource.instance_name }}_db_proxy" {
+            name   = "{{ resource.instance_name }}-db-proxy"
+            policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_policy.json}"
+            role   = "${aws_iam_role.{{ resource.instance_name }}_db_proxy.id}"
+          }
+        {% endif %}  # if resource.settings.use_db_proxy
+
+        {% if not resource.settings.public %}
+          resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
+            name        = "{{ resource.instance_name }}"
+            description = "RDS subnet group"
+            subnet_ids  = concat(aws_subnet.{{ environment.collection.instance_name }}_private[*].id)
+          }
+        {% endif %}
+
+        resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
+          {% if not resource.settings.public %}
+            vpc_id = aws_vpc.{{ environment.collection.instance_name }}.id
           {% endif %}
-        ]
-      }
-
-      {% endif %}  # Fim de not resource.settings.public
-
-      resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
-        {% if environment.vpc is defined and environment.vpc.create_vpc %}
-        vpc_id = aws_vpc.{{ environment.collection.instance_name }}.id
-        {% elif environment.vpc is defined %}
-        vpc_id = data.aws_vpc.{{ environment.collection.instance_name }}.id
-        {% else %}
-        vpc_id = "{{ environment.vpc_id }}"
-        {% endif %}
-        name        = "{{ resource.instance_name }}-db-access"
-        description = "Allow access to RDS"
-      }
-
-      resource "aws_security_group" "{{ resource.instance_name }}_db" {
-        {% if environment.vpc is defined and environment.vpc.create_vpc %}
-        vpc_id = aws_vpc.{{ environment.collection.instance_name }}.id
-        {% elif environment.vpc is defined %}
-        vpc_id = data.aws_vpc.{{ environment.collection.instance_name }}.id
-        {% else %}
-        vpc_id = "{{ environment.vpc_id }}"
-        {% endif %}
-        name        = "{{ resource.instance_name }}-db"
-        description = "RDS Security Group"
-
-        # Permitir tráfego interno
-        ingress {
-          from_port   = 0
-          to_port     = 0
-          protocol    = "-1"
-          self        = true
+          name        = "{{ resource.instance_name }}-db-access"
+          description = "Allow access to RDS"
         }
 
-        # Regras de ingresso com base no tipo de banco de dados
-        {% if resource.settings.engine == "mysql" %}
-        ingress {
-          from_port       = 3306
-          to_port         = 3306
-          protocol        = "tcp"
-          security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
-        }
-        {% elif resource.settings.engine == "sqlserver" %}
-        ingress {
-          from_port       = 1433
-          to_port         = 1433
-          protocol        = "tcp"
-          security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
-        }
-        {% elif resource.settings.engine == "postgres" %}
-        ingress {
-          from_port       = 5432
-          to_port         = 5432
-          protocol        = "tcp"
-          security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
-        }
-        {% endif %}
+        resource "aws_security_group" "{{ resource.instance_name }}_db" {
+          {% if not resource.settings.public %}
+            vpc_id = aws_vpc.{{ environment.collection.instance_name }}.id
+          {% endif %}
+          name        = "{{ resource.instance_name }}-db"
+          description = "RDS Security Group"
 
-        # Acesso público, se aplicável
-        {% if resource.settings.public %}
-        ingress {
-          from_port   = {% if resource.settings.engine == "mysql" %}3306{% elif resource.settings.engine == "sqlserver" %}1433{% elif resource.settings.engine == "postgres" %}5432{% endif %}
-          to_port     = {% if resource.settings.engine == "mysql" %}3306{% elif resource.settings.engine == "sqlserver" %}1433{% elif resource.settings.engine == "postgres" %}5432{% endif %}
-          protocol    = "tcp"
-          cidr_blocks = ["0.0.0.0/0"]
-        }
-        {% endif %}
+          # Allow traffic from the SG
+          ingress {
+            from_port = 0
+            to_port   = 0
+            protocol  = "-1"
+            self      = true
+          }
 
-        # Saída para a Internet
-        egress {
-          from_port   = 0
-          to_port     = 0
-          protocol    = "-1"
-          cidr_blocks = ["0.0.0.0/0"]
-        }
-      }
+          {% if has_mysql_db %}
+            ingress {
+              from_port       = 3306
+              to_port         = 3306
+              protocol        = "tcp"
+              security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
+            }
+          {% endif %}
 
-    {% endif %}  {# Fim de resource.is_database #}
-  {% endfor %}  {# Fim do loop de resources #}
-{% endfor %}  {# Fim do loop de environments #}
+          {% if has_mssql_db %}
+            ingress {
+              from_port       = 1433
+              to_port         = 1433
+              protocol        = "tcp"
+              security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
+            }
+          {% endif %}
+
+          {% if has_postgres_db %}
+            ingress {
+              from_port       = 5432
+              to_port         = 5432
+              protocol        = "tcp"
+              security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
+            }
+          {% endif %}
+
+          {% if resource.settings.public %}
+            ingress {
+              from_port   = 5432
+              to_port     = 5432
+              protocol    = "tcp"
+              cidr_blocks = ["0.0.0.0/0"]
+            }
+          {% endif %}
+
+          # Outbound internet access
+          egress {
+            from_port   = 0
+            to_port     = 0
+            protocol    = "-1"
+            cidr_blocks = ["0.0.0.0/0"]
+          }
+        }
+      {% endif %}  # if environment.active_deployment
+    {% endif %}  # if resource.is_database
+  {% endfor %}  {# for resource in environment.database_resources #}
+{% endfor %}  {# for environment in env_collection.active_environments #}
