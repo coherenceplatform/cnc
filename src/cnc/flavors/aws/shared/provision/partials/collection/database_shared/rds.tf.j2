@@ -160,7 +160,9 @@ resource "aws_iam_role_policy" "{{ resource.instance_name }}_db_proxy" {
     role = "${aws_iam_role.{{ resource.instance_name }}_db_proxy.id}"
 }
 
-{% endif %} # if resource.settings.use_db_proxy
+{% endif %}  # if resource.settings.use_db_proxy
+
+{% endif %}  # Fechando o if environment.active_deployment
 
 {% if not resource.settings.public %}
 
@@ -174,13 +176,13 @@ resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
     {% endif %}
 }
 
+{% endif %}  # if not resource.settings.public
+
 resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
-    {% if not resource.settings.public %}
     {% if environment.vpc.create_vpc %}
     vpc_id = aws_vpc.{{environment.collection.instance_name}}.id
     {% else %}
     vpc_id = data.aws_vpc.{{environment.collection.instance_name}}.id
-    {% endif %}
     {% endif %}
     name = "{{ resource.instance_name }}-db-access"
     description = "Allow access to RDS"
@@ -233,28 +235,28 @@ resource "aws_security_group" "{{ resource.instance_name }}_db" {
 
     # Public access if resource is public
     {% if resource.settings.public %}
-    {% if has_mysql_db %}
-    ingress {
-        from_port = 3306
-        to_port = 3306
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-    {% elif has_mssql_db %}
-    ingress {
-        from_port = 1433
-        to_port = 1433
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-    {% elif has_postgres_db %}
-    ingress {
-        from_port = 5432
-        to_port = 5432
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-    {% endif %}
+        {% if has_mysql_db %}
+        ingress {
+            from_port = 3306
+            to_port = 3306
+            protocol = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]
+        }
+        {% elif has_mssql_db %}
+        ingress {
+            from_port = 1433
+            to_port = 1433
+            protocol = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]
+        }
+        {% elif has_postgres_db %}
+        ingress {
+            from_port = 5432
+            to_port = 5432
+            protocol = "tcp"
+            cidr_blocks = ["0.0.0.0/0"]
+        }
+        {% endif %}
     {% endif %}
 
     # Outbound internet access
@@ -266,8 +268,6 @@ resource "aws_security_group" "{{ resource.instance_name }}_db" {
     }
 }
 
-
-{% endif %} # if environment.active_deployment
-{% endif %} # if resource.is_database
-{% endfor %}{# {% for resource in environment.resources_by_type("database") %} #}
-{% endfor %}{# {% for environment in env_collection.active_environments %} #}
+{% endif %}  # if resource.is_database
+{% endfor %}  {# for resource in environment.database_resources #}
+{% endfor %}  {# for environment in env_collection.active_environments #}
