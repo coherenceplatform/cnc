@@ -172,7 +172,7 @@ resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
 {% endif %}
 resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
     {% if not resource.settings.public %}
-    vpc_id = aws_vpc.{{environment.collection.instance_name}}.id
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
     {% endif %}
     name = "{{ resource.instance_name }}-db-access"
     description = "Allow access to RDS"
@@ -180,7 +180,7 @@ resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
 
 resource "aws_security_group" "{{ resource.instance_name }}_db" {
     {% if not resource.settings.public %}
-    vpc_id = aws_vpc.{{environment.collection.instance_name}}.id
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
     {% endif %}
     name = "{{ resource.instance_name }}-db"
     description = "RDS Security Group"
