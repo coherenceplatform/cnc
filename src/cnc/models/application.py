@@ -106,8 +106,7 @@ class Application(BaseModel):
                 for service in environment.services:
                     if service.settings.type not in allowed_service_types:
                         raise ValueError(
-                            f"Unsupported service type '{service.settings.type}' for flavor '{self.flavor}' "
-                            f"in environment '{environment.name}' of collection '{collection.name}'"
+                            f"Unsupported service type {service.settings.type} for flavor {self.environment.collection.application.flavor}"
                         )
         return self
 
