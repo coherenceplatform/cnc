@@ -84,7 +84,7 @@ output "{{ resource.settings.host_output_id }}" {
 }
 {% if resource.settings.use_db_proxy %}
 resource "aws_db_proxy" "{{ resource.instance_name }}" {
-    name = "{{ resource.instance_name [:60}}"
+    name = "{{ resource.instance_name [:60]}}"
     engine_family = "{{ resource.settings.engine_family }}"
     vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db.id]
     role_arn = aws_iam_role.{{ resource.instance_name }}_db_proxy.arn
