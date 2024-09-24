@@ -11,7 +11,7 @@ resource "aws_secretsmanager_secret" "{{environment.collection.instance_name[:29
     {% endif %}
 }
 
-resource "aws_secretsmanager_secret_version" "{{ resource.instance_name }}_db_creds" {
+resource "aws_secretsmanager_secret_version" "{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db_creds" {
     secret_id = aws_secretsmanager_secret.{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db_creds.id
     secret_string = jsonencode({
         username = "{{ resource.settings.username }}"
@@ -31,9 +31,9 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
     username = "{{ resource.settings.username }}"
     password = "{{ resource.settings.database_password }}"
 {% if not resource.settings.public %}
-    db_subnet_group_name = "${aws_db_subnet_group.{{ resource.instance_name }}.id}"
+    db_subnet_group_name = "${aws_db_subnet_group.environment.collection.instance_name[:29]_{{ resource.instance_name }}.id}"
 {% endif %}
-    vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db.id]
+    vpc_security_group_ids = [aws_security_group.{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db.id]
     skip_final_snapshot = true
     allow_major_version_upgrade = true
     storage_encrypted = true
@@ -88,8 +88,8 @@ output "{{ resource.settings.host_output_id }}" {
 resource "aws_db_proxy" "{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}" {
     name = "{{ resource.instance_name }}"
     engine_family = "{{ resource.settings.engine_family }}"
-    vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db.id]
-    role_arn = aws_iam_role.{{ resource.instance_name }}_db_proxy.arn
+    vpc_security_group_ids = [aws_security_group.{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db.id]
+    role_arn = aws_iam_role.{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db_proxy.arn
 
     vpc_subnet_ids = concat(
       aws_subnet.{{environment.collection.instance_name}}_public[*].id,
@@ -103,8 +103,8 @@ resource "aws_db_proxy" "{{environment.collection.instance_name[:29]}}_{{ resour
     }
 
     depends_on = [
-        aws_iam_role.{{ resource.instance_name }}_db_proxy,
-        aws_iam_role_policy.{{ resource.instance_name }}_db_proxy
+        aws_iam_role.{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db_proxy,
+        aws_iam_role_policy.{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db_proxy
     ]
 
     provisioner "local-exec" {
@@ -156,8 +156,8 @@ data "aws_iam_policy_document" "{{environment.collection.instance_name[:29]}}_{{
 
 resource "aws_iam_role_policy" "{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db_proxy" {
     name = "{{ resource.instance_name }}-db-proxy"
-    policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_policy.json}"
-    role = "${aws_iam_role.{{ resource.instance_name }}_db_proxy.id}"
+    policy = "${data.aws_iam_policy_document.{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db_proxy_service_policy.json}"
+    role = "${aws_iam_role.{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db_proxy.id}"
 }
 
 {% endif %} # if resource.settings.use_db_proxy
