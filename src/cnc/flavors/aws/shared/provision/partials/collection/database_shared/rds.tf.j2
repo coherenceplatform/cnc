@@ -4,15 +4,15 @@
 
 {% if not resource.settings.use_existing %}
 
-resource "aws_secretsmanager_secret" "{{environment.name}}_{{ resource.instance_name }}_db_creds" {
+resource "aws_secretsmanager_secret" "{{ resource.instance_name }}_db_creds" {
     name = "{{ resource.settings.database_credentials_secret_id }}"
     {% if environment.is_preview %}
     recovery_window_in_days = 0
     {% endif %}
 }
 
-resource "aws_secretsmanager_secret_version" "{{environment.name}}_{{ resource.instance_name }}_db_creds" {
-    secret_id = aws_secretsmanager_secret.{{environment.name}}_{{ resource.instance_name }}_db_creds.id
+resource "aws_secretsmanager_secret_version" "{{ resource.instance_name }}_db_creds" {
+    secret_id = aws_secretsmanager_secret.{{ resource.instance_name }}_db_creds.id
     secret_string = jsonencode({
         username = "{{ resource.settings.username }}"
         password = "{{ resource.settings.database_password }}"
@@ -31,9 +31,9 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
     username = "{{ resource.settings.username }}"
     password = "{{ resource.settings.database_password }}"
 {% if not resource.settings.public %}
-    db_subnet_group_name = "${aws_db_subnet_group.{{environment.name}}_{{ resource.instance_name }}.id}"
+    db_subnet_group_name = "${aws_db_subnet_group.{{ resource.instance_name }}.id}"
 {% endif %}
-    vpc_security_group_ids = [aws_security_group.{{environment.name}}_{{ resource.instance_name }}_db.id]
+    vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db.id]
     skip_final_snapshot = true
     allow_major_version_upgrade = true
     storage_encrypted = true
@@ -65,7 +65,7 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
 {% endif %}
 {% else %}
 
-data "aws_secretsmanager_secret" "{{environment.name}}_{{ resource.instance_name }}_db_creds" {
+data "aws_secretsmanager_secret" "{{ resource.instance_name }}_db_creds" {
     name = "{{ resource.settings.use_existing.secret_id }}"
 }
 {% if not resource.settings.use_existing.cluster_mode %}
@@ -85,11 +85,11 @@ output "{{ resource.settings.host_output_id }}" {
     value = "{{ resource.settings.host_output_tf_value_string }}"
 }
 {% if resource.settings.use_db_proxy %}
-resource "aws_db_proxy" "{{environment.name}}_{{ resource.instance_name }}" {
+resource "aws_db_proxy" "{{ resource.instance_name }}" {
     name = "{{ resource.instance_name }}"
     engine_family = "{{ resource.settings.engine_family }}"
-    vpc_security_group_ids = [aws_security_group.{{environment.name}}_{{ resource.instance_name }}_db.id]
-    role_arn = aws_iam_role.{{environment.name}}_{{ resource.instance_name }}_db_proxy.arn
+    vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db.id]
+    role_arn = aws_iam_role.{{ resource.instance_name }}_db_proxy.arn
 
     vpc_subnet_ids = concat(
       aws_subnet.{{environment.collection.instance_name}}_public[*].id,
@@ -98,13 +98,13 @@ resource "aws_db_proxy" "{{environment.name}}_{{ resource.instance_name }}" {
 
     auth {
         auth_scheme = "SECRETS"
-        secret_arn = {% if resource.settings.use_existing %}data.{% endif %}aws_secretsmanager_secret.{{environment.name}}_{{ resource.instance_name }}_db_creds.arn
+        secret_arn = {% if resource.settings.use_existing %}data.{% endif %}aws_secretsmanager_secret.{{ resource.instance_name }}_db_creds.arn
         iam_auth = "DISABLED"
     }
 
     depends_on = [
-        aws_iam_role.{{environment.name}}_{{ resource.instance_name }}_db_proxy,
-        aws_iam_role_policy.{{environment.name}}_{{ resource.instance_name }}_db_proxy
+        aws_iam_role.{{ resource.instance_name }}_db_proxy,
+        aws_iam_role_policy.{{ resource.instance_name }}_db_proxy
     ]
 
     provisioner "local-exec" {
@@ -112,21 +112,21 @@ resource "aws_db_proxy" "{{environment.name}}_{{ resource.instance_name }}" {
     }
 }
 
-resource "aws_db_proxy_default_target_group" "{{environment.name}}_{{ resource.instance_name }}" {
-    db_proxy_name = aws_db_proxy.{{environment.name}}_{{ resource.instance_name }}.name
+resource "aws_db_proxy_default_target_group" "{{ resource.instance_name }}" {
+    db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
 }
 
-resource "aws_db_proxy_target" "{{environment.name}}_{{ resource.instance_name }}" {
+resource "aws_db_proxy_target" "{{ resource.instance_name }}" {
     {%- if resource.settings.cluster_mode %}
     db_cluster_identifier = "{{ resource.settings.identifier }}"
     {%- else %}
     db_instance_identifier = "{{ resource.settings.identifier }}"
     {%- endif %}
-    db_proxy_name = aws_db_proxy.{{environment.name}}_{{ resource.instance_name }}.name
-    target_group_name = aws_db_proxy_default_target_group.{{environment.name}}_{{ resource.instance_name }}.name
+    db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
+    target_group_name = aws_db_proxy_default_target_group.{{ resource.instance_name }}.name
 }
 
-data "aws_iam_policy_document" "{{environment.name}}_{{ resource.instance_name }}_db_proxy_service_role" {
+data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_role" {
     statement {
         effect = "Allow"
         actions = ["sts:AssumeRole"]
@@ -137,16 +137,16 @@ data "aws_iam_policy_document" "{{environment.name}}_{{ resource.instance_name }
     }
 }
 
-resource "aws_iam_role" "{{environment.name}}_{{ resource.instance_name }}_db_proxy" {
+resource "aws_iam_role" "{{ resource.instance_name }}_db_proxy" {
     name = "{{ resource.instance_name }}-db-proxy"
-    assume_role_policy = "${data.aws_iam_policy_document.{{environment.name}}_{{ resource.instance_name }}_db_proxy_service_role.json}"
+    assume_role_policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_role.json}"
 
     provisioner "local-exec" {
         command = "sleep 30"
     }
 }
 
-data "aws_iam_policy_document" "{{environment.name}}_{{ resource.instance_name }}_db_proxy_service_policy" {
+data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_policy" {
     statement {
         effect = "Allow"
         resources = ["*"]
@@ -154,35 +154,35 @@ data "aws_iam_policy_document" "{{environment.name}}_{{ resource.instance_name }
     }
 }
 
-resource "aws_iam_role_policy" "{{environment.name}}_{{ resource.instance_name }}_db_proxy" {
+resource "aws_iam_role_policy" "{{ resource.instance_name }}_db_proxy" {
     name = "{{ resource.instance_name }}-db-proxy"
-    policy = "${data.aws_iam_policy_document.{{environment.name}}_{{ resource.instance_name }}_db_proxy_service_policy.json}"
-    role = "${aws_iam_role.{{environment.name}}_{{ resource.instance_name }}_db_proxy.id}"
+    policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_policy.json}"
+    role = "${aws_iam_role.{{ resource.instance_name }}_db_proxy.id}"
 }
 
 {% endif %} # if resource.settings.use_db_proxy
 
 {% if not resource.settings.public %}
 
-resource "aws_db_subnet_group" "{{environment.name}}_{{ resource.instance_name }}" {
+resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
     name = "{{ resource.instance_name }}"
     description = "RDS subnet group"
     subnet_ids = concat(aws_subnet.{{environment.collection.instance_name}}_private[*].id)
 }
 {% endif %}
-resource "aws_security_group" "{{environment.name}}_{{ resource.instance_name }}_db_access" {
+resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
     {% if not resource.settings.public %}
     vpc_id = {{ env_collection.vpc_resource_address }}.id
     {% endif %}
-    name = "{{environment.name}}_{{ resource.instance_name }}-db-access"
+    name = "{{ resource.instance_name }}-db-access"
     description = "Allow access to RDS"
 }
 
-resource "aws_security_group" "{{environment.name}}_{{ resource.instance_name }}_db" {
+resource "aws_security_group" "{{ resource.instance_name }}_db" {
     {% if not resource.settings.public %}
     vpc_id = {{ env_collection.vpc_resource_address }}.id
     {% endif %}
-    name = "{{environment.name}}_{{ resource.instance_name }}-db"
+    name = "{{ resource.instance_name }}-db"
     description = "RDS Security Group"
 
     # Allow traffic from the SG
@@ -198,7 +198,7 @@ resource "aws_security_group" "{{environment.name}}_{{ resource.instance_name }}
         from_port = 3306
         to_port = 3306
         protocol = "tcp"
-        security_groups = [aws_security_group.{{environment.name}}_{{ resource.instance_name }}_db_access.id]
+        security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
     }
 {% endif %}
 
@@ -207,7 +207,7 @@ resource "aws_security_group" "{{environment.name}}_{{ resource.instance_name }}
         from_port = 1433
         to_port = 1433
         protocol = "tcp"
-        security_groups = [aws_security_group.{{environment.name}}_{{ resource.instance_name }}_db_access.id]
+        security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
     }
 {% endif %}
 
@@ -216,7 +216,7 @@ resource "aws_security_group" "{{environment.name}}_{{ resource.instance_name }}
         from_port = 5432
         to_port = 5432
         protocol = "tcp"
-        security_groups = [aws_security_group.{{environment.name}}_{{ resource.instance_name }}_db_access.id]
+        security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
     }
 {% endif %}
 
