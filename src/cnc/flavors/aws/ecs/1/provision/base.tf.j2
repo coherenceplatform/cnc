@@ -23,24 +23,24 @@ terraform {
 {% endblock lambda %}
 
 {% block lambda_shared %}
-{% include "partials/collection/lambda_shared/lambda.tf.j2" %}
-{% include "partials/collection/lambda_shared/variables.tf.j2" %}
-{% include "partials/collection/lambda_shared/outputs.tf.j2" %}
+{% include "partials/collection/lambda/lambda.tf.j2" %}
+{% include "partials/collection/lambda/variables.tf.j2" %}
+{% include "partials/collection/lambda/outputs.tf.j2" %}
 
 {% endblock lambda_shared %}
 {% endif %}
 
 {% if env_collection.dynamodb_resources %}
 {% block dynamodb_shared %}
-{% include "partials/collection/dynamodb_shared/dynamodb.tf.j2" %}
-{% include "partials/collection/dynamodb_shared/variables.tf.j2" %}
-{% include "partials/collection/dynamodb_shared/outputs.tf.j2" %}
+{% include "partials/collection/dynamodb/dynamodb.tf.j2" %}
+{% include "partials/collection/dynamodb/variables.tf.j2" %}
+{% include "partials/collection/dynamodb/outputs.tf.j2" %}
 {% endblock dynamodb_shared %}
 {% endif %}
 
 {% if env_collection.database_resources %}
 {% block database_shared %}
-{% include "partials/collection/database_shared/rds.tf.j2" %}
+{% include "partials/collection/database/rds.tf.j2" %}
 {% endblock database_shared %}
 {% endif %}
 {% endblock collection_level_resources %}

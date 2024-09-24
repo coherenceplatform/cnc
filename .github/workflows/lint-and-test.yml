@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "feat/main-updated-combine-two-flavors" ]
   pull_request:
-    branches: [ "feat/main-updated-combine-two-flavors" ]
+    branches: [ "main" ]
 
 jobs:
   build:
