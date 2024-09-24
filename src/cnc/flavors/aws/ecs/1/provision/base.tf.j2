@@ -40,11 +40,11 @@ terraform {
 {% endblock collection_level_resources %}
 
 {% if env_collection.database_resources %}
-{% for environment in env_collection.valid_environments %}
+{# % for environment in env_collection.valid_environments % #}
 {% block database_shared %}
 {% include "partials/collection/database_shared/rds.tf.j2" %}
 {% endblock database_shared %}
-{% endfor %}
+{# % endfor % #}
 {% endif %}
 
 {# Per active environment #}
