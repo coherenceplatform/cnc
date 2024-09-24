@@ -31,7 +31,7 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
     username = "{{ resource.settings.username }}"
     password = "{{ resource.settings.database_password }}"
 {% if not resource.settings.public %}
-    db_subnet_group_name = "${aws_db_subnet_group.environment.collection.instance_name[:29]_{{ resource.instance_name }}.id}"
+    db_subnet_group_name = "${aws_db_subnet_group.{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}.id}"
 {% endif %}
     vpc_security_group_ids = [aws_security_group.{{environment.collection.instance_name[:29]}}_{{ resource.instance_name }}_db.id]
     skip_final_snapshot = true
