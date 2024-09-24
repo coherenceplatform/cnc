@@ -148,28 +148,28 @@
           }
         {% endif %}  # if resource.settings.use_db_proxy
 
-        {% if not resource.settings.public %}
-          resource "aws_db_subnet_group" "{{ resource.instance_name }}_{{ env_collection.instance_name }}" {
-            name        = "{{ resource.instance_name }}_{{ env_collection.instance_name }}"
-            description = "RDS subnet group"
-            subnet_ids  = concat(aws_subnet.{{ env_collection.instance_name }}_private[*].id)
-          }
-        {% endif %}
+{% if not resource.settings.public %}
 
-        resource "aws_security_group" "{{ resource.instance_name }}_{{ env_collection.instance_name }}_db_access" {
-          {% if not resource.settings.public %}
-            vpc_id = aws_vpc.{{ env_collection.instance_name }}.id
-          {% endif %}
-          name        = "{{ resource.instance_name }}_{{ env_collection.instance_name }}-db-access"
-          description = "Allow access to RDS"
-        }
+resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
+    name = "{{ resource.instance_name }}"
+    description = "RDS subnet group"
+    subnet_ids = concat(aws_subnet.{{environment.collection.instance_name}}_private[*].id)
+}
+{% endif %}
+resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
+    {% if not resource.settings.public %}
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+    {% endif %}
+    name = "{{ resource.instance_name }}-db-access"
+    description = "Allow access to RDS"
+}
 
-        resource "aws_security_group" "{{ resource.instance_name }}_{{ env_collection.instance_name }}_db" {
-          {% if not resource.settings.public %}
-            vpc_id = aws_vpc.{{ env_collection.instance_name }}.id
-          {% endif %}
-          name        = "{{ resource.instance_name }}_{{ env_collection.instance_name }}-db"
-          description = "RDS Security Group"
+resource "aws_security_group" "{{ resource.instance_name }}_db" {
+    {% if not resource.settings.public %}
+    vpc_id = {{ env_collection.vpc_resource_address }}.id
+    {% endif %}
+    name = "{{ resource.instance_name }}-db"
+    description = "RDS Security Group"
 
           # Allow traffic from the SG
           ingress {
