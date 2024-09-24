@@ -49,7 +49,7 @@ class AWSDatabaseResourceSettings(DatabaseResourceSettings):
             resource_type_fragment += "aws_db_instance"
 
         return "".join(
-            [f"{resource_type_fragment}.", f"{self.environment.instance_name}_",self.service.instance_name, ".endpoint}"]
+            [f"{resource_type_fragment}.", f"{self.env_collection.instance_name}_",self.service.instance_name, ".endpoint}"]
         )
 
     @property
