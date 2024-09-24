@@ -2,7 +2,7 @@ name: Lint and Test
 
 on:
   push:
-    branches: [ "rollback/tests" ]
+    branches: [ "feat/main-updated-combine-two-flavors" ]
   pull_request:
     branches: [ "feat/main-updated-combine-two-flavors" ]
 
