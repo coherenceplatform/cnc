@@ -21,7 +21,15 @@ SUPPORTED_SERVICES_FOR_FLAVOR = {
     "run": ["backend", "frontend", "database", "cache", "object_storage"],
     "gke": ["backend", "frontend", "database", "cache", "object_storage"],
     "run-lite": ["backend", "frontend", "database", "cache", "object_storage"],
-    "ecs": ["backend", "frontend", "database", "cache", "dynamodb","serverless", "object_storage"],
+    "ecs": [
+        "backend",
+        "frontend",
+        "database",
+        "cache",
+        "dynamodb",
+        "serverless",
+        "object_storage",
+    ],
     "lambda-lite": ["serverless", "dynamodb", "database"],
 }
 
@@ -109,7 +117,6 @@ class Application(BaseModel):
                             f"Unsupported service type {service.settings.type} for flavor {self.environment.collection.application.flavor}"
                         )
         return self
-
 
     # ------------------------------
     # Class methods
