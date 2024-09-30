@@ -24,12 +24,6 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         return False
 
     @property
-    def has_service_domains(self):
-        if self.application.flavor == "lambda-lite":
-            return True
-        return False
-
-    @property
     def hosted_zone_ns_records(self):
         return self.get_terraform_output("hosted_zone_ns_records")
 

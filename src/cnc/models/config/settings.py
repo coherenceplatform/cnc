@@ -130,10 +130,6 @@ class BaseServiceSettings(BaseModel):
         return False
 
     @property
-    def is_dynamodb(self):
-        return False
-
-    @property
     def is_cache(self):
         return False
 
