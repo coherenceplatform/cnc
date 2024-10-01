@@ -6,7 +6,7 @@
 # ALB Configuration
 ################################################################################
 resource "aws_lb_target_group" "{{ service.instance_name }}_tg" {
-  name        = "{{environment.collection.instance_name[:29]}}-tg"
+  name        = "{{service.instance_name[:29]}}-tg"
   target_type = "lambda"
   vpc_id = {{ env_collection.vpc_resource_address }}.id
 }
@@ -18,7 +18,7 @@ resource "aws_lb_target_group_attachment" "{{ service.instance_name }}_tg_attach
 
 resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
   listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_http.arn
-  priority     = 100
+  priority = {{ 1000 + lb_rules.priority }}
 
   action {
     type             = "forward"
@@ -27,7 +27,7 @@ resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
 
   condition {
     path_pattern {
-      values = ["/{{ service.instance_name }}/*"]
+      values = ["/{{ service.settings.url_path }}/*"]
     }
   }
 }

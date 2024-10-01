@@ -33,6 +33,15 @@ variable "{{ service.instance_name }}_runtime" {
     default     = "{{ service.settings.runtime | default('python3.12') }}"
 }
 
+  dynamic "environment" {
+    for_each = length(keys(var.{{ service.instance_name }}_lambda_variables)) == 0 ? [] : [true]
+    content {
+       variables = merge(
+        var.{{ service.instance_name }}_lambda_variables
+      )
+    }
+  }
+
 {% endif %}
 {% endfor %}
 {% endfor %}
