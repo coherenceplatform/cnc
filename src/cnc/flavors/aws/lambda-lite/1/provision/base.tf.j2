@@ -5,6 +5,7 @@ terraform {
   }
 }
 {% endblock %}
+{% set lb_rules = namespace(priority=1) %}
 
 {% if not output_only %}
 

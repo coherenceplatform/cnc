@@ -19,6 +19,7 @@ terraform {
 
 {% if env_collection.serverless_services %}
 {% block lambda %}
+{% set lb_rules = namespace(priority=1) %}
 {% include "partials/collection/lambda/config_alb.tf.j2"%}
 {% endblock lambda %}
 

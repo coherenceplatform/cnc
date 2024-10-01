@@ -30,7 +30,10 @@ resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
       values = ["/{{ service.settings.url_path }}/*"]
     }
   }
+  
 }
+{% set lb_rules.priority = lb_rules.priority + 1 %}
+
 
 resource "aws_lambda_permission" "{{ service.instance_name }}_alb_permission" {
   statement_id  = "AllowExecutionFromALB"
