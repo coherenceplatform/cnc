@@ -9,5 +9,4 @@ services:
     x-cnc:
       type: database
       version: 15
-       false
     image: postgres

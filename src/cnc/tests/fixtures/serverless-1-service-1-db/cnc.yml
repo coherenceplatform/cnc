@@ -2,7 +2,6 @@ services:
   app:
     x-cnc:
       type: serverless
-       true
     build:
       context: .
 
@@ -11,5 +10,4 @@ services:
       type: database
       version: 15
       use_db_proxy: False
-       True
     image: postgres

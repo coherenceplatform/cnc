@@ -10,14 +10,12 @@ services:
     x-cnc:
       type: database
       version: 15
-       false
     image: postgres
 
   db2:
     x-cnc:
       type: database
       version: 15
-       false
     image: postgres
 
   lambda1:

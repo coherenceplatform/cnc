@@ -2,14 +2,12 @@ services:
   app:
     x-cnc:
       type: serverless
-       true
     build:
       context: .
 
   app2:
     x-cnc:
       type: serverless
-       true
     build:
       context: .
 
