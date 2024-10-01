@@ -42,7 +42,7 @@ resource "aws_cloudwatch_event_target" "{{ service.instance_name }}_{{ task.name
         launch_type = "FARGATE"
 
         network_configuration {
-            security_groups = "${concat([aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id], [aws_security_group.{{ env_collection.instance_name }}_db_access.id], [aws_security_group.{{ env_collection.instance_name }}_cache_access.id])}"
+            security_groups = "${concat([aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id], [aws_security_group.{{env_collection.instance_name}}_db_access.id], [aws_security_group.{{ env_collection.instance_name }}_cache_access.id])}"
             subnets = concat(
                 local.private_subnet_ids,
                 length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id

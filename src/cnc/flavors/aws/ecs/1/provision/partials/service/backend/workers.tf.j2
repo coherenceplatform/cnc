@@ -31,7 +31,7 @@ resource "aws_ecs_service" "{{ service.instance_name }}_{{ worker.name }}" {
     depends_on = [aws_iam_role_policy.{{ env_collection.instance_name }}_ecs_task, aws_alb_target_group.{{ service.instance_name }}]
 
     network_configuration {
-        security_groups = "${concat([aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id], [aws_security_group.{{ env_collection.instance_name }}_db_access.id], [aws_security_group.{{ env_collection.instance_name }}_cache_access.id])}"
+        security_groups = "${concat([aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id], [aws_security_group.{{env_collection.instance_name}}_db_access.id], [aws_security_group.{{ env_collection.instance_name }}_cache_access.id])}"
         subnets = concat(
             local.private_subnet_ids,
             length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id

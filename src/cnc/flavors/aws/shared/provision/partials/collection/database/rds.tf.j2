@@ -24,14 +24,16 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
     engine = "{{ resource.settings.engine }}"
     instance_class = "{{ resource.settings.instance_class }}"
     multi_az = false
-    publicly_accessible = {% if resource.settings.public %} true {% else %} false {% endif %}
+    publicly_accessible = {% if environment.collection.application.flavor == 'lambda-lite' %} true {% else %} false {% endif %}
     engine_version = "{{ resource.settings.version }}"
     username = "{{ resource.settings.username }}"
     password = "{{ resource.settings.database_password }}"
-{% if not resource.settings.public %}
+{% if not environment.collection.application.flavor == 'lambda-lite' %}
     db_subnet_group_name = "${aws_db_subnet_group.{{ resource.instance_name }}.id}"
+    vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_db.id]
+  {% else %}
+  vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db_public.id]
 {% endif %}
-    vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db.id]
     skip_final_snapshot = true
     allow_major_version_upgrade = true
     storage_encrypted = true
@@ -82,11 +84,12 @@ data "aws_rds_cluster" "{{ resource.instance_name }}" {
 output "{{ resource.settings.host_output_id }}" {
     value = "{{ resource.settings.host_output_tf_value_string }}"
 }
+{% if not environment.collection.application.flavor == 'lambda-lite' %}
 {% if resource.settings.use_db_proxy %}
 resource "aws_db_proxy" "{{ resource.instance_name[:60] }}" {
     name = "{{ resource.instance_name [:60]}}"
     engine_family = "{{ resource.settings.engine_family }}"
-    vpc_security_group_ids = [aws_security_group.{{ resource.instance_name }}_db.id]
+    vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_db.id]
     role_arn = aws_iam_role.{{ resource.instance_name }}_db_proxy.arn
 
     vpc_subnet_ids = concat(
@@ -110,75 +113,87 @@ resource "aws_db_proxy" "{{ resource.instance_name[:60] }}" {
     }
 }
 
-          resource "aws_db_proxy_default_target_group" "{{ resource.instance_name }}" {
-            db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
-          }
-
-          resource "aws_db_proxy_target" "{{ resource.instance_name }}" {
-            {%- if resource.settings.cluster_mode %}
-              db_cluster_identifier = "{{ resource.settings.identifier }}"
-            {%- else %}
-              db_instance_identifier = "{{ resource.settings.identifier }}"
-            {%- endif %}
-            db_proxy_name     = aws_db_proxy.{{ resource.instance_name }}.name
-            target_group_name = aws_db_proxy_default_target_group.{{ resource.instance_name }}.name
-          }
-
-          data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_role" {
-            statement {
-              effect  = "Allow"
-              actions = ["sts:AssumeRole"]
-              principals {
-                type        = "Service"
-                identifiers = ["rds.amazonaws.com"]
-              }
-            }
-          }
-
-          resource "aws_iam_role" "{{ resource.instance_name }}_db_proxy" {
-            name               = "{{ resource.instance_name }}-db-proxy"
-            assume_role_policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_role.json}"
-            provisioner "local-exec" {
-              command = "sleep 30"
-            }
-          }
-
-          data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_policy" {
-            statement {
-              effect    = "Allow"
-              resources = ["*"]
-              actions   = ["secretsManager:GetSecretValue"]
-            }
-          }
-
-          resource "aws_iam_role_policy" "{{ resource.instance_name }}_db_proxy" {
-            name   = "{{ resource.instance_name }}-db-proxy"
-            policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_policy.json}"
-            role   = "${aws_iam_role.{{ resource.instance_name }}_db_proxy.id}"
-          }
-        {% endif %}  # if resource.settings.use_db_proxy
-
-{% if not resource.settings.public %}
-
-resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
-    name = "{{ resource.instance_name }}"
-    description = "RDS subnet group"
-    subnet_ids = concat(aws_subnet.{{environment.collection.instance_name}}_private[*].id)
+resource "time_sleep" "wait_for_proxy_role" {
+  depends_on = [aws_iam_role.{{ env_collection.instance_name }}_db_proxy, aws_iam_role_policy.{{ env_collection.instance_name }}_db_proxy]
+  create_duration = "60s"
 }
+
+resource "aws_iam_role" "{{ env_collection.instance_name }}_db_proxy" {
+    name = "{{ env_collection.instance_name }}-db-proxy"
+    assume_role_policy = "${data.aws_iam_policy_document.db_proxy_service_role.json}"
+}
+
+data "aws_iam_policy_document" "db_proxy_service_policy" {
+    statement {
+        effect = "Allow"
+        resources = ["*"]
+        actions = ["secretsManager:GetSecretValue"]
+    }
+}
+
+resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_db_proxy" {
+    name = "{{ env_collection.instance_name }}-db-proxy"
+    policy = "${data.aws_iam_policy_document.db_proxy_service_policy.json}"
+    role = "${aws_iam_role.{{ env_collection.instance_name }}_db_proxy.id}"
+}
+
+
+resource "aws_db_proxy_default_target_group" "{{ resource.instance_name }}" {
+  db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
+}
+
+resource "aws_db_proxy_target" "{{ resource.instance_name }}" {
+  {%- if resource.settings.cluster_mode %}
+    db_cluster_identifier = "{{ resource.settings.identifier }}"
+  {%- else %}
+    db_instance_identifier = "{{ resource.settings.identifier }}"
+  {%- endif %}
+  db_proxy_name     = aws_db_proxy.{{ resource.instance_name }}.name
+  target_group_name = aws_db_proxy_default_target_group.{{ resource.instance_name }}.name
+}
+
+data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["rds.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "{{ resource.instance_name }}_db_proxy" {
+  name               = "{{ resource.instance_name }}-db-proxy"
+  assume_role_policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_role.json}"
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_policy" {
+  statement {
+    effect    = "Allow"
+    resources = ["*"]
+    actions   = ["secretsManager:GetSecretValue"]
+  }
+}
+
+resource "aws_iam_role_policy" "{{ resource.instance_name }}_db_proxy" {
+  name   = "{{ resource.instance_name }}-db-proxy"
+  policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_policy.json}"
+  role   = "${aws_iam_role.{{ resource.instance_name }}_db_proxy.id}"
+}
+{% endif %}  # if resource.settings.use_db_proxy
 {% endif %}
-resource "aws_security_group" "{{ resource.instance_name }}_db_access" {
-    {% if not resource.settings.public %}
-    vpc_id = {{ env_collection.vpc_resource_address }}.id
-    {% endif %}
-    name = "{{ resource.instance_name }}-db-access"
+{% if environment.collection.application.flavor == 'lambda-lite' %}
+resource "aws_security_group" "{{resource.instance_name}}_db_public_access" {
+    name = "{{ env_collection.instance_name }}-db-public-access"
     description = "Allow access to RDS"
 }
 
-resource "aws_security_group" "{{ resource.instance_name }}_db" {
-    {% if not resource.settings.public %}
-    vpc_id = {{ env_collection.vpc_resource_address }}.id
-    {% endif %}
-    name = "{{ resource.instance_name }}-db"
+resource "aws_security_group" "{{ resource.instance_name }}_db_public" {
+    name = "{{ resource.instance_name }}-db-public"
     description = "RDS Security Group"
 
           # Allow traffic from the SG
@@ -194,7 +209,7 @@ resource "aws_security_group" "{{ resource.instance_name }}_db" {
               from_port       = 3306
               to_port         = 3306
               protocol        = "tcp"
-              security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
+              security_groups = [aws_security_group.{{resource.instance_name}}_db_public_access.id]
             }
           {% endif %}
 
@@ -203,7 +218,7 @@ resource "aws_security_group" "{{ resource.instance_name }}_db" {
               from_port       = 1433
               to_port         = 1433
               protocol        = "tcp"
-              security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
+              security_groups = [aws_security_group.{{resource.instance_name}}_db_public_access.id]
             }
           {% endif %}
 
@@ -212,18 +227,16 @@ resource "aws_security_group" "{{ resource.instance_name }}_db" {
               from_port       = 5432
               to_port         = 5432
               protocol        = "tcp"
-              security_groups = [aws_security_group.{{ resource.instance_name }}_db_access.id]
+              security_groups = [aws_security_group.{{resource.instance_name}}_db_public_access.id]
             }
           {% endif %}
 
-          {% if resource.settings.public %}
             ingress {
               from_port   = 5432
               to_port     = 5432
               protocol    = "tcp"
               cidr_blocks = ["0.0.0.0/0"]
             }
-          {% endif %}
 
           # Outbound internet access
           egress {
@@ -233,6 +246,19 @@ resource "aws_security_group" "{{ resource.instance_name }}_db" {
             cidr_blocks = ["0.0.0.0/0"]
           }
         }
+   {% endif %}
+
+{% if not environment.collection.application.flavor == 'lambda-lite' %}
+
+resource "aws_db_subnet_group" "{{ resource.instance_name }}" {
+    name = "{{ resource.instance_name }}"
+    description = "RDS subnet group"
+    subnet_ids = concat(aws_subnet.{{environment.collection.instance_name}}_private[*].id)
+}
+{% endif %}
+
+
+
       {% endif %}  # if environment.active_deployment
     {% endif %}  # if resource.is_database
   {% endfor %}  {# for resource in environment.database_resources #}

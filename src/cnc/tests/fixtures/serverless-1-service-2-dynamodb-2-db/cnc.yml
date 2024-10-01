@@ -2,7 +2,7 @@ services:
   app:
     x-cnc:
       type: serverless
-      lite: true
+       true
     build:
       context: .
 

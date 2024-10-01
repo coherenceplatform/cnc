@@ -220,7 +220,6 @@ class ServerlessServiceSettings(BaseServiceSettings):
     runtime: Optional[str] = "python3.12"
     secrets_mode: Optional[Literal["arn", "plaintext"]] = "plaintext"
     cdn: Optional[ServerlessCDNConfig] = Field(default_factory=ServerlessCDNConfig)
-    lite: Optional[bool] = False
 
     @property
     def is_web(self):

@@ -82,7 +82,7 @@ resource "aws_instance" "{{ env_collection.instance_name }}_bastion" {
     ), 0)
     associate_public_ip_address = true
     iam_instance_profile = aws_iam_instance_profile.{{ env_collection.instance_name }}_bastion.name
-    vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id, aws_security_group.{{ env_collection.instance_name }}_db_access.id, aws_security_group.{{ env_collection.instance_name }}_cache_access.id]
+    vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_default.id, aws_security_group.{{ env_collection.instance_name }}_ecs.id, aws_security_group.{{env_collection.instance_name}}_db_access.id, aws_security_group.{{ env_collection.instance_name }}_cache_access.id]
 
     tags = {
         Name = "{{ env_collection.instance_name }}-bastion"
