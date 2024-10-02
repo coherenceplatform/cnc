@@ -117,6 +117,40 @@ resource "aws_security_group" "{{ env_collection.instance_name }}_db" {
             cidr_blocks = ["0.0.0.0/0"]
           }
         }
+data "aws_iam_policy_document" "db_proxy_service_role" {
+    statement {
+        effect = "Allow"
+        actions = ["sts:AssumeRole"]
+        principals {
+          type = "Service"
+          identifiers = ["rds.amazonaws.com"]
+        }
+    }
+}
+
+resource "time_sleep" "wait_for_proxy_role" {
+  depends_on = [aws_iam_role.{{ env_collection.instance_name }}_db_proxy, aws_iam_role_policy.{{ env_collection.instance_name }}_db_proxy]
+  create_duration = "60s"
+}
+
+resource "aws_iam_role" "{{ env_collection.instance_name }}_db_proxy" {
+    name = "{{ env_collection.instance_name }}-db-proxy"
+    assume_role_policy = "${data.aws_iam_policy_document.db_proxy_service_role.json}"
+}
+
+data "aws_iam_policy_document" "db_proxy_service_policy" {
+    statement {
+        effect = "Allow"
+        resources = ["*"]
+        actions = ["secretsManager:GetSecretValue"]
+    }
+}
+
+resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_db_proxy" {
+    name = "{{ env_collection.instance_name }}-db-proxy"
+    policy = "${data.aws_iam_policy_document.db_proxy_service_policy.json}"
+    role = "${aws_iam_role.{{ env_collection.instance_name }}_db_proxy.id}"
+}
 
 resource "aws_elasticache_subnet_group" "{{ env_collection.instance_name }}" {
     name = "{{ env_collection.instance_name }}"

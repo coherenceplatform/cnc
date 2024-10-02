@@ -113,29 +113,6 @@ resource "aws_db_proxy" "{{ resource.instance_name[:60] }}" {
     }
 }
 
-resource "time_sleep" "wait_for_proxy_role" {
-  depends_on = [aws_iam_role.{{ env_collection.instance_name }}_db_proxy, aws_iam_role_policy.{{ env_collection.instance_name }}_db_proxy]
-  create_duration = "60s"
-}
-
-resource "aws_iam_role" "{{ env_collection.instance_name }}_db_proxy" {
-    name = "{{ env_collection.instance_name }}-db-proxy"
-    assume_role_policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_role.json}"
-}
-
-data "aws_iam_policy_document" "db_proxy_service_policy" {
-    statement {
-        effect = "Allow"
-        resources = ["*"]
-        actions = ["secretsManager:GetSecretValue"]
-    }
-}
-
-resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_db_proxy" {
-    name = "{{ env_collection.instance_name }}-db-proxy"
-    policy = "${data.aws_iam_policy_document.db_proxy_service_policy.json}"
-    role = "${aws_iam_role.{{ env_collection.instance_name }}_db_proxy.id}"
-}
 
 
 resource "aws_db_proxy_default_target_group" "{{ resource.instance_name }}" {
@@ -152,38 +129,6 @@ resource "aws_db_proxy_target" "{{ resource.instance_name }}" {
   target_group_name = aws_db_proxy_default_target_group.{{ resource.instance_name }}.name
 }
 
-data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_role" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["rds.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "{{ resource.instance_name }}_db_proxy" {
-  name               = "{{ resource.instance_name }}-db-proxy"
-  assume_role_policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_role.json}"
-  provisioner "local-exec" {
-    command = "sleep 30"
-  }
-}
-
-data "aws_iam_policy_document" "{{ resource.instance_name }}_db_proxy_service_policy" {
-  statement {
-    effect    = "Allow"
-    resources = ["*"]
-    actions   = ["secretsManager:GetSecretValue"]
-  }
-}
-
-resource "aws_iam_role_policy" "{{ resource.instance_name }}_db_proxy" {
-  name   = "{{ resource.instance_name }}-db-proxy"
-  policy = "${data.aws_iam_policy_document.{{ resource.instance_name }}_db_proxy_service_policy.json}"
-  role   = "${aws_iam_role.{{ resource.instance_name }}_db_proxy.id}"
-}
 {% endif %}  # if resource.settings.use_db_proxy
 {% endif %}
 {% if environment.collection.application.flavor == 'lambda-lite' %}
