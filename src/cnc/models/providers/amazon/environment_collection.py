@@ -22,7 +22,7 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         if self.application.flavor == "lambda-lite":
             return True
         return False
-    
+
     @property
     def has_backend_services(self):
         if self.application.flavor in ["lambda-lite", "ecs"]:
@@ -177,7 +177,7 @@ class AWSEnvironmentCollection(EnvironmentCollection):
             return json.loads(secret_string)[inner_json_key]
 
         return secret_string
-    
+
     def generate_tf_assets(self, config_files_path, rendered_files_path):
         if self.has_backend_services:
             lambda_payload_path = os.path.join(
