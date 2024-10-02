@@ -25,7 +25,7 @@ class AWSEnvironmentCollection(EnvironmentCollection):
 
     @property
     def has_serverless_services(self):
-        if self.application.flavor in ["lambda-lite", "ecs"]:
+        if self.application.flavor in ["lambda-lite", "lambda"]:
             return True
         return False
 
