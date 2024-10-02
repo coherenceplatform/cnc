@@ -77,7 +77,12 @@ class BaseServiceSettings(BaseModel):
     internal: Optional[bool] = False
     data: Optional[dict] = {}
     raw_url_path: Optional[str] = Field(alias="url_path", default="/")
-    custom_headers: Optional[Union[AWSCustomHeaders, GCPCustomHeaders,]] = Field(
+    custom_headers: Optional[
+        Union[
+            AWSCustomHeaders,
+            GCPCustomHeaders,
+        ]
+    ] = Field(
         discriminator="provider",
         default=None,
     )
@@ -135,7 +140,6 @@ class BaseServiceSettings(BaseModel):
     @property
     def is_resource(self):
         return False
-
 
     @property
     def unique_id(self):

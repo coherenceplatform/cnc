@@ -38,7 +38,7 @@ class GCPDeployResourceLimits(DeployResourceLimits):
             num_cpu_cores = self.normalized_cpu
             # mem/cpu comparison is done in Gi/cores
             # => return memory value in bytes
-            return int(num_cpu_cores * (2 ** 30))
+            return int(num_cpu_cores * (2**30))
 
         return self.memory
 
@@ -83,20 +83,20 @@ class GCPDeployResourceLimits(DeployResourceLimits):
         returns memory value in Gi
         """
         memory_units = {
-            "Ei": 2 ** 60,  # Exbibytes
-            "Pi": 2 ** 50,  # Pebibytes
-            "Ti": 2 ** 40,  # Tebibytes
-            "Gi": 2 ** 30,  # Gibibytes
-            "Mi": 2 ** 20,  # Mebibytes
-            "Ki": 2 ** 10,  # Kibibytes
-            "E": 10 ** 18,  # Exabytes
-            "P": 10 ** 15,  # Petabytes
-            "T": 10 ** 12,  # Terabytes
-            "G": 10 ** 9,  # Gigabytes
-            "M": 10 ** 6,  # Megabytes
-            "k": 10 ** 3,  # Kilobytes
+            "Ei": 2**60,  # Exbibytes
+            "Pi": 2**50,  # Pebibytes
+            "Ti": 2**40,  # Tebibytes
+            "Gi": 2**30,  # Gibibytes
+            "Mi": 2**20,  # Mebibytes
+            "Ki": 2**10,  # Kibibytes
+            "E": 10**18,  # Exabytes
+            "P": 10**15,  # Petabytes
+            "T": 10**12,  # Terabytes
+            "G": 10**9,  # Gigabytes
+            "M": 10**6,  # Megabytes
+            "k": 10**3,  # Kilobytes
         }
 
         for unit, multiplier in memory_units.items():
             if str(value).endswith(unit):
-                return float(value[: -len(unit)]) * multiplier / (2 ** 30)
+                return float(value[: -len(unit)]) * multiplier / (2**30)
