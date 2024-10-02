@@ -2,9 +2,9 @@ name: Lint and Test
 
 on:
   push:
-    branches: [ "feat/main-updated-combine-two-flavors" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "feat/main-updated-combine-two-flavors" ]
+    branches: [ "main" ]
 
 jobs:
   build:
