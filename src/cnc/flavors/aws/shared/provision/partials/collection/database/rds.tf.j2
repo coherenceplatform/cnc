@@ -120,7 +120,7 @@ resource "time_sleep" "wait_for_proxy_role" {
 
 resource "aws_iam_role" "{{ env_collection.instance_name }}_db_proxy" {
     name = "{{ env_collection.instance_name }}-db-proxy"
-    assume_role_policy = "${data.aws_iam_policy_document.db_proxy_service_role.json}"
+    assume_role_policy = "${data.aws_iam_policy_document{{ resource.instance_name }}.db_proxy_service_role.json}"
 }
 
 data "aws_iam_policy_document" "db_proxy_service_policy" {
