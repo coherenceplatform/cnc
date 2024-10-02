@@ -8,11 +8,6 @@ from typing import (
     Union,
     Annotated,
 )
-from pydantic import (
-    field_validator,
-    Field,
-    model_validator,
-)
 
 from cnc.models.base_model import BaseModel, IgnoredType
 from cnc.models.custom_header import CustomHeaders
