@@ -179,7 +179,7 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         return secret_string
     
     def generate_tf_assets(self, config_files_path, rendered_files_path):
-        if self.has_servervelss_services:
+        if self.has_serverless_services:
             lambda_payload_path = os.path.join(
                 rendered_files_path, "lambda_function_payload"
             )
