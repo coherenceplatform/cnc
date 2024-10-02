@@ -4,7 +4,10 @@ import re
 import urllib
 import secrets
 from typing import List, Optional, Literal, Union
+from pydantic import Field
+
 from ..base_model import BaseModel, IgnoredType
+
 from cnc.logger import get_logger
 
 log = get_logger(__name__)

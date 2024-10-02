@@ -8,6 +8,11 @@ from typing import (
     Union,
     Annotated,
 )
+from pydantic import (
+    field_validator,
+    Field,
+    model_validator,
+)
 
 from cnc.models.base_model import BaseModel, IgnoredType
 from cnc.models.custom_header import CustomHeaders
@@ -130,6 +135,7 @@ class BaseServiceSettings(BaseModel):
     @property
     def is_resource(self):
         return False
+
 
     @property
     def unique_id(self):
