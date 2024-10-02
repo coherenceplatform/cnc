@@ -79,6 +79,7 @@ data "aws_rds_cluster" "{{ resource.instance_name }}" {
 {% endif %}
 
 {% endif %}
+
 {% if environment.active_deployment %}
 
 output "{{ resource.settings.host_output_id }}" {
@@ -86,15 +87,18 @@ output "{{ resource.settings.host_output_id }}" {
 }
 {% if not environment.collection.application.flavor == 'lambda-lite' %}
 {% if resource.settings.use_db_proxy %}
-resource "aws_db_proxy" "{{ resource.instance_name[:60] }}" {
-    name = "{{ resource.instance_name [:60]}}"
+
+resource "aws_db_proxy" "{{ resource.instance_name }}" {
+    name = "{{ resource.instance_name }}"
     engine_family = "{{ resource.settings.engine_family }}"
     vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_db.id]
-    role_arn = aws_iam_role.{{ resource.instance_name }}_db_proxy.arn
+    role_arn = aws_iam_role.{{ env_collection.instance_name }}_db_proxy.arn
 
     vpc_subnet_ids = concat(
-      aws_subnet.{{environment.collection.instance_name}}_public[*].id,
-      aws_subnet.{{environment.collection.instance_name}}_private[*].id
+        local.private_subnet_ids,
+        local.public_subnet_ids,
+        length(local.public_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_public.*.id,
+        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
     )
 
     auth {
@@ -104,30 +108,24 @@ resource "aws_db_proxy" "{{ resource.instance_name[:60] }}" {
     }
 
     depends_on = [
-        aws_iam_role.{{ resource.instance_name }}_db_proxy,
-        aws_iam_role_policy.{{ resource.instance_name }}_db_proxy
+        time_sleep.wait_for_proxy_role
     ]
-
-    provisioner "local-exec" {
-        command = "sleep 60"
-    }
 }
 
-
-
 resource "aws_db_proxy_default_target_group" "{{ resource.instance_name }}" {
-  db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
+    db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
 }
 
 resource "aws_db_proxy_target" "{{ resource.instance_name }}" {
-  {%- if resource.settings.cluster_mode %}
+    {%- if resource.settings.cluster_mode %}
     db_cluster_identifier = "{{ resource.settings.identifier }}"
-  {%- else %}
+    {%- else %}
     db_instance_identifier = "{{ resource.settings.identifier }}"
-  {%- endif %}
-  db_proxy_name     = aws_db_proxy.{{ resource.instance_name }}.name
-  target_group_name = aws_db_proxy_default_target_group.{{ resource.instance_name }}.name
+    {%- endif %}
+    db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
+    target_group_name = aws_db_proxy_default_target_group.{{ resource.instance_name }}.name
 }
+{%- endif %} # if resource.settings.use_db_proxy
 
 {% endif %}  # if resource.settings.use_db_proxy
 {% endif %}
