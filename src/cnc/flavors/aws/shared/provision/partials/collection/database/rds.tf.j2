@@ -28,6 +28,7 @@ resource "aws_db_instance" "{{ resource.instance_name }}" {
     engine_version = "{{ resource.settings.version }}"
     username = "{{ resource.settings.username }}"
     password = "{{ resource.settings.database_password }}"
+
 {% if not environment.collection.application.flavor == 'lambda-lite' %}
     db_subnet_group_name = "${aws_db_subnet_group.{{ resource.instance_name }}.id}"
     vpc_security_group_ids = [aws_security_group.{{ env_collection.instance_name }}_db.id]
@@ -125,8 +126,6 @@ resource "aws_db_proxy_target" "{{ resource.instance_name }}" {
     db_proxy_name = aws_db_proxy.{{ resource.instance_name }}.name
     target_group_name = aws_db_proxy_default_target_group.{{ resource.instance_name }}.name
 }
-{%- endif %} # if resource.settings.use_db_proxy
-
 {% endif %}  # if resource.settings.use_db_proxy
 {% endif %}
 {% if environment.collection.application.flavor == 'lambda-lite' %}
