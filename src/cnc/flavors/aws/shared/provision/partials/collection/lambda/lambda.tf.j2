@@ -99,14 +99,6 @@ resource "aws_lambda_function" "{{ service.instance_name }}" {
       ]
   }
 
-  dynamic "environment" {
-    for_each = length(keys(var.{{ service.instance_name }}_lambda_variables)) == 0 ? [] : [true]
-    content {
-       variables = merge(
-        var.{{ service.instance_name }}_lambda_variables
-      )
-    }
-  }
 {% if not environment.collection.application.flavor == 'lambda-lite' %}
   vpc_config {
       security_group_ids = [aws_security_group.{{ service.instance_name }}_lambda.id]
