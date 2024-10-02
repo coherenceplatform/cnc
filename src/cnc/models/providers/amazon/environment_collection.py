@@ -24,12 +24,6 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         return False
 
     @property
-    def has_serverless_services(self):
-        if self.application.flavor in ["lambda-lite", "lambda"]:
-            return True
-        return False
-
-    @property
     def hosted_zone_ns_records(self):
         return self.get_terraform_output("hosted_zone_ns_records")
 
@@ -179,7 +173,7 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         return secret_string
     
     def generate_tf_assets(self, config_files_path, rendered_files_path):
-        if self.has_serverless_services:
+        if self.application.flavor in ["lambda-lite", "lambda"]:
             lambda_payload_path = os.path.join(
                 rendered_files_path, "lambda_function_payload"
             )
