@@ -1,18 +1,6 @@
 {# Initialize lb_rules.priority globally once #}
 {% set lb_rules = namespace(priority=1) %}
 
-{# Generate the sorted list of all web services #}
-{% set all_web_services = [] %}
-{% for environment in env_collection.active_environments %}
-  {% for service in environment.services %}
-    {% if service.is_web_service %}
-      {% do all_web_services.append(service) %}
-    {% endif %}
-  {% endfor %}
-{% endfor %}
-
-{% set sorted_services = all_web_services | sort(attribute='settings.url_path') %}
-
 {% block state %}
 terraform {
   backend "local" {
@@ -28,16 +16,10 @@ terraform {
 {% endblock providers %}
 
 {% block collection %}{% endblock collection %}
-
 {% block collection_level_resources %}
 {% include "partials/collection_level_resources.tf.j2" %}
 
 {% if env_collection.serverless_services %}
-{% block lambda %}
-{# Remove redundant initialization #}
-{% include "partials/collection/lambda/config_alb.tf.j2" %}
-{% endblock lambda %}
-
 {% block lambda_shared %}
 {% include "partials/collection/lambda/lambda.tf.j2" %}
 {% include "partials/collection/lambda/variables.tf.j2" %}
@@ -60,6 +42,15 @@ terraform {
 {% endif %}
 {% endblock collection_level_resources %}
 
+{% for service in sorted(env_collection.all_web_services, key=svc_path_lambda, reverse=True) %}
+{% set environment = service.environment %}
+
+{% block service_resources scoped %}
+{% include "partials/service_level_resources.tf.j2" %}
+{% endblock service_resources %}
+{% endfor %}
+
+
 {# For active environment #}
 {% for environment in env_collection.active_environments %}
 {% block environment_resources scoped %}
@@ -69,14 +60,6 @@ terraform {
 
 {% set efs_mountpoint_status = namespace(created=False) %}
 
-{# Iterate over sorted_services #}
-{% for service in sorted_services %}
-{% set environment = service.environment %}
-
-{% block service_resources scoped %}
-{% include "partials/service_level_resources.tf.j2" %}
-{% endblock service_resources %}
-{% endfor %}
 
 {% block custom scoped %}
 {% endblock custom %}

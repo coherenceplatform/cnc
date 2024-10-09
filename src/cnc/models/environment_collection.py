@@ -190,7 +190,7 @@ class EnvironmentCollection(BaseModel):
 
     @property
     def all_web_services(self):
-        return self.all_services_for_type(["frontend", "backend"])
+        return self.all_services_for_type(["frontend", "backend", "serverless"])
 
     @property
     def database_resources(self):

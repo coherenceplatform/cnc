@@ -31,6 +31,12 @@ resource "aws_cloudwatch_log_group" "{{ service.instance_name }}" {
 {% if service.is_backend %}
 {% include "partials/service/active_backend.tf.j2" %}
 {% endif %}{# if service.is_backend #}
+
+
+{% if service.is_serverless %}
+{% include "partials/collection/lambda/config_alb.tf.j2" %}
+{% endif %}{# if service.serverless_services #}
+
 {% endif %}{# if environment.active_deployment #}
 
 {% endif %}{# if hosted_zone_ns_records #}

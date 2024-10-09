@@ -1,15 +1,13 @@
 {# Use lb_rules.priority and sorted_services globally initialized #}
-{% for service in sorted_services %}
-  {% if service.is_serverless %}
 
-    resource "aws_lb_target_group" "{{ service.instance_name }}_tg" {
+    resource "aws_alb_target_group" "{{ service.instance_name }}_tg" {
       name        = "{{ service.instance_name[:29] }}-tg"
       target_type = "lambda"
       vpc_id      = {{ env_collection.vpc_resource_address }}.id
     }
 
-    resource "aws_lb_target_group_attachment" "{{ service.instance_name }}_tg_attachment" {
-      target_group_arn = aws_lb_target_group.{{ service.instance_name }}_tg.arn
+    resource "aws_alb_target_group_attachment" "{{ service.instance_name }}_tg_attachment" {
+      target_group_arn = aws_alb_target_group.{{ service.instance_name }}_tg.arn
       target_id        = aws_lambda_function.{{ service.instance_name }}.arn
     }
 
@@ -19,7 +17,7 @@
 
       action {
         type             = "forward"
-        target_group_arn = aws_lb_target_group.{{ service.instance_name }}_tg.arn
+        target_group_arn = aws_alb_target_group.{{ service.instance_name }}_tg.arn
       }
 
       condition {
@@ -36,8 +34,6 @@
       action        = "lambda:InvokeFunction"
       function_name = aws_lambda_function.{{ service.instance_name }}.function_name
       principal     = "elasticloadbalancing.amazonaws.com"
-      source_arn    = aws_lb_target_group.{{ service.instance_name }}_tg.arn
+      source_arn    = aws_alb_target_group.{{ service.instance_name }}_tg.arn
     }
 
-  {% endif %}
-{% endfor %}

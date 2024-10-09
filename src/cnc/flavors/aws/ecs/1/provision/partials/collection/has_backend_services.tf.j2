@@ -64,15 +64,7 @@ resource "aws_security_group" "{{ env_collection.instance_name }}_cache" {
     }
 }
 
-resource "aws_elasticache_subnet_group" "{{ env_collection.instance_name }}" {
-    name = "{{ env_collection.instance_name }}"
 
-    description = "Elasticache subnet group"
-    subnet_ids = concat(
-        local.private_subnet_ids,
-        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
-    )
-}
 
 resource "aws_db_subnet_group" "{{ env_collection.instance_name }}" {
     name = "{{ env_collection.instance_name }}"
@@ -175,7 +167,6 @@ resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_db_proxy" {
 
 resource "aws_elasticache_subnet_group" "{{ env_collection.instance_name }}" {
     name = "{{ env_collection.instance_name }}"
-
     description = "Elasticache subnet group"
     subnet_ids = concat(
         local.private_subnet_ids,
