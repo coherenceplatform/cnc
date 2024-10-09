@@ -1,14 +1,11 @@
-{% for environment in env_collection.active_environments %}
-{% for service in environment.services %}
-{% if service.is_serverless %}
+{# Use lb_rules.priority and sorted_services globally initialized #}
+{% for service in sorted_services %}
+  {% if service.is_serverless %}
 
-################################################################################
-# ALB Configuration
-################################################################################
 resource "aws_lb_target_group" "{{ service.instance_name }}_tg" {
-  name        = "{{service.instance_name[:29]}}-tg"
+  name        = "{{ service.instance_name[:29] }}-tg"
   target_type = "lambda"
-  vpc_id = {{ env_collection.vpc_resource_address }}.id
+  vpc_id      = {{ env_collection.vpc_resource_address }}.id
 }
 
 resource "aws_lb_target_group_attachment" "{{ service.instance_name }}_tg_attachment" {
@@ -18,7 +15,7 @@ resource "aws_lb_target_group_attachment" "{{ service.instance_name }}_tg_attach
 
 resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
   listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_http.arn
-  priority = {{ 1000 + lb_rules.priority }}
+  priority     = {{ 1000 + lb_rules.priority }}
 
   action {
     type             = "forward"
@@ -30,10 +27,9 @@ resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
       values = ["/{{ service.settings.url_path }}/*"]
     }
   }
-  
 }
-{% set lb_rules.priority = lb_rules.priority + 1 %}
 
+{% set lb_rules.priority = lb_rules.priority + 1 %}
 
 resource "aws_lambda_permission" "{{ service.instance_name }}_alb_permission" {
   statement_id  = "AllowExecutionFromALB"
@@ -43,6 +39,5 @@ resource "aws_lambda_permission" "{{ service.instance_name }}_alb_permission" {
   source_arn    = aws_lb_target_group.{{ service.instance_name }}_tg.arn
 }
 
-{% endif %}
-{% endfor %}
+  {% endif %}
 {% endfor %}

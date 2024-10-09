@@ -2,19 +2,6 @@
 {% for service in environment.services %}
 {% if service.is_serverless %}
 
-variable "{{ service.instance_name }}_lambda_variables" {
-  description = "Environment variables to pass to the Lambda function"
-  type        =  map(string)
-  default     = {
-    {% if service.is_serverless %}
-    {% for item in service.insecure_environment_items %}
-    "{{ item.name }}" = "{{ item.value }}"
-    {% if not loop.last %}{% endif %}
-    {% endfor %}
-    {% endif %}
-  }
-}
-
 variable "{{ service.instance_name }}_aws_resources_permission_lambda" {
   description = "List of AWS resources that the Lambda function needs to access"
   type        = list(string)
