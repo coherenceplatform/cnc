@@ -1,79 +1,84 @@
 {# Use lb_rules.priority globally initialized in base.tf.j2 #}
+{% for service in sorted_services %}
+  {% if not service.is_serverless %}
 
-{# Define the main listener rule for the backend service #}
-resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
-    listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
-    priority     = {{ 1000 + lb_rules.priority }}
+    {# Define the main listener rule for the backend service #}
+    resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
+        listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
+        priority     = {{ 1000 + lb_rules.priority }}
 
-    action {
-        type             = "forward"
-        target_group_arn = aws_lb_target_group.{{ service.instance_name }}.arn
+        action {
+            type             = "forward"
+            target_group_arn = aws_lb_target_group.{{ service.instance_name }}.arn
+        }
+
+        condition {
+            path_pattern {
+                values = [
+                    {% if service.settings.url_path != "/" %}
+                    "/{{ service.settings.url_path.strip('/') }}",
+                    {% endif %}
+                    "{{ service.settings.url_path }}*"
+                ]
+            }
+        }
+
+        condition {
+            host_header {
+                values = [
+                    replace(aws_alb.{{ env_collection.instance_name }}.dns_name, "/^https?://([^/]*).*/", "$1"),
+                    "*.{{ service.environment.domain }}",
+                    "{{ service.environment.domain }}"
+                ]
+            }
+        }
     }
 
-    condition {
-        path_pattern {
-            values = [
-                {% if service.settings.url_path != "/" %}
-                "/{{ service.settings.url_path.strip('/') }}",
+    {% set lb_rules.priority = lb_rules.priority + 1 %}
+
+    {# Define listener rules for custom domains if applicable #}
+    {% if service.environment.domains %}
+        {% for domain_info in environment.domains %}
+            {% with domain = domain_info.get("domain", "") %}
+                {% if service.environment.custom_ns_records_for(domain) %}
+                    resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule_{{ lb_rules.priority }}" {
+                        listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
+                        priority     = {{ 1000 + lb_rules.priority }}
+
+                        action {
+                            type             = "forward"
+                            target_group_arn = aws_lb_target_group.{{ service.instance_name }}.arn
+                        }
+
+                        condition {
+                            path_pattern {
+                                values = [
+                                    {% if service.settings.url_path != "/" %}
+                                    "/{{ service.settings.url_path.strip('/') }}",
+                                    {% endif %}
+                                    "{{ service.settings.url_path }}*"
+                                ]
+                            }
+                        }
+
+                        condition {
+                            host_header {
+                                values = [
+                                    "*.{{ domain }}",
+                                    "{{ domain }}"
+                                ]
+                            }
+                        }
+                    }
+
+                    {% set lb_rules.priority = lb_rules.priority + 1 %}
                 {% endif %}
-                "{{ service.settings.url_path }}*"
-            ]
-        }
-    }
+            {% endwith %}
+        {% endfor %}
+    {% endif %}
 
-    condition {
-        host_header {
-            values = [
-                replace(aws_alb.{{ env_collection.instance_name }}.dns_name, "/^https?://([^/]*).*/", "$1"),
-                "*.{{ service.environment.domain }}",
-                "{{ service.environment.domain }}"
-            ]
-        }
-    }
-}
-
-{% set lb_rules.priority = lb_rules.priority + 1 %}
-
-{# Define listener rules for custom domains if applicable #}
-{% if service.environment.domains %}
-    {% for domain_info in environment.domains %}
-        {% with domain = domain_info.get("domain", "") %}
-            {% if service.environment.custom_ns_records_for(domain) %}
-                resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule_{{ lb_rules.priority }}" {
-                    listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
-                    priority     = {{ 1000 + lb_rules.priority }}
-
-                    action {
-                        type             = "forward"
-                        target_group_arn = aws_lb_target_group.{{ service.instance_name }}.arn
-                    }
-
-                    condition {
-                        path_pattern {
-                            values = [
-                                {% if service.settings.url_path != "/" %}
-                                "/{{ service.settings.url_path.strip('/') }}",
-                                {% endif %}
-                                "{{ service.settings.url_path }}*"
-                            ]
-                        }
-                    }
-
-                    condition {
-                        host_header {
-                            values = [
-                                "*.{{ domain }}",
-                                "{{ domain }}"
-                            ]
-                        }
-                    }
-                }
-
-                {% set lb_rules.priority = lb_rules.priority + 1 %}
-            {% endif %}
-        {% endwith %}
-    {% endfor %}
-{% endif %}
+  {% endif %}
+{% endfor %}
 
 
 resource "aws_appautoscaling_target" "{{ service.instance_name }}" {
