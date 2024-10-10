@@ -191,15 +191,6 @@ class BaseServiceSettings(BaseModel):
 class CORSSettings(BaseModel):
     allowed_origins: List[str]
 
-
-class ServerlessCDNConfig(BaseModel):
-    enabled: Optional[bool] = True
-
-
-class ServerlessCDNConfig(BaseModel):
-    enabled: Optional[bool] = True
-
-
 class FrontendCDNConfig(BaseModel):
     enabled: Optional[bool] = True
 
@@ -219,7 +210,6 @@ class ServerlessServiceSettings(BaseServiceSettings):
     handler: Optional[str] = "function.lambda_handler"
     runtime: Optional[str] = "python3.12"
     secrets_mode: Optional[Literal["arn", "plaintext"]] = "plaintext"
-    cdn: Optional[ServerlessCDNConfig] = Field(default_factory=ServerlessCDNConfig)
 
     @property
     def is_web(self):
