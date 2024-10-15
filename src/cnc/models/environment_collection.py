@@ -211,6 +211,11 @@ class EnvironmentCollection(BaseModel):
     @property
     def message_queue_resources(self):
         return self.all_services_for_type("message_queue")
+    
+
+    @property
+    def has_serverless_services(self):
+        return bool(self.serverless_services)
 
     @property
     def has_dynamodb_resources(self):
