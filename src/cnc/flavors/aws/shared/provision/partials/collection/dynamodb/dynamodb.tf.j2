@@ -1,4 +1,5 @@
-{% for environment in env_collection.active_environments  %}
+{% for environment in env_collection.valid_environments %}
+{% if environment.active_deployment %}
 {% for resource in environment.dynamodb_resources %}
 {% if resource.is_dynamodb %}
 ################################################################################
@@ -60,5 +61,6 @@ resource "aws_dynamodb_table" "{{ resource.instance_name }}" {
 
 {% endif %}
 {% endfor %}
+{% endif %}
 {% endfor %}
 
