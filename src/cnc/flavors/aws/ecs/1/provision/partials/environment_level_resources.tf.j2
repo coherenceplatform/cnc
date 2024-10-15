@@ -10,7 +10,6 @@ output "{{ re.sub('\W', '', domain) }}_ns_records" {
 {% endfor %}
 {% endif %}
 
-
 {% if env_collection.hosted_zone_ns_records %}
 {% if environment.active_deployment %}
 
@@ -415,6 +414,7 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
         viewer_protocol_policy = "redirect-to-https"
     }
     {% endif %}
+
     {% endfor %}
 
     {% if environment.default_service.is_frontend %}

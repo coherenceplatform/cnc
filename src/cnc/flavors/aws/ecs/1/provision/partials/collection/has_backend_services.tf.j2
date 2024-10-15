@@ -64,7 +64,15 @@ resource "aws_security_group" "{{ env_collection.instance_name }}_cache" {
     }
 }
 
+resource "aws_elasticache_subnet_group" "{{ env_collection.instance_name }}" {
+    name = "{{ env_collection.instance_name }}"
 
+    description = "Elasticache subnet group"
+    subnet_ids = concat(
+        local.private_subnet_ids,
+        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
+    )
+}
 
 resource "aws_db_subnet_group" "{{ env_collection.instance_name }}" {
     name = "{{ env_collection.instance_name }}"
@@ -89,43 +97,43 @@ resource "aws_security_group" "{{ env_collection.instance_name }}_db" {
     # Allow traffic from the SG
     ingress {
         from_port = 0
-        to_port   = 0
-        protocol  = "-1"
-        self      = true
+        to_port = 0
+        protocol = "-1"
+        self = true
     }
 
-    {% if has_mysql_db %}
+{% if has_mysql_db %}
     ingress {
-        from_port       = 3306
-        to_port         = 3306
-        protocol        = "tcp"
+        from_port = 3306
+        to_port = 3306
+        protocol = "tcp"
         security_groups = [aws_security_group.{{ env_collection.instance_name }}_db_access.id]
     }
-    {% endif %}
+{% endif %}
 
-    {% if has_mssql_db %}
+{% if has_mssql_db %}
     ingress {
-        from_port       = 1433
-        to_port         = 1433
-        protocol        = "tcp"
+        from_port = 1433
+        to_port = 1433
+        protocol = "tcp"
         security_groups = [aws_security_group.{{ env_collection.instance_name }}_db_access.id]
     }
-    {% endif %}
+{% endif %}
 
-    {% if has_postgres_db %}
+{% if has_postgres_db %}
     ingress {
-        from_port       = 5432
-        to_port         = 5432
-        protocol        = "tcp"
+        from_port = 5432
+        to_port = 5432
+        protocol = "tcp"
         security_groups = [aws_security_group.{{ env_collection.instance_name }}_db_access.id]
     }
-    {% endif %}
+{% endif %}
 
     # Outbound internet access
     egress {
-        from_port   = 0
-        to_port     = 0
-        protocol    = "-1"
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
         cidr_blocks = ["0.0.0.0/0"]
     }
 }
@@ -142,8 +150,8 @@ data "aws_iam_policy_document" "db_proxy_service_role" {
 }
 
 resource "time_sleep" "wait_for_proxy_role" {
-    depends_on = [aws_iam_role.{{ env_collection.instance_name }}_db_proxy, aws_iam_role_policy.{{ env_collection.instance_name }}_db_proxy]
-    create_duration = "60s"
+  depends_on = [aws_iam_role.{{ env_collection.instance_name }}_db_proxy, aws_iam_role_policy.{{ env_collection.instance_name }}_db_proxy]
+  create_duration = "60s"
 }
 
 resource "aws_iam_role" "{{ env_collection.instance_name }}_db_proxy" {
@@ -165,30 +173,20 @@ resource "aws_iam_role_policy" "{{ env_collection.instance_name }}_db_proxy" {
     role = "${aws_iam_role.{{ env_collection.instance_name }}_db_proxy.id}"
 }
 
-resource "aws_elasticache_subnet_group" "{{ env_collection.instance_name }}" {
-    name = "{{ env_collection.instance_name }}"
-    description = "Elasticache subnet group"
-    subnet_ids = concat(
-        local.private_subnet_ids,
-        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
-    )
-}
-
-
 resource "aws_ecs_cluster" "{{ env_collection.instance_name }}" {
     name = "{{ env_collection.instance_name }}"
 }
 
 resource "aws_ecs_cluster_capacity_providers" "{{ env_collection.instance_name }}" {
-    cluster_name = "${aws_ecs_cluster.{{ env_collection.instance_name }}.name}"
+  cluster_name = "${aws_ecs_cluster.{{ env_collection.instance_name }}.name}"
 
-    capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
 
-    default_capacity_provider_strategy {
-        base              = 1
-        weight            = 100
-        capacity_provider = "FARGATE"
-    }
+  default_capacity_provider_strategy {
+    base              = 1
+    weight            = 100
+    capacity_provider = "FARGATE"
+  }
 }
 
 data "aws_iam_policy_document" "ecs_service_role" {
