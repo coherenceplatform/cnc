@@ -19,6 +19,7 @@ terraform {
 {% block collection_level_resources %}
 {% include "partials/collection_level_resources.tf.j2" %}
 
+{% if env_collection.hosted_zone_ns_records %}
 {% if env_collection.serverless_services %}
 {% block lambda_shared %}
 {% include "partials/collection/lambda/lambda.tf.j2" %}
@@ -39,6 +40,7 @@ terraform {
 {% block database_shared %}
 {% include "partials/collection/database/rds.tf.j2" %}
 {% endblock database_shared %}
+{% endif %}
 {% endif %}
 {% endblock collection_level_resources %}
 
