@@ -52,24 +52,25 @@ resource "aws_acm_certificate_validation" "{{ env_collection.instance_name }}" {
 }
 
 {% if (env_collection.cache_resources or env_collection.database_resources) %}
-    data "aws_ami" "amazon-linux-2" {
-    most_recent = true
-
-    filter {
-        name   = "owner-alias"
-        values = ["amazon"]
-    }
+data "aws_ami" "amazon-linux-2" {
+ most_recent = true
 
 
-    filter {
-        name   = "name"
-        values = ["amzn2-ami-hvm*"]
-    }
+ filter {
+   name   = "owner-alias"
+   values = ["amazon"]
+ }
 
-    filter {
-        name   = "architecture"
-        values = ["x86_64"]
-    }
+
+ filter {
+   name   = "name"
+   values = ["amzn2-ami-hvm*"]
+ }
+
+ filter {
+   name   = "architecture"
+   values = ["x86_64"]
+ }
 }
 
 resource "aws_instance" "{{ env_collection.instance_name }}_bastion" {
@@ -93,13 +94,13 @@ resource "aws_instance" "{{ env_collection.instance_name }}_bastion" {
 }
 
 output "bastion_instance_id" {
-    description = "aws instance id of the bastion host"
-    value       = aws_instance.{{ env_collection.instance_name }}_bastion.id
+  description = "aws instance id of the bastion host"
+  value       = aws_instance.{{ env_collection.instance_name }}_bastion.id
 }
 
 output "bastion_instance_type" {
-    description = "Instance type of the bastion host"
-    value       = aws_instance.{{ env_collection.instance_name }}_bastion.instance_type
+  description = "Instance type of the bastion host"
+  value       = aws_instance.{{ env_collection.instance_name }}_bastion.instance_type
 }
 
 resource "aws_iam_instance_profile" "{{ env_collection.instance_name }}_bastion" {
@@ -134,25 +135,25 @@ resource "aws_iam_role_policy_attachment" "{{ env_collection.instance_name }}_ba
 }
 
 resource "aws_ssm_document" "{{ env_collection.instance_name }}_bastion" {
-    name            = "{{ env_collection.instance_name }}_SSM-SessionManagerRunShell"
-    document_type   = "Session"
-    document_format = "JSON"
+  name            = "{{ env_collection.instance_name }}_SSM-SessionManagerRunShell"
+  document_type   = "Session"
+  document_format = "JSON"
 
-    content = <<DOC
-    {
-        "schemaVersion": "1.0",
-        "description": "Document to hold regional settings for Session Manager",
-        "sessionType": "Standard_Stream",
-        "inputs": {
-            "s3EncryptionEnabled": true,
-            "cloudWatchEncryptionEnabled": false,
-            "cloudWatchStreamingEnabled": false,
-            "idleSessionTimeout": "60",
-            "maxSessionDuration": "1440",
-            "runAsEnabled": false
-        }
-    }
-    DOC
+  content = <<DOC
+{
+"schemaVersion": "1.0",
+"description": "Document to hold regional settings for Session Manager",
+"sessionType": "Standard_Stream",
+"inputs": {
+    "s3EncryptionEnabled": true,
+    "cloudWatchEncryptionEnabled": false,
+    "cloudWatchStreamingEnabled": false,
+    "idleSessionTimeout": "60",
+    "maxSessionDuration": "1440",
+    "runAsEnabled": false
+}
+}
+DOC
 }
 {% endif %}
 
@@ -162,10 +163,10 @@ resource "aws_s3_bucket" "{{ env_collection.instance_name }}_cloudfront_logs" {
 }
 
 resource "aws_s3_bucket_ownership_controls" "{{ env_collection.instance_name }}_cloudfront_logs" {
-    bucket = "${aws_s3_bucket.{{ env_collection.instance_name }}_cloudfront_logs.id}"
-    rule {
-        object_ownership = "ObjectWriter"
-    }
+  bucket = "${aws_s3_bucket.{{ env_collection.instance_name }}_cloudfront_logs.id}"
+  rule {
+    object_ownership = "ObjectWriter"
+  }
 }
 
 resource "aws_s3_bucket_acl" "{{ env_collection.instance_name }}_cloudfront_logs" {
