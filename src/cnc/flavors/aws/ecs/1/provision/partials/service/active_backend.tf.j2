@@ -2,7 +2,7 @@
 {% include "partials/service/backend/alb_target_group.tf.j2" %}
 {# Define the main listener rule for the backend service #}
 
-resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
+resource "aws_lb_listener_rule" "{{ env_collection.instance_name }}_{{ lb_rules.priority }}" {
     depends_on   = [aws_alb_target_group.{{ service.instance_name }}]
     listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
     priority     = {{ 1000 + lb_rules.priority }}
@@ -41,7 +41,7 @@ resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
     {% for domain_info in environment.domains %}
         {% with domain = domain_info.get("domain", "") %}
             {% if service.environment.custom_ns_records_for(domain) %}
-                resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule_{{ lb_rules.priority }}" {
+                resource "aws_lb_listener_rule" "{{ env_collection.instance_name }}_{{ lb_rules.priority }}" {
                     listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
                     priority     = {{ 1000 + lb_rules.priority }}
 

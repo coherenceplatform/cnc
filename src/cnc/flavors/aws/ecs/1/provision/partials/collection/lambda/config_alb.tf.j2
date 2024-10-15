@@ -11,7 +11,7 @@
       target_id        = aws_lambda_function.{{ service.instance_name }}.arn
     }
 
-    resource "aws_lb_listener_rule" "{{ service.instance_name }}_listener_rule" {
+    resource "aws_lb_listener_rule" "{{ env_collection.instance_name }}_{{ lb_rules.priority }}" {
       listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_http.arn
       priority     = {{ 1000 + lb_rules.priority }}
 
