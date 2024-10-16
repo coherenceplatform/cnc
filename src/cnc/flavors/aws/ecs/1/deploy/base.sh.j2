@@ -63,3 +63,9 @@ deploy_{{ service.name }}_to_s3
 
 {% block finally_build_commands %}
 {% endblock %}
+
+{% if service.is_serverless %}
+{% block serverless_block %}
+{% include "deploy_lambda_functions.sh.j2" %}
+{% endblock %}
+{% endif %}

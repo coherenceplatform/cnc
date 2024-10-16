@@ -1,0 +1,197 @@
+#!/bin/bash
+
+send_{{ service.name }}_status_hook () {
+    echo -e \\nSending deploy status webhook...\\n
+
+    if [ $1 -eq 0 ]; then
+        cnc_build_status=${2:-"success"}
+    else
+        cnc_build_status="failed"
+    fi
+
+    if test -f {{ deployer.rendered_files_path }}/task_rev_{{ service.instance_name }}.txt; then
+        task_revision=$(cat {{ deployer.rendered_files_path }}/task_rev_{{ service.instance_name }}.txt)
+    fi
+
+    data='{
+        "token": "{{ deployer.webhook_token }}",
+        "status": "'"$cnc_build_status"'",
+        "stage": "deploy",
+        "service": "{{ service.name }}",
+        "revision_id": "'"$task_revision"'"
+    }'
+    echo "===== {{ service.name }} deploy status ====="
+    echo "$data" | jq .
+    echo "===== {{ service.name }} deploy status ====="
+
+    which curl; curl_exists=$?
+    if [ $curl_exists -ne 0 ]; then
+        echo -e \\nWarning: Cannot find curl binary, skipping deploy status webhook...\\n
+    else
+        {% if deployer.webhook_url %}
+        webhook_status=$(curl -X PUT -H "Content-Type: application/json" \
+        -o /dev/null \
+        -d "$data" -w "%{http_code}" \
+        {{ deployer.webhook_url }}) || true
+
+        if [ "$webhook_status" != "200" ]; then
+            echo -e \\nDeploy status webhook failed.
+        else
+            echo -e \\nDeploy status webhook succeeded.
+        fi
+        {% else %}
+        echo -e \\nNo webhook URL provided. Skipping deploy status webhook...
+        {% endif %}
+    fi
+}
+
+# Function to wait for the Lambda function to be in Active state
+wait_for_active() {
+  local max_retries=20
+  local retry_count=0
+
+  while true; do
+    state=$(aws lambda get-function-configuration --function-name "$name_lambda" --region "$region" --query 'State' --output text)
+    if [ "$state" == "Active" ]; then
+      break
+    fi
+
+    if [ $retry_count -ge $max_retries ]; then
+      echo "Lambda function $name_lambda did not become Active after $max_retries attempts."
+      exit 1
+    fi
+
+    echo "Waiting for lambda function $name_lambda to be Active... (Attempt: $((retry_count + 1))/$max_retries)"
+    sleep 3
+    retry_count=$((retry_count + 1))
+  done
+}
+
+deploy_{{ service.name }} () {
+  echo "ZIP Lambda function code..."
+
+  source_dir="{{ service.build.context }}"
+  output_dir="{{ deployer.rendered_files_path }}"
+  output_file="$output_dir/{{ service.instance_name }}_lambda_function.zip"
+
+  if [ -d "$source_dir" ]; then
+    echo "Source is a directory: $source_dir"
+    (cd "$source_dir" && zip -r "$output_file" . -x "*.git*") || { echo "Error creating ZIP file"; exit 1; }
+  elif [ -f "$source_dir" ]; then
+    echo "Source is a file: $source_dir"
+    base_name=$(basename "$source_dir")
+    dir_name=$(dirname "$source_dir")
+    (cd "$dir_name" && zip -r "$output_file" "$base_name" -x "*.git*") || { echo "Error creating ZIP file"; exit 1; }
+  else
+    echo "Error: Source path is not valid: $source_dir"
+    exit 1
+  fi
+
+  if [ -f "$output_file" ]; then
+    echo "ZIP file created successfully at $output_file"
+  else
+    echo "Error: ZIP file was not created at $output_file"
+    exit 1
+  fi
+
+  # Assigning variables
+  name_lambda="{{ service.instance_name }}"
+  output_dir="{{ deployer.rendered_files_path }}/{{ service.instance_name }}_lambda_function.zip"
+  region="{{ service.environment.collection.region }}"
+
+  # Validation echos
+  echo "Validating variables for service {{ service.instance_name }}..."
+  echo "name_lambda: $name_lambda"
+  echo "output_dir: $output_dir"
+  echo "region: $region"
+
+  env_vars_file="{{ deployer.rendered_files_path }}/{{ service.name }}_env_vars.json"
+  {{ render_template("env_vars.json.j2", "{}_env_vars.json".format(service.name)) }}
+
+  cat $env_vars_file
+
+  # Check if variables are set
+  if [ -z "$name_lambda" ] || [ -z "$output_dir" ] || [ -z "$region" ]; then
+    echo "Error: One or more required variables are not set for service {{ service.instance_name }}."
+    exit 1
+  fi
+
+  # Backup the current Lambda function code
+  echo "Backing up current function code for lambda function $name_lambda"
+  aws lambda get-function --function-name "$name_lambda" --region "$region" > current_lambda_function.json
+  zip_file_url=$(jq -r '.Code.Location' current_lambda_function.json)
+  curl -o current_lambda_function.zip "$zip_file_url"
+
+  # Deploying lambda function using AWS CLI
+  echo "Deploying lambda function $name_lambda with ZIP file at $output_dir in region $region"
+
+  # Lambda deployment command using AWS CLI
+  aws lambda update-function-code --function-name "$name_lambda" --zip-file "fileb://$output_dir" --region "$region" --no-cli-pager
+
+  # Capturing the exit status of the aws command
+  exit_code=$?
+
+  # Checking the exit status of the aws command
+  if [ $exit_code -eq 0 ]; then
+    echo "Lambda function $name_lambda updated successfully"
+  else
+    echo "Error updating lambda function $name_lambda."
+    exit $exit_code
+  fi
+
+  # Wait for the function to be active before updating environment variables
+  wait_for_active
+
+  # Backup the current environment variables
+  echo "Backing up current environment variables for lambda function $name_lambda"
+  current_env_vars=$(aws lambda get-function-configuration --function-name "$name_lambda" --region "$region" --query 'Environment' --output json)
+
+  # Updating the lambda function configuration to add environment variables
+  echo "Updating environment variables for lambda function $name_lambda"
+  aws lambda update-function-configuration --function-name "$name_lambda" --environment "file://$env_vars_file" --region "$region" --no-cli-pager
+  # Capturing the exit status of the aws command
+  exit_code=$?
+
+  # Checking the exit status of the aws command
+  if [ $exit_code -eq 0 ]; then
+    echo "Environment variables for lambda function $name_lambda updated successfully"
+  else
+    echo "Error updating environment variables for lambda function $name_lambda. Rolling back to previous environment variables and function code."
+
+    # Rollback to previous environment variables
+    rollback_exit_code=0
+    echo "$current_env_vars" > current_env_vars.json
+    aws lambda update-function-configuration --function-name "$name_lambda" --environment "file://current_env_vars.json" --region "$region" --no-cli-pager || rollback_exit_code=$?
+
+    if [ $rollback_exit_code -eq 0 ]; then
+      echo "Rollback to previous environment variables successful."
+    else
+      echo "Error rolling back to previous environment variables. Manual intervention might be required."
+    fi
+
+    # Rollback to previous function code
+    aws lambda update-function-code --function-name "$name_lambda" --zip-file "fileb://current_lambda_function.zip" --region "$region" --no-cli-pager || rollback_exit_code=$?
+
+    if [ $rollback_exit_code -eq 0 ]; then
+      echo "Rollback to previous function code successful."
+    else
+      echo "Error rolling back to previous function code. Manual intervention might be required."
+    fi
+
+    # Cleanup
+    rm $env_vars_file
+    rm current_env_vars.json
+    rm current_lambda_function.json
+    rm current_lambda_function.zip
+
+    exit $exit_code
+  fi
+
+  # Cleanup
+  rm $env_vars_file
+  rm current_lambda_function.json
+  rm current_lambda_function.zip
+
+  # Exit with the captured exit code
+  exit $exit_code
+}
