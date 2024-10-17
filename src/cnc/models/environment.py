@@ -20,6 +20,7 @@ class Environment(BaseModel):
     name: str
     # TODO: validate - no wildcard domains allowed here?
     custom_domains: Optional[List[str]] = []
+    allowed_hosts: Optional[List[str]] = []
     environment_variables: Optional[List[EnvironmentVariable]] = []
     config_file_path: Optional[str] = None
     config_data: Optional[dict] = {}
