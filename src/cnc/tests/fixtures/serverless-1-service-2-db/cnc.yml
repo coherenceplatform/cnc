@@ -1,0 +1,20 @@
+services:
+  app:
+    x-cnc:
+      type: serverless
+    build:
+      context: .
+
+  db1:
+    x-cnc:
+      type: database
+      version: 15
+      use_db_proxy: False
+    image: postgres
+
+  db2:
+    x-cnc:
+      type: database
+      version: 15
+      use_db_proxy: False
+    image: postgres

@@ -1,0 +1,90 @@
+{# Use lb_rules.priority and sorted_services globally initialized #}
+
+resource "aws_alb_target_group" "{{ service.instance_name }}_tg" {
+  name        = "{{ service.instance_name[:29] }}-tg"
+  target_type = "lambda"
+  vpc_id      = {{ env_collection.vpc_resource_address }}.id
+}
+
+resource "aws_alb_target_group_attachment" "{{ service.instance_name }}_tg_attachment" {
+  target_group_arn = aws_alb_target_group.{{ service.instance_name }}_tg.arn
+  target_id        = aws_lambda_function.{{ service.instance_name }}.arn
+}
+
+resource "aws_lb_listener_rule" "{{ env_collection.instance_name }}_{{ lb_rules.priority }}" {
+  listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
+  priority     = {{ 1000 + lb_rules.priority }}
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_alb_target_group.{{ service.instance_name }}_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = [{% if service.settings.url_path != "/" %}
+            "/{{ service.settings.url_path.strip('/') }}",
+            {% endif %}
+            "{{ service.settings.url_path }}*"]
+    }
+  }
+  condition {
+    host_header {
+        values = [
+            replace(aws_alb.{{ env_collection.instance_name }}.dns_name, "/^https?://([^/]*).*/", "$1"),
+            "*.{{ service.environment.domain }}",
+            "{{ service.environment.domain }}"
+        ]
+    }
+  }
+}
+
+{% set lb_rules.priority = lb_rules.priority + 1 %}
+
+{% if service.environment.domains %}
+{% for domain_info in environment.domains %}
+{% with domain = domain_info.get("domain", "") %}
+{% if service.environment.custom_ns_records_for(domain) %}
+resource "aws_lb_listener_rule" "{{ env_collection.instance_name }}_{{ lb_rules.priority }}" {
+    listener_arn = aws_alb_listener.{{ env_collection.instance_name }}_https.arn
+    priority = {{ 1000 + lb_rules.priority }}
+
+    action {
+        type = "forward"
+        target_group_arn = aws_alb_target_group.{{ service.instance_name }}_tg.arn
+    }
+
+    condition {
+        path_pattern {
+            values = [
+                {% if service.settings.url_path != "/" %}
+                "/{{ service.settings.url_path.strip('/') }}",
+                {% endif %}
+                "{{ service.settings.url_path }}*"
+            ]
+        }
+    }
+
+    condition {
+        host_header {
+            values = [
+                "*.{{ domain }}",
+                "{{ domain }}"
+            ]
+        }
+    }
+}
+{% set lb_rules.priority = lb_rules.priority + 1 %}
+{% endif %}
+{% endwith %}
+{% endfor %}
+{% endif %}
+
+resource "aws_lambda_permission" "{{ service.instance_name }}_alb_permission" {
+  statement_id  = "AllowExecutionFromALB"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.{{ service.instance_name }}.function_name
+  principal     = "elasticloadbalancing.amazonaws.com"
+  source_arn    = aws_alb_target_group.{{ service.instance_name }}_tg.arn
+}
+
