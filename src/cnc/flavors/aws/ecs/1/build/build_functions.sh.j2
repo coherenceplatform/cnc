@@ -5,7 +5,7 @@ if ! command -v bash >/dev/null 2>&1; then
     exit 1
 fi
 
-
+{% if service.is_backend %}
 {% block shared_functions %}
 run_pre_build_commands () {
     echo `aws --version`
@@ -141,3 +141,10 @@ verify_{{ service.name }}_image_exists () {
 {% endif %}
 
 {% endblock %}
+{% endif %}
+
+{% if service.is_serverless %}
+{% block serverless_block %}
+{% include "build_lambda_functions.sh.j2" %}
+{% endblock %}
+{% endif %}

@@ -13,6 +13,8 @@ source {{ builder.rendered_files_path }}/build-{{ service.name }}-functions.sh
 send_{{ service.name }}_status_hook 0 "working"
 {% endblock %}
 
+{% if service.is_backend %}
+
 {% block pre_build_commands %}
 {% if service.build %}
 login_to_registries
@@ -20,7 +22,6 @@ login_to_registries
 {% endblock %}
 
 {% block build_commands %}
-
 log_{{ service.name }}_variables
 
 {%- if service.image %}
@@ -38,3 +39,11 @@ push_{{ service.name }}_image_tags
 
 {% block post_build_commands %}
 {% endblock %}
+
+{% endif %}
+
+{% if service.is_serverless %}
+{% block serverless_block %}
+{% include "main_lambda.sh.j2" %}
+{% endblock %}
+{% endif %}
