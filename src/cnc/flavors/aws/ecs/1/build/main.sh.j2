@@ -44,6 +44,6 @@ push_{{ service.name }}_image_tags
 
 {% if service.is_serverless %}
 {% block serverless_block %}
-{% include "main_lambda.sh.j2" %}
+build_{{ service.name }}
 {% endblock %}
 {% endif %}

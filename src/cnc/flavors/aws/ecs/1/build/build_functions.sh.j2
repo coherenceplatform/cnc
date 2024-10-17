@@ -5,7 +5,6 @@ if ! command -v bash >/dev/null 2>&1; then
     exit 1
 fi
 
-{% if service.is_backend %}
 {% block shared_functions %}
 run_pre_build_commands () {
     echo `aws --version`
@@ -78,7 +77,7 @@ log_{{ service.name }}_variables () {
   env_vars_file="{{ builder.rendered_files_path }}/{{ service.name }}_env_vars.env"
   cat $env_vars_file
 }
-
+{% if not service.is_serverless %}
 {% if not service.image %}
 build_{{ service.name }}_image () {
 {% if builder.file_exists(service.build.dockerfile) or (not service.build.dockerfile_is_default) %}
