@@ -10,6 +10,7 @@ collections:
   account_id: "foo-bar-123"
   environments:
   - name: main
+    allowed_hosts: ["my-extra-allowed-host.cnctest.com"]
     environment_variables:
     - name: foo
       value: "{\"type\":\"backend\"}"
