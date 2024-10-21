@@ -9,8 +9,40 @@ resource "kubernetes_cron_job_v1" "{{ service.instance_name }}-{{ task.name }}" 
   metadata {
     name      = "{{ service.name }}-{{ task.name }}"
     namespace = "{{ service.instance_name }}"
+    annotations = {
+      "kubectl.kubernetes.io/last-applied-configuration" = jsonencode({
+        apiVersion = "batch/v1"
+        kind       = "CronJob"
+        metadata = {
+          name      = "{{ service.name }}-{{ task.name }}"
+          namespace = "{{ service.instance_name }}"
+        }
+        spec = {
+          schedule = "0 0 1 1 *"
+          jobTemplate = {
+            metadata = {
+              name = "hello-world-job"
+            }
+            spec = {
+              template = {
+                metadata = {
+                  name = "hello-world-pod"
+                }
+                spec = {
+                  containers = [{
+                    name    = "hello-world"
+                    image   = "busybox"
+                    command = ["/bin/sh", "-c", "echo Hello World"]
+                  }]
+                  restartPolicy = "OnFailure"
+                }
+              }
+            }
+          }
+        }
+      })
+    }
   }
-
   spec {
     schedule = "0 0 1 1 *"
     job_template {
@@ -34,9 +66,11 @@ resource "kubernetes_cron_job_v1" "{{ service.instance_name }}-{{ task.name }}" 
       }
     }
   }
-
   lifecycle {
-    ignore_changes = all
+    ignore_changes = [
+      metadata[0].annotations["kubectl.kubernetes.io/last-applied-configuration"],
+      spec,
+    ]
   }
 }
 {% endfor %}
