@@ -176,7 +176,10 @@ resource "google_compute_url_map" "{{ env_collection.instance_name }}-map" {
 {% for environment in env_collection.valid_environments %}
 {% if environment.active_deployment %}
   host_rule {
-    hosts        = [{% for domain_info in environment.domains %}{% with domain = domain_info.get("domain", "") %}"{{ domain }}", "*.{{ domain }}"{% endwith %}{% if not loop.last %}, {% endif %}{% endfor %}]
+    hosts        = [
+      {% for domain_info in environment.domains %}{% with domain = domain_info.get("domain", "") %}"{{ domain }}", "*.{{ domain }}"{% endwith %}{% if environment.allowed_hosts or not loop.last %}, {% endif %}{% endfor %}
+      {% for domain in environment.allowed_hosts %}"{{ domain }}", "*.{{ domain }}"{% if not loop.last %}, {% endif %}{% endfor %}
+    ]
     path_matcher = "{{ environment.instance_name }}"
   }
 
