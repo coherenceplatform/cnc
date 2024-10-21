@@ -363,7 +363,7 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
         viewer_protocol_policy = "redirect-to-https"
     }
     {% endif %}
-    {% elif service.is_backend %}
+    {% else %}
     origin {
         domain_name = replace(aws_alb.{{ env_collection.instance_name }}.dns_name, "/^https?://([^/]*).*/", "$1")
         origin_id = "{{ service.instance_name }}"
@@ -413,71 +413,6 @@ resource "aws_cloudfront_distribution" "{{ environment.instance_name }}_{{ front
 
         viewer_protocol_policy = "redirect-to-https"
     }
-    {% else %}
-    origin {
-        domain_name = "${aws_s3_bucket_website_configuration.{{ service.instance_name }}_website.website_endpoint}"
-        origin_id = "{{ service.instance_name }}"
-
-        custom_origin_config {
-            http_port = 80
-            https_port = 443
-            origin_protocol_policy = "http-only"
-            origin_ssl_protocols = ["TLSv1.2"]
-            origin_keepalive_timeout = 60
-            origin_read_timeout = 60
-        }
-    }
-
-    {% if not service.settings.url_path == "/" %}
-    ordered_cache_behavior {
-        path_pattern = "/{{ service.settings.url_path.strip('/') }}"
-        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-        cached_methods = ["GET", "HEAD"]
-        target_origin_id = "{{ service.instance_name }}"
-        {% if service.settings.cdn.enabled %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
-        {% else %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
-        {% endif %}
-
-        {% if service.settings.custom_headers %}
-        response_headers_policy_id = "${aws_cloudfront_response_headers_policy.custom_headers_policy.id}"
-        {% endif %}
-
-        lambda_function_association {
-            event_type = "origin-response"
-            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
-        }
-
-        viewer_protocol_policy = "redirect-to-https"
-    }
-    ordered_cache_behavior {
-        path_pattern = "{{ service.settings.url_path }}*"
-        allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-        cached_methods = ["GET", "HEAD"]
-        target_origin_id = "{{ service.instance_name }}"
-        {% if service.settings.cdn.enabled %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_frontend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_frontend.id}"
-        {% else %}
-        cache_policy_id = "${aws_cloudfront_cache_policy.{{ env_collection.instance_name }}_backend.id}"
-        origin_request_policy_id = "${aws_cloudfront_origin_request_policy.{{ env_collection.instance_name }}_backend.id}"
-        {% endif %}
-
-        {% if service.settings.custom_headers %}
-        response_headers_policy_id = "${aws_cloudfront_response_headers_policy.{{ service.instance_name }}.id}"
-        {% endif %}
-
-        lambda_function_association {
-            event_type = "origin-response"
-            lambda_arn = aws_lambda_function.{{ env_collection.instance_name }}_frontend_routing.qualified_arn
-        }
-
-        viewer_protocol_policy = "redirect-to-https"
-    }
-
     {% endif %}
 
     {% endfor %}
