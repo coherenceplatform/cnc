@@ -172,7 +172,7 @@ class AWSEnvironmentCollection(EnvironmentCollection):
         return secret_string
 
     def generate_tf_assets(self, config_files_path, rendered_files_path):
-        if self.application.flavor == "lambda-lite":
+        if self.has_serverless_services:
             lambda_payload_path = os.path.join(
                 rendered_files_path, "lambda_function_payload"
             )
@@ -181,7 +181,6 @@ class AWSEnvironmentCollection(EnvironmentCollection):
                 "zip",
                 root_dir=(f"{config_files_path}/lambda_function_payload"),
             )
-            return True
 
         log.debug(f"Generating provider assets for {self}...")
         # Zip the js file

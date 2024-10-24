@@ -52,7 +52,7 @@ check_{{ service.name }}_ecs_workers_deploy_status
 deploy_{{ service.name }}_scheduled_tasks
 {% endif %}
 
-{% else %}
+{% elif service.is_frontend %}
 
 build_{{ service.name }}_frontend_assets
 deploy_{{ service.name }}_to_s3
@@ -63,3 +63,10 @@ deploy_{{ service.name }}_to_s3
 
 {% block finally_build_commands %}
 {% endblock %}
+
+{% if service.is_serverless %}
+{% block serverless_block %}
+{% include "deploy_lambda_functions.sh.j2" %}
+deploy_{{ service.name }}
+{% endblock %}
+{% endif %}

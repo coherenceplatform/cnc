@@ -1,0 +1,14 @@
+build_{{ service.name }} () {
+  echo "Verify Lambda function code..."
+
+  source_dir="{{ service.build.context }}"
+
+  if [ -d "$source_dir" ]; then
+    echo "Source is a directory: $source_dir"
+  elif [ -f "$source_dir" ]; then
+    echo "Source is a file: $source_dir"
+  else
+    echo "Error: Source path is not valid: $source_dir"
+    exit 1
+  fi
+}

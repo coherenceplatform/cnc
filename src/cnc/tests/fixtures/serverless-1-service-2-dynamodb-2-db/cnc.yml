@@ -1,0 +1,28 @@
+services:
+  app:
+    x-cnc:
+      type: serverless
+    build:
+      context: .
+
+  dynamodb1:
+    x-cnc:
+      type: dynamodb
+
+  dynamodb2:
+    x-cnc:
+      type: dynamodb
+
+  db1:
+    x-cnc:
+      type: database
+      version: 15
+      use_db_proxy: False
+    image: postgres
+
+  db2:
+    x-cnc:
+      type: database
+      version: 15
+      use_db_proxy: False
+    image: postgres

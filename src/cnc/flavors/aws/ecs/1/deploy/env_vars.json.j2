@@ -1,0 +1,15 @@
+{
+    "Variables": {
+        {%- for item in service.insecure_environment_items %}
+        "{{ item.name }}": {{ item.value | tojson }}{%- if not loop.last or service.environment_secrets %},{%- endif %}
+        {%- endfor %}
+
+        {%- for secret in service.environment_secrets %}
+        {% if service.settings.secrets_mode == 'plaintext' %}
+        "{{ secret.name }}": {{ secret.value | tojson }}{%- if not loop.last %},{%- endif %}
+        {%- elif service.settings.secrets_mode == 'arn' %}
+        "{{ secret.name }}": "{{ secret.secret_id }}"{%- if not loop.last %},{%- endif %}
+        {%- endif %}
+        {%- endfor %}
+    }
+}
