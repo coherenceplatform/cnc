@@ -74,15 +74,6 @@ resource "aws_elasticache_subnet_group" "{{ env_collection.instance_name }}" {
     )
 }
 
-resource "aws_db_subnet_group" "{{ env_collection.instance_name }}" {
-    name = "{{ env_collection.instance_name }}"
-    description = "RDS subnet group"
-    subnet_ids = concat(
-        local.private_subnet_ids,
-        length(local.private_subnet_ids) > 0 ? [] : aws_subnet.{{ env_collection.instance_name }}_private.*.id
-    )
-}
-
 resource "aws_security_group" "{{ env_collection.instance_name }}_db_access" {
     vpc_id = {{ env_collection.vpc_resource_address }}.id
     name = "{{ env_collection.instance_name }}-db-access"
