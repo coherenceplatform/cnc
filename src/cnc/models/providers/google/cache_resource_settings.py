@@ -22,7 +22,7 @@ class GCPCacheResourceSettings(CacheResourceSettings):
         if major_version == 6:
             return "REDIS_6_X"
 
-        return "REDIS_{{ service.settings.version }}_0"
+        return f"REDIS_{{ service.settings.version }}_0"
 
     @property
     def toolbox_ssh_port_mapping(self):
