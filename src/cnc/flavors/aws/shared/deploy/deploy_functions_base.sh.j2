@@ -161,7 +161,7 @@ deploy_{{ service.name }}_to_s3 () {
 {% if service.settings.migrate %}
 run_{{ service.name }}_migrate () {
     echo -e \\nRunning migrate task...\\n
-    cnc toolbox run {{ environment.name }} --tag {{ deployer.tag_for_service(service.name) }} \
+    cnc toolbox --collection-name {{ environment.collection.name }} run {{ environment.name }} --tag {{ deployer.tag_for_service(service.name) }} \
     --service-name {{ service.name }} -- '{{ " ".join(service.settings.migrate) }}'; migrate_result=$?
     if [ $migrate_result -ne 0 ]; then exit $migrate_result; fi
 }
@@ -197,7 +197,7 @@ load_{{ service.name }}_snapshot () {
 {% if not service.environment.is_production and (service.is_backend and service.settings.seed) %}
 seed_{{ service.name }}_databases () {
     echo -e \\nRunning seed task...\\n
-    cnc toolbox run {{ environment.name }} --tag {{ deployer.tag_for_service(service.name) }} \
+    cnc toolbox --collection-name {{ environment.collection.name }} run {{ environment.name }} --tag {{ deployer.tag_for_service(service.name) }} \
     --service-name {{ service.name }} -- '{{ " ".join(service.settings.seed) }}'; seed_result=$?
     if [ $seed_result -ne 0 ]; then exit $seed_result; fi
 }
