@@ -12,7 +12,8 @@ jobs:
 
     - name: Install build dependencies
       run: |
-          python3 -m pip install --upgrade build twine toml
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install --upgrade build==1.2.1 twine==5.0.0 toml poetry-core
 
     - name: Set package version and create artifact
       run: |
