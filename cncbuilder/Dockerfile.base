@@ -1,7 +1,6 @@
 FROM python:3.12
 
 ENV PATH=$PATH:/root/google-cloud-sdk/bin
-ARG DOCKER_VERSION="5:28.3.1-1~debian.12~bookworm"
 
 WORKDIR /tmp
 
@@ -36,9 +35,8 @@ RUN apt-get update && apt-get -y dist-upgrade && \
     jq \
     groff \
     mandoc \
-    docker-ce=${DOCKER_VERSION} \
-    docker-ce-cli=${DOCKER_VERSION} \
-    docker-compose \
+    docker-ce \
+    docker-ce-cli \
     docker-compose-plugin \
     kubectl \
     google-cloud-sdk-gke-gcloud-auth-plugin && \
@@ -52,11 +50,21 @@ RUN curl -sSL https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_lin
 
 RUN curl -sSL https://sdk.cloud.google.com | bash
 
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"; \
+    fi && \
     unzip awscliv2.zip && \
     ./aws/install
 
-RUN curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb" && \
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_arm64/session-manager-plugin.deb" -o "session-manager-plugin.deb"; \
+    fi && \
     dpkg -i session-manager-plugin.deb
 
 RUN curl -sSL https://nixpacks.com/install.sh | bash
