@@ -29,7 +29,7 @@ can be run using `cnc` as if there was a binary installed.
 ```bash
 # starts a login shell in the virtual env created by poetry
 # pre-requisite for the following commands (python shell, cli, etc.)
-poetry shell
+eval $(poetry env activate)
 ```
 
 # running the tests

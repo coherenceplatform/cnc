@@ -89,3 +89,70 @@ class AWSDeployStageSmokeTest(AWSDeployStageTestBase):
         for service in self.environment.web_services:
             web_task = self.parse(f"ecs-web-{service.name}.json")
             self.assertIn(service.instance_name, web_task)
+
+
+class UpdateExitCodeTest(DeployStageTestBase):
+    """Test that update command properly propagates exit codes on failure"""
+
+    def test_update_command_ignores_deploy_failure_exit_code(self):
+        """Test that demonstrates the bug where update.py doesn't propagate deploy failures
+
+        This test shows that when deployer.perform() returns a non-zero exit code,
+        the update command ignores it and always exits with 0.
+        """
+        from unittest.mock import patch, MagicMock
+        from cnc.commands.update import perform
+        import typer
+
+        # Mock the context and application
+        mock_ctx = MagicMock()
+        mock_application = MagicMock()
+        mock_collection = MagicMock()
+        mock_environment = MagicMock()
+
+        mock_application.collection_by_name.return_value = mock_collection
+        mock_collection.environment_by_name.return_value = mock_environment
+        mock_ctx.obj.application = mock_application
+
+        # Mock BuildStageManager to succeed
+        with patch("cnc.commands.update.BuildStageManager") as mock_build_class, patch(
+            "cnc.commands.update.DeployStageManager"
+        ) as mock_deploy_class, patch(
+            "cnc.commands.update.send_event"
+        ):  # Mock telemetry
+
+            mock_builder = MagicMock()
+            mock_builder.perform.return_value = 0  # Build succeeds
+            mock_build_class.return_value = mock_builder
+
+            mock_deployer = MagicMock()
+            mock_deployer.perform.return_value = 42  # Deploy fails with exit code 42
+            mock_deploy_class.return_value = mock_deployer
+
+            # Call the perform function and expect it to raise typer.Exit
+            with self.assertRaises(typer.Exit) as cm:
+                perform(
+                    ctx=mock_ctx,
+                    environment_name="main",
+                    collection_name="test",
+                    service_tags=[],
+                    default_tag=None,
+                    cleanup=True,
+                    debug=False,
+                    generate=True,
+                )
+
+            # The exit code should be 42 (from deploy failure), not 0
+            # This will FAIL with the current bug, showing exit code is 0
+            exit_code = cm.exception.exit_code
+            self.assertNotEqual(
+                exit_code,
+                0,
+                f"Expected non-zero exit code from failed deploy in update command, got {exit_code}. "
+                f"This demonstrates the bug where update.py ignores deployer.perform() exit code.",
+            )
+            self.assertEqual(
+                exit_code,
+                42,
+                f"Expected exit code 42 from failed deploy in update command, got {exit_code}",
+            )
