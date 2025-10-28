@@ -65,15 +65,16 @@ def perform(
             service_tags=service_tags,
             default_tag=default_tag,
         )
-        deployer.perform(
+        update_exit_code = deployer.perform(
             should_cleanup=cleanup,
             should_regenerate_config=generate,
             debug=debug,
         )
     else:
         log.warning(f"Build failed (exit code {_ret}), did not deploy!")
+        update_exit_code = _ret
 
     log.debug(
         f"All set updating for {service_tags}/{default_tag} in {int(time.time() - start_time)} seconds"
     )
-    raise typer.Exit()
+    raise typer.Exit(code=update_exit_code)
