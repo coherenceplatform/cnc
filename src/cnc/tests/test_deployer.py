@@ -71,10 +71,7 @@ class AWSDeployStageSmokeTest(AWSDeployStageTestBase):
         self.assertNotIn("deploy_app_scheduled_tasks", build)
         self.assertNotIn("deploy_app_workers_to_ecs", build)
         self.assertIn(
-            (
-                f"source { self.deployer.rendered_files_path }/deploy-"
-                "app-functions.sh"
-            ),
+            (f"source {self.deployer.rendered_files_path}/deploy-" "app-functions.sh"),
             build,
         )
         self.assertIn("deploy_app_to_ecs", build)
